@@ -1,0 +1,45 @@
+{
+  "_comment": "Copiez ce fichier en config.json et renseignez vos propres valeurs.",
+  "phyc": {
+    "url": "http://services.schapi.e2.rie.gouv.fr/phycop/bdtr.wsdl",
+    "idcontact": "",
+    "motdepasse": ""
+  },
+  "bdimage": {
+    "url": "http://services.schapi.e2.rie.gouv.fr/bdimage/2016/wsbdi",
+    "timeout_async": 300,
+    "epsg": 2154,
+    "resol": 1000,
+    "nodata": -1
+  },
+  "station": {
+    "code_station": "",
+    "code_site": "",
+    "code_bnbv": "",
+    "nom_station": "",
+    "ul": "",
+    "lr": ""
+  },
+  "output_dir": "./sorties",
+  "seuils_q": {
+    "zt_jaune": null,
+    "jaune": null,
+    "zt_orange": null,
+    "orange": null,
+    "zt_rouge": null,
+    "rouge": null
+  },
+  "seuils_h": {
+    "zt_jaune": null,
+    "jaune": null,
+    "zt_orange": null,
+    "orange": null,
+    "zt_rouge": null,
+    "rouge": null
+  },
+  "parametrage": {
+    "prefixe_station": "Y",
+    "nb_chiffres_station": 9,
+    "prefixe_bnbv": "MO"
+  }
+}

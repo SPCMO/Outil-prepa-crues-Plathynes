@@ -1,0 +1,28 @@
+# ── Configuration sensible (identifiants PHyC, codes station) ──────────────
+config/config.json
+
+# ── Données de sortie utilisateur ──────────────────────────────────────────
+sorties/
+
+# ── Python ─────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ── Windows ────────────────────────────────────────────────────────────────
+*.lnk
+Thumbs.db
+desktop.ini
+
+# ── Données locales de développement (non nécessaires à l'utilisation) ─────
+aspimage/
+BNBV_SPCMO/
+Doc BDImage/
+Docs Phyc/
+Format données sortie/
+test_hu_bv.py
+test_phyc.py
+test_pluie_bv.py
+test_seuils.py
+Crues H-Q Cassaignes sup 1m20.csv
