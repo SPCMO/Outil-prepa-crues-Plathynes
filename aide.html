@@ -103,8 +103,8 @@
 <body>
 
 <div class="tab-bar">
-  <button class="tab-btn active" onclick="showTab('install')">⚙️ Installation</button>
-  <button class="tab-btn" onclick="showTab('tuto')">🎓 Tutoriel utilisateur</button>
+  <button class="tab-btn" onclick="showTab('install')">⚙️ Installation</button>
+  <button class="tab-btn active" onclick="showTab('tuto')">🎓 Tutoriel utilisateur</button>
   <button class="tab-btn" onclick="showTab('archi')">🏗️ Architecture</button>
   <button class="tab-btn" onclick="showTab('detail')">🔬 Détail technique</button>
   <button class="tab-btn" onclick="showTab('changelog')">📋 Historique des évolutions</button>
@@ -112,7 +112,7 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════ INSTALLATION -->
-<div id="tab-install" class="tab-panel active">
+<div id="tab-install" class="tab-panel">
   <h1>Installation de l'outil</h1>
   <p>Avant le premier lancement, vérifiez que votre environnement Python est complet en exécutant le script de test fourni.</p>
 
@@ -189,7 +189,7 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ TUTORIEL -->
-<div id="tab-tuto" class="tab-panel">
+<div id="tab-tuto" class="tab-panel active">
   <h1>Guide d'utilisation — Outil préparation crues Plathynes</h1>
   <p>Ce guide vous accompagne pas à pas dans l'utilisation de l'outil, de la configuration initiale jusqu'à l'analyse comparative des épisodes de crue.</p>
 
