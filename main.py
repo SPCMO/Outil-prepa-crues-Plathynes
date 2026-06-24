@@ -1610,8 +1610,9 @@ class App(tk.Tk):
             tk.Label(frame, text=q_txt, bg=vig_bg, fg=vig_fg,
                      font=("TkDefaultFont", 8), anchor="center", padx=8, pady=5
                      ).grid(row=ri, column=1, sticky="nsew", padx=1, pady=0)
-            for j, txt in enumerate([ant_txt, pan_txt, pct_txt], start=2):
-                tk.Label(frame, text=txt, bg=row_bg, fg=c_p,
+            for j, (txt, fg) in enumerate(
+                    [(ant_txt, C_ANT), (pan_txt, C_PAN), (pct_txt, c_p)], start=2):
+                tk.Label(frame, text=txt, bg=row_bg, fg=fg,
                          font=("TkDefaultFont", 8, "bold"), anchor="center", padx=8, pady=5
                          ).grid(row=ri, column=j, sticky="nsew", padx=1, pady=0)
 
