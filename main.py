@@ -706,10 +706,123 @@ class App(tk.Tk):
         except Exception:
             return "Vert"
 
+    # ── Stats Antilope vs Panthère ──────────────────────────────────────────
+
+    @staticmethod
+    def _calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals):
+        """Calcule les 4 indicateurs de comparaison Ant/Pan pour un épisode.
+        Retourne un dict ou None si données insuffisantes."""
+        if not p_dates or not pant_dates:
+            return None
+        ant_d = dict(zip(p_dates, p_vals))
+        pan_d = dict(zip(pant_dates, pant_vals))
+        common = sorted(set(ant_d) & set(pan_d))
+        if len(common) < 2:
+            return None
+        ant_c = [ant_d[t] for t in common]
+        pan_c = [pan_d[t] for t in common]
+        diffs = [p - a for p, a in zip(pan_c, ant_c)]
+
+        # 1. Écart moyen
+        ecart_moyen = sum(diffs) / len(diffs)
+        pct_pan_over = sum(1 for d in diffs if d > 0) / len(diffs) * 100
+
+        # 2. Écart max 1h (|Pan - Ant| max)
+        abs_diffs = [abs(d) for d in diffs]
+        idx_max1h = max(range(len(abs_diffs)), key=lambda i: abs_diffs[i])
+        ecart_max_1h = diffs[idx_max1h]
+        ts_max_1h   = common[idx_max1h]
+
+        # 3. Cumul 1h max Antilope → écart à ce pas de temps
+        idx_ant_max = max(range(len(ant_c)), key=lambda i: ant_c[i])
+        ecart_at_ant_peak = diffs[idx_ant_max]
+        ts_ant_peak       = common[idx_ant_max]
+
+        # 4. 3h consécutives max Antilope → écart sur cette fenêtre
+        best_i = 0
+        best_sum = -1.0
+        for i in range(len(common) - 2):
+            s = ant_c[i] + ant_c[i+1] + ant_c[i+2]
+            if s > best_sum:
+                best_sum = s
+                best_i   = i
+        ecart_3h      = sum(diffs[best_i:best_i+3])
+        ts_3h_start   = common[best_i]
+        ts_3h_end     = common[best_i + 2]
+
+        return {
+            "ecart_moyen":       ecart_moyen,
+            "pct_pan_over":      pct_pan_over,
+            "ecart_max_1h":      ecart_max_1h,
+            "ts_max_1h":         ts_max_1h,
+            "ecart_at_ant_peak": ecart_at_ant_peak,
+            "ts_ant_peak":       ts_ant_peak,
+            "ecart_3h":          ecart_3h,
+            "ts_3h_start":       ts_3h_start,
+            "ts_3h_end":         ts_3h_end,
+        }
+
+    def _get_global_antpan_max(self):
+        """Retourne les maxima globaux (en valeur absolue) sur tous les épisodes.
+        Résultat mis en cache dans self._antpan_global_max."""
+        if getattr(self, "_antpan_global_max", None) is not None:
+            return self._antpan_global_max
+
+        max_em  = 0.0   # |écart moyen|
+        max_e1h = 0.0   # |écart max 1h|
+        max_ep  = 0.0   # |écart au pic Ant|
+        max_e3h = 0.0   # |écart 3h consécutives|
+
+        def _read_bv(path):
+            pairs = []
+            try:
+                with open(path, encoding="utf-8") as f:
+                    reader = csv.reader(f, delimiter=";")
+                    next(reader, None)
+                    for row in reader:
+                        if len(row) >= 2:
+                            try:
+                                pairs.append((
+                                    datetime.strptime(row[0].strip(), "%d/%m/%Y %H:%M"),
+                                    float(row[1].strip())))
+                            except (ValueError, IndexError):
+                                pass
+            except Exception:
+                pass
+            pairs.sort(key=lambda x: x[0])
+            return [r[0] for r in pairs], [r[1] for r in pairs]
+
+        for ep in self._visu_episodes:
+            if not (ep.get("p_path") and ep.get("pant_path")):
+                continue
+            if not (os.path.exists(ep["p_path"]) and os.path.exists(ep["pant_path"])):
+                continue
+            try:
+                pd_, pv_ = _read_bv(ep["p_path"])
+                pp_, ppv = _read_bv(ep["pant_path"])
+                s = self._calc_ep_antpan_stats(pd_, pv_, pp_, ppv)
+                if s is None:
+                    continue
+                max_em  = max(max_em,  abs(s["ecart_moyen"]))
+                max_e1h = max(max_e1h, abs(s["ecart_max_1h"]))
+                max_ep  = max(max_ep,  abs(s["ecart_at_ant_peak"]))
+                max_e3h = max(max_e3h, abs(s["ecart_3h"]))
+            except Exception:
+                continue
+
+        self._antpan_global_max = {
+            "ecart_moyen":       max_em  or 1.0,
+            "ecart_max_1h":      max_e1h or 1.0,
+            "ecart_at_ant_peak": max_ep  or 1.0,
+            "ecart_3h":          max_e3h or 1.0,
+        }
+        return self._antpan_global_max
+
     def _refresh_visu_list(self):
         """Scanne le dossier de sortie et remplit la liste des épisodes extraits."""
         self.visu_listbox.delete(0, tk.END)
         self._visu_episodes.clear()
+        self._antpan_global_max = None   # invalide le cache global
 
         debits_dir, hu_dir, pluies_dir, bv_dir = self._get_out_dirs()
 
@@ -970,6 +1083,15 @@ class App(tk.Tk):
         if all_h:
             self._visu_ax_p.legend(all_h, all_l, loc="upper right", fontsize=8)
 
+        # ── Encart stats Ant. vs Pan. (bas-droite) ────────────────────────────
+        if p_dates and pant_dates:
+            try:
+                self._draw_antpan_stats_panel(
+                    self._visu_ax_p, p_dates, p_vals, pant_dates, pant_vals,
+                    C_P, C_PANT)
+            except Exception:
+                pass
+
         # ── Graphique bas : débit Q ou H ─────────────────────────────────────
         grandeur_ep = ep.get("grandeur", self.config_data.get("extraction", {}).get("grandeur", "Q"))
         if grandeur_ep == "H":
@@ -1110,6 +1232,131 @@ class App(tk.Tk):
                 ax.tick_params(axis="x", labelsize=7)
 
         self._visu_canvas.draw()
+
+    # ── Encart stats Antilope vs Panthère ───────────────────────────────────
+
+    def _draw_antpan_stats_panel(self, ax, p_dates, p_vals,
+                                  pant_dates, pant_vals, c_ant, c_pant):
+        """Dessine l'encart de comparaison Ant/Pan en bas-droite du graphique."""
+        import matplotlib.patches as mpatches
+
+        s = self._calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals)
+        if s is None:
+            return
+        gmax = self._get_global_antpan_max()
+
+        C_ANT  = c_ant
+        C_PAN  = c_pant
+
+        def color_for(val):
+            return C_PAN if val > 0 else C_ANT
+
+        def fmt_val(val):
+            sign = "+" if val > 0 else ""
+            return f"{sign}{val:.1f} mm"
+
+        def fmt_ts(ts):
+            return ts.strftime("%d/%m %Hh")
+
+        def bar_frac(val, ref_key):
+            ref = gmax.get(ref_key, 1.0)
+            return min(abs(val) / ref, 1.0) if ref > 0 else 0.0
+
+        # Position et dimensions de l'encart (coordonnées axes 0–1)
+        x0, y0 = 0.54, 0.01
+        w,  h  = 0.45, 0.36
+
+        # Fond blanc semi-transparent
+        bg = mpatches.FancyBboxPatch(
+            (x0, y0), w, h, boxstyle="round,pad=0.008",
+            transform=ax.transAxes, clip_on=False,
+            facecolor="white", edgecolor="#BBBBBB",
+            linewidth=0.8, alpha=0.90, zorder=9)
+        ax.add_patch(bg)
+
+        # En-tête
+        ax.text(x0 + 0.012, y0 + h - 0.025,
+                "Antilope vs Panthère",
+                transform=ax.transAxes, fontsize=7, fontweight="bold",
+                color="#444444", va="top", zorder=12)
+
+        rows = [
+            ("Écart moyen",          s["ecart_moyen"],       None,
+             None,                    "ecart_moyen"),
+            ("Écart max 1h",         s["ecart_max_1h"],      fmt_ts(s["ts_max_1h"]),
+             None,                    "ecart_max_1h"),
+            ("Cumul 1h max Ant.",    s["ecart_at_ant_peak"], fmt_ts(s["ts_ant_peak"]),
+             None,                    "ecart_at_ant_peak"),
+            ("3h consécutives max",  s["ecart_3h"],
+             f"{fmt_ts(s['ts_3h_start'])}–{s['ts_3h_end'].strftime('%Hh')}",
+             None,                    "ecart_3h"),
+        ]
+
+        n_rows    = len(rows)
+        header_h  = 0.055
+        row_h     = (h - header_h - 0.01) / n_rows
+        bar_x     = x0 + 0.012
+        bar_max_w = w - 0.024
+        bar_thick = row_h * 0.28
+
+        # Ligne de séparation en-tête
+        ax.plot([x0 + 0.008, x0 + w - 0.008],
+                [y0 + h - header_h, y0 + h - header_h],
+                color="#CCCCCC", linewidth=0.5,
+                transform=ax.transAxes, zorder=10)
+
+        for i, (label, val, ts_txt, _, ref_key) in enumerate(rows):
+            row_cy = y0 + h - header_h - (i + 0.5) * row_h
+
+            c = color_for(val)
+
+            # ── Fond barre (gris clair)
+            bg_bar = mpatches.Rectangle(
+                (bar_x, row_cy - bar_thick / 2), bar_max_w, bar_thick,
+                transform=ax.transAxes, clip_on=False,
+                facecolor="#EEEEEE", alpha=0.75, zorder=10)
+            ax.add_patch(bg_bar)
+
+            # ── Barre colorée proportionnelle
+            frac = bar_frac(val, ref_key)
+            if frac > 0:
+                fg_bar = mpatches.Rectangle(
+                    (bar_x, row_cy - bar_thick / 2), bar_max_w * frac, bar_thick,
+                    transform=ax.transAxes, clip_on=False,
+                    facecolor=c, alpha=0.55, zorder=11)
+                ax.add_patch(fg_bar)
+
+            # ── Label (au-dessus de la barre)
+            ax.text(bar_x, row_cy + bar_thick / 2 + 0.005,
+                    label,
+                    transform=ax.transAxes, fontsize=6,
+                    color="#666666", va="bottom", zorder=12)
+
+            # ── Valeur (dans / sous la barre)
+            val_txt = fmt_val(val)
+            ax.text(bar_x + 0.004, row_cy,
+                    val_txt,
+                    transform=ax.transAxes, fontsize=6.5, fontweight="bold",
+                    color=c, va="center", zorder=12)
+
+            # ── Horodatage (aligné après la valeur, même hauteur)
+            if ts_txt:
+                # largeur approx de la valeur pour décaler l'horodatage
+                val_offset = 0.002 + len(val_txt) * 0.0055
+                ax.text(bar_x + val_offset, row_cy,
+                        ts_txt,
+                        transform=ax.transAxes, fontsize=5.8,
+                        color="#888888", va="center", zorder=12)
+
+        # Ligne de tendance sous les rows
+        tendance_txt = (f"Pan. sur-estime {s['pct_pan_over']:.0f} % des pas de temps"
+                        if s["pct_pan_over"] >= 50
+                        else f"Pan. sous-estime {100 - s['pct_pan_over']:.0f} % des pas de temps")
+        tc = C_PAN if s["pct_pan_over"] >= 50 else C_ANT
+        ax.text(x0 + 0.012, y0 + 0.008,
+                tendance_txt,
+                transform=ax.transAxes, fontsize=5.8, fontstyle="italic",
+                color=tc, va="bottom", zorder=12)
 
     # ── Onglet Paramétrage ───────────────────────────────────────────────────
 
