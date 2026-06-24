@@ -1395,9 +1395,6 @@ class App(tk.Tk):
 
         seuil_lbl = f"Forte int. (>{seuil:.0f}mm)"
         rows = [
-            ("Écart moyen",
-             fmt_val(s["ecart_moyen"],       s["pct_ecart_moyen"]),
-             None,                                                       "ecart_moyen",      s["ecart_moyen"]),
             ("Écart max 1h",
              fmt_val(s["ecart_max_1h"],      s["pct_ecart_max_1h"]),
              fmt_ts(s["ts_max_1h"]),                                     "ecart_max_1h",     s["ecart_max_1h"]),
@@ -1424,10 +1421,10 @@ class App(tk.Tk):
             if val_txt is None or val_raw is None:
                 # Pas de données (ex : aucun pas > seuil)
                 ax.text(x0 + 0.006, row_cy, label,
-                        transform=ax.transAxes, fontsize=5.8,
+                        transform=ax.transAxes, fontsize=6.5,
                         color="#AAAAAA", va="center", zorder=12)
                 ax.text(VAL_X, row_cy, "—",
-                        transform=ax.transAxes, fontsize=6,
+                        transform=ax.transAxes, fontsize=6.8,
                         color="#AAAAAA", va="center", zorder=12)
                 continue
 
@@ -1436,7 +1433,7 @@ class App(tk.Tk):
             # ── Label (colonne gauche)
             ax.text(x0 + 0.006, row_cy,
                     label,
-                    transform=ax.transAxes, fontsize=5.8,
+                    transform=ax.transAxes, fontsize=6.5,
                     color="#555555", va="center", zorder=12)
 
             # ── Barre fond gris
@@ -1456,7 +1453,7 @@ class App(tk.Tk):
             # ── Valeur + % (colonne droite)
             ax.text(VAL_X, row_cy,
                     val_txt,
-                    transform=ax.transAxes, fontsize=6, fontweight="bold",
+                    transform=ax.transAxes, fontsize=7, fontweight="bold",
                     color=c, va="center", zorder=12)
 
             # ── Horodatage (aligné après la valeur)
@@ -1464,7 +1461,7 @@ class App(tk.Tk):
                 ts_offset = len(val_txt) * 0.0048 + 0.003
                 ax.text(VAL_X + ts_offset, row_cy,
                         ts_txt,
-                        transform=ax.transAxes, fontsize=5.5,
+                        transform=ax.transAxes, fontsize=6.2,
                         color="#888888", va="center", zorder=12)
 
     # ── Synthèse BV (fenêtre tableau tous épisodes) ──────────────────────────
@@ -1645,15 +1642,17 @@ class App(tk.Tk):
                 bw = bar_days          # mdates uses days as float unit
                 if pct is None:
                     # Marque sur l'axe : petite ligne verticale grise
-                    ax.vlines(x, -2, 2, colors=C_NEU, linewidth=1.5, zorder=3)
+                    ax.vlines(x, -3, 3, colors=C_NEU, linewidth=3, zorder=3)
                 elif pct >= 0:
                     # Panthère > Antilope → barre orange vers le bas
                     ax.bar(x, -abs(pct), width=bw, color=C_PAN,
-                           alpha=0.75, align="center", zorder=2)
+                           alpha=0.88, align="center", zorder=2,
+                           edgecolor=C_PAN, linewidth=0.5)
                 else:
                     # Antilope > Panthère → barre bleue vers le haut
                     ax.bar(x, abs(pct), width=bw, color=C_ANT,
-                           alpha=0.75, align="center", zorder=2)
+                           alpha=0.88, align="center", zorder=2,
+                           edgecolor=C_ANT, linewidth=0.5)
 
             # Axe horizontal (ligne 0)
             ax.axhline(0, color="#444444", linewidth=0.8, zorder=4)
