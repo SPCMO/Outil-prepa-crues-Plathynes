@@ -483,15 +483,27 @@ class App(tk.Tk):
         frm = self.tab_extraction
 
         # Section Pluies
-        inn, bg = self._make_section(frm, "Pluies spatialisées — BDImage Antilope", "teal")
+        inn, bg = self._make_section(frm, "Pluies spatialisées — BDImage", "teal")
+        # Ligne Antilope
         r = self._row(inn, bg)
         self.var_pluies = tk.BooleanVar(value=True)
-        tk.Checkbutton(r, text="Extraire", variable=self.var_pluies, bg=bg,
+        tk.Checkbutton(r, text="Antilope", variable=self.var_pluies, bg=bg,
                        activebackground=bg).pack(side=tk.LEFT)
         tk.Label(r, text="Pas de temps :", bg=bg, font=("TkDefaultFont", 9)).pack(side=tk.LEFT, padx=(16, 4))
         self.var_pdt_pluies = tk.StringVar(value="1 heure")
         ttk.Combobox(r, textvariable=self.var_pdt_pluies,
                      values=list(PDT_PLUIES_OPTIONS.keys()), state="readonly", width=15).pack(side=tk.LEFT)
+        # Ligne Panthère
+        r2 = self._row(inn, bg)
+        self.var_pluies_panthere = tk.BooleanVar(value=False)
+        tk.Checkbutton(r2, text="Panthère", variable=self.var_pluies_panthere, bg=bg,
+                       activebackground=bg).pack(side=tk.LEFT)
+        tk.Label(r2, text="Pas de temps :", bg=bg, font=("TkDefaultFont", 9)).pack(side=tk.LEFT, padx=(16, 4))
+        cb_pant = ttk.Combobox(r2, values=["1 heure"], state="disabled", width=15)
+        cb_pant.set("1 heure")
+        cb_pant.pack(side=tk.LEFT)
+        tk.Label(r2, text="(seul pdt disponible sur BDImage)", bg=bg,
+                 fg="#777777", font=("TkDefaultFont", 8, "italic")).pack(side=tk.LEFT, padx=(8, 0))
 
         # Section HU
         inn, bg = self._make_section(frm, "Humidité des sols HU — BDImage SIM (moyenne BV)", "vert")
@@ -683,66 +695,81 @@ class App(tk.Tk):
         self.visu_listbox.delete(0, tk.END)
         self._visu_episodes.clear()
 
-        debits_dir, hu_dir, pluies_dir = self._get_out_dirs()
+        debits_dir, hu_dir, pluies_dir, bv_dir = self._get_out_dirs()
 
-        if not os.path.isdir(debits_dir):
-            return
-
-        def _fname_date(fn):
-            parts = fn[5:-4].split("_")  # "DD_MM_YYYY_..."
+        def _parse_key(key):
+            """Extrait (datetime, label) depuis 'DD_MM_YYYY_Station'."""
+            parts = key.split("_")
             try:
-                return datetime.strptime(f"{parts[0]}/{parts[1]}/{parts[2]}", "%d/%m/%Y")
-            except Exception:
-                return datetime.min
+                dt = datetime.strptime(f"{parts[0]}/{parts[1]}/{parts[2]}", "%d/%m/%Y")
+                station = " ".join(parts[3:]) if len(parts) > 3 else ""
+                return dt, f"{dt.strftime('%d/%m/%Y')} — {station}"
+            except (ValueError, IndexError):
+                return datetime.min, key
 
-        for fname in sorted(os.listdir(debits_dir), key=_fname_date, reverse=True):
-            if not (fname.startswith("Q-Ep_") and fname.endswith(".txt")):
-                continue
-            q_path   = os.path.join(debits_dir, fname)
-            hu_fname = fname.replace("Q-Ep_", "HU-Ep_").replace(".txt", ".csv")
-            hu_path  = os.path.join(hu_dir, hu_fname)
-            p_fname  = fname.replace("Q-Ep_", "PluieBV-Ep_").replace(".txt", ".csv")
-            p_path   = os.path.join(pluies_dir, p_fname)
-            # Générer le CSV pluie BV à la volée si le dossier .grd existe mais le CSV non
-            if not os.path.exists(p_path):
+        # Construire un dict d'épisodes indexé par clé "DD_MM_YYYY_Station"
+        eps = {}  # key → ep dict
+
+        def _get_ep(key):
+            if key not in eps:
+                dt, label = _parse_key(key)
+                eps[key] = {"label": label, "_dt": dt,
+                            "q_path": None, "hu_path": None,
+                            "p_path": None, "pant_path": None}
+            return eps[key]
+
+        # Scan Debits/ — fichiers Q-Ep_*.txt (pilotent débit + HU)
+        if os.path.isdir(debits_dir):
+            for fname in os.listdir(debits_dir):
+                if not (fname.startswith("Q-Ep_") and fname.endswith(".txt")):
+                    continue
+                key = fname[5:-4]  # DD_MM_YYYY_Station
+                ep  = _get_ep(key)
+                ep["q_path"]  = os.path.join(debits_dir, fname)
+                hu_fname = fname.replace("Q-Ep_", "HU-Ep_").replace(".txt", ".csv")
+                hu_path  = os.path.join(hu_dir, hu_fname)
+                ep["hu_path"] = hu_path if os.path.exists(hu_path) else None
+
+        # Scan Pluies temps moy BV pour graph/ — AntJ1_BV et Pant_BV
+        if os.path.isdir(bv_dir):
+            for fname in os.listdir(bv_dir):
+                if fname.startswith("AntJ1_BV-Ep_") and fname.endswith(".csv"):
+                    key = fname[len("AntJ1_BV-Ep_"):-4]
+                    _get_ep(key)["p_path"] = os.path.join(bv_dir, fname)
+                elif fname.startswith("Pant_BV-Ep_") and fname.endswith(".csv"):
+                    key = fname[len("Pant_BV-Ep_"):-4]
+                    _get_ep(key)["pant_path"] = os.path.join(bv_dir, fname)
+
+        # Générer AntJ1_BV à la volée si .grd présent mais CSV absent
+        for key, ep in eps.items():
+            if ep["p_path"] is None:
+                p_path = os.path.join(bv_dir, f"AntJ1_BV-Ep_{key}.csv")
                 for _pfx in ("AntJ1-Ep_", "Pluie-Ep_"):
-                    grd_dir = os.path.join(pluies_dir, fname.replace("Q-Ep_", _pfx).replace(".txt", ""))
+                    grd_dir = os.path.join(pluies_dir, f"{_pfx}{key}")
                     if os.path.isdir(grd_dir):
                         try:
+                            os.makedirs(bv_dir, exist_ok=True)
                             from modules.bdimage_client import calculer_pluie_bv_csv
                             calculer_pluie_bv_csv(grd_dir, p_path)
+                            ep["p_path"] = p_path
                         except Exception:
                             pass
                         break
 
-            # Label depuis le nom de fichier : Q-Ep_DD_MM_YYYY_Station.txt
-            base  = fname[5:-4]  # "DD_MM_YYYY_Station"
-            parts = base.split("_")
-            label = base
-            if len(parts) >= 3:
-                try:
-                    dt = datetime.strptime(f"{parts[0]}/{parts[1]}/{parts[2]}", "%d/%m/%Y")
-                    station = " ".join(parts[3:]) if len(parts) > 3 else ""
-                    label = f"{dt.strftime('%d/%m/%Y')} — {station}"
-                except ValueError:
-                    pass
-
-            ep = {
-                "label":    label,
-                "q_path":   q_path,
-                "hu_path":  hu_path if os.path.exists(hu_path) else None,
-                "p_path":   p_path  if os.path.exists(p_path)  else None,
-            }
+        # Trier par date décroissante
+        sorted_eps = sorted(eps.values(), key=lambda e: e["_dt"], reverse=True)
+        for ep in sorted_eps:
             self._visu_episodes.append(ep)
             parts_marker = []
-            if ep["q_path"]:   parts_marker.append("Q")
-            if ep["hu_path"]:  parts_marker.append("HU")
-            if ep["p_path"]:   parts_marker.append("P")
-            marker = "+".join(parts_marker) if parts_marker else "Q"
-            vig   = self._vig_from_file(q_path)
+            if ep["q_path"]:    parts_marker.append("Q")
+            if ep["hu_path"]:   parts_marker.append("HU")
+            if ep["p_path"]:    parts_marker.append("Ant")
+            if ep["pant_path"]: parts_marker.append("Pan")
+            marker = "+".join(parts_marker) if parts_marker else "?"
+            vig    = self._vig_from_file(ep["q_path"]) if ep["q_path"] else "vig_vert"
             bg, fg = self._VIG_ITEM_COLORS.get(vig, ("#EBF5FB", "#1A5276"))
             idx = self.visu_listbox.size()
-            self.visu_listbox.insert(tk.END, f"●  [{marker}]  {label}")
+            self.visu_listbox.insert(tk.END, f"●  [{marker}]  {ep['label']}")
             self.visu_listbox.itemconfig(idx, bg=bg, fg=fg,
                                          selectbackground="#1A5276",
                                          selectforeground="white")
@@ -791,9 +818,14 @@ class App(tk.Tk):
             pairs.sort(key=lambda x: x[0])
             return [r[0] for r in pairs], [r[1] for r in pairs]
 
-        q_dates, q_vals   = _read_csv(ep["q_path"],  has_header=False)
-        hu_dates, hu_vals = (_read_csv(ep["hu_path"]) if ep.get("hu_path") and os.path.exists(ep["hu_path"]) else ([], []))
-        p_dates,  p_vals  = (_read_csv(ep["p_path"])  if ep.get("p_path")  and os.path.exists(ep["p_path"])  else ([], []))
+        q_dates,    q_vals    = (_read_csv(ep["q_path"], has_header=False)
+                                  if ep.get("q_path") and os.path.exists(ep["q_path"]) else ([], []))
+        hu_dates,   hu_vals   = (_read_csv(ep["hu_path"])
+                                  if ep.get("hu_path") and os.path.exists(ep["hu_path"]) else ([], []))
+        p_dates,    p_vals    = (_read_csv(ep["p_path"])
+                                  if ep.get("p_path")  and os.path.exists(ep["p_path"])  else ([], []))
+        pant_dates, pant_vals = (_read_csv(ep["pant_path"])
+                                  if ep.get("pant_path") and os.path.exists(ep["pant_path"]) else ([], []))
 
         # Seuil hyétogramme
         try:
@@ -802,26 +834,43 @@ class App(tk.Tk):
             seuil = 40.0
 
         # ── Graphique haut : hyétogramme inversé (barres vers le bas) + HU ────────
+        C_PANT = "#CC5500"  # orange foncé Panthère
+
+        from datetime import timedelta as _td
+
+        # Calcul de l'échelle Y globale (max Antilope + Panthère)
+        all_p_max = max((max(p_vals) if p_vals else 0),
+                        (max(pant_vals) if pant_vals else 0))
+        y_bottom = max(all_p_max, 5) * 1.15
+
+        # Panthère en premier (en arrière-plan) — hachures + transparence
+        if pant_dates:
+            bar_w_pant = (pant_dates[1] - pant_dates[0]) * 0.85 if len(pant_dates) >= 2 else _td(hours=1)
+            self._visu_ax_p.bar(pant_dates, pant_vals, width=bar_w_pant,
+                                 color=C_PANT, alpha=0.30, align="center",
+                                 hatch="///", edgecolor=C_PANT, linewidth=0.5,
+                                 label="Panthère BV (mm)")
+
+        # Antilope par-dessus (premier plan) — barres pleines
         if p_dates:
-            from datetime import timedelta as _td
             bar_w = (p_dates[1] - p_dates[0]) * 0.8 if len(p_dates) >= 2 else _td(hours=1)
-            p_max = max(p_vals) if p_vals else 0
-            y_bottom = max(p_max, 5) * 1.15  # auto-scale, min 5mm, 15% marge
             # Partie sous le seuil (bleu foncé)
             base_vals = [min(v, seuil) for v in p_vals]
             self._visu_ax_p.bar(p_dates, base_vals, width=bar_w,
                                  color=C_P, alpha=0.75, align="center",
-                                 label=f"Pluie BV <= {seuil:.0f} mm")
+                                 label=f"Antilope BV ≤ {seuil:.0f} mm")
             # Partie au-dessus du seuil (violet), empilée
             excess_vals = [max(v - seuil, 0) for v in p_vals]
             if any(v > 0 for v in excess_vals):
                 self._visu_ax_p.bar(p_dates, excess_vals, width=bar_w,
                                      bottom=base_vals,
                                      color=C_P_EXCESS, alpha=0.85, align="center",
-                                     label=f"Pluie BV > {seuil:.0f} mm")
+                                     label=f"Antilope BV > {seuil:.0f} mm")
             # Ligne seuil
             self._visu_ax_p.axhline(seuil, color=C_P_EXCESS, linewidth=0.9,
                                      linestyle="--", alpha=0.6)
+
+        if p_dates or pant_dates:
             # Axe inversé : 0 en haut, barres tombent vers le bas
             self._visu_ax_p.set_ylim(y_bottom, 0)
         self._visu_ax_p.set_ylabel("Pluie BV (mm)", color=C_P, fontsize=9)
@@ -1264,15 +1313,15 @@ class App(tk.Tk):
     def _refresh_analyse(self):
         if not HAS_MPL:
             return
-        debits_dir, hu_dir, pluies_dir = self._get_out_dirs()
-        episodes = self._collect_analyse_data(debits_dir, hu_dir, pluies_dir)
+        debits_dir, hu_dir, pluies_dir, bv_dir = self._get_out_dirs()
+        episodes = self._collect_analyse_data(debits_dir, hu_dir, bv_dir)
         vig_on = {v for v, bv in self._analyse_vig_chk.items() if bv.get()}
         if len(vig_on) < len(self._analyse_vig_chk):
             episodes = [ep for ep in episodes
                         if ep.get("vig") in vig_on]
         self._plot_analyse(episodes)
 
-    def _collect_analyse_data(self, debits_dir, hu_dir, pluies_dir):
+    def _collect_analyse_data(self, debits_dir, hu_dir, bv_dir):
         """Lit les CSV de chaque épisode et retourne la liste des métriques."""
         episodes = []
         if not os.path.isdir(debits_dir):
@@ -1295,8 +1344,8 @@ class App(tk.Tk):
                     pass
 
             q_path  = os.path.join(debits_dir, fname)
-            hu_path = os.path.join(hu_dir,     fname.replace(prefix, "HU-Ep_").replace(".txt", ".csv"))
-            p_path  = os.path.join(pluies_dir, fname.replace(prefix, "PluieBV-Ep_").replace(".txt", ".csv"))
+            hu_path = os.path.join(hu_dir, fname.replace(prefix, "HU-Ep_").replace(".txt", ".csv"))
+            p_path  = os.path.join(bv_dir, fname.replace(prefix, "AntJ1_BV-Ep_").replace(".txt", ".csv"))
 
             def read_col(path, col=1, has_header=True):
                 vals = []
@@ -1517,7 +1566,8 @@ class App(tk.Tk):
                 leg_bottom_fig = leg.get_window_extent().y0 / fig_h_px
                 self._analyse_fig.text(
                     lx, leg_bottom_fig - 0.025,
-                    "* 25 %, 50 % et 100 %\ndu cumul max des épisodes",
+                    "* 25 %, 50 % et 100 % du cumul max des épisodes\n"
+                    "  (Antilope — cumul total sur l'ensemble de la BBox)",
                     ha="left", va="top", fontsize=6, color="#777777",
                     linespacing=1.4)
             except Exception:
@@ -1690,7 +1740,7 @@ class App(tk.Tk):
                      self.config_data.get("seuils", {}))
         nom_station = self.config_data.get("station", {}).get("nom_station", "") or \
                       self.config_data.get("station", {}).get("code_site", "")
-        debits_dir, _, _ = self._get_out_dirs()
+        debits_dir, _, _, _ = self._get_out_dirs()
         date_tag = ep["date_debut"].strftime("%d_%m_%Y")
         q_file = os.path.join(debits_dir, f"{grandeur}-Ep_{date_tag}_{nom_station}.txt")
 
@@ -1806,6 +1856,7 @@ class App(tk.Tk):
         })
         self._refresh_parametrage_ui()
         self._refresh_config_ui()
+        self._refresh_extraction_ui()
 
     def _refresh_config_ui(self):
         phyc = self.config_data.get("phyc", {})
@@ -1849,6 +1900,25 @@ class App(tk.Tk):
         for key in ("zt_jaune", "jaune", "zt_orange", "orange", "zt_rouge", "rouge"):
             val = seuils.get(key, "")
             self._var_seuils[key].set(str(val) if val != "" else "")
+
+    def _refresh_extraction_ui(self):
+        """Restaure les préférences d'extraction depuis config_data."""
+        ext = self.config_data.get("extraction", {})
+        if not ext:
+            return
+        self.var_pluies.set(ext.get("pluies", True))
+        pdt_p = ext.get("pdt_pluies", 60)
+        rev = {v: k for k, v in PDT_PLUIES_OPTIONS.items()}
+        self.var_pdt_pluies.set(rev.get(pdt_p, "1 heure"))
+        self.var_pluies_panthere.set(ext.get("pluies_panthere", False))
+        self.var_hu.set(ext.get("hu", True))
+        pdt_hu = ext.get("pdt_hu", 60)
+        self.var_pdt_hu.set("1 jour à 6:00" if pdt_hu == "journalier_6h" else "1 heure")
+        self.var_debits.set(ext.get("debits", True))
+        pdt_q = ext.get("pdt_debits", 15)
+        rev_q = {v: k for k, v in PDT_DEBITS_OPTIONS.items()}
+        self.var_pdt_debits.set(rev_q.get(pdt_q, "15 minutes"))
+        self.var_grandeur.set(ext.get("grandeur", "Q"))
 
     def _save_config(self):
         if "phyc"    not in self.config_data: self.config_data["phyc"]    = {}
@@ -1894,10 +1964,10 @@ class App(tk.Tk):
         webbrowser.open(f"file:///{html_path.replace(os.sep, '/')}")
 
     def _get_out_dirs(self):
-        """Retourne (debits_dir, hu_dir, pluies_dir) selon la config courante.
+        """Retourne (debits_dir, hu_dir, pluies_dir, bv_dir) selon la config courante.
 
-        Utilise la nouvelle structure {nom}/Debits|HU|Pluies/ si elle existe,
-        sinon replie sur l'ancienne structure plate pour la rétro-compatibilité.
+        Utilise la nouvelle structure {nom}/Debits|HU|Pluies|Pluies temps moy BV…/ si elle
+        existe, sinon replie sur l'ancienne structure plate pour la rétro-compatibilité.
         """
         base = self.config_data.get("output_dir", "./sorties")
         nom  = (self.config_data.get("station", {}).get("nom_station", "")
@@ -1905,11 +1975,13 @@ class App(tk.Tk):
                 or "station")
         new_debits = os.path.join(base, nom, "Debits")
         if os.path.isdir(new_debits):
-            return (new_debits,
-                    os.path.join(base, nom, "HU"),
-                    os.path.join(base, nom, "Pluies"))
+            root = os.path.join(base, nom)
+            return (os.path.join(root, "Debits"),
+                    os.path.join(root, "HU"),
+                    os.path.join(root, "Pluies"),
+                    os.path.join(root, "Pluies temps moy BV pour graph"))
         # Ancienne structure plate (rétro-compatibilité)
-        return (base, base, os.path.join(base, "Pluie temp pr graphique"))
+        return (base, base, base, os.path.join(base, "Pluie temp pr graphique"))
 
     def _browse_outdir(self):
         d = filedialog.askdirectory(title="Dossier de sortie")
@@ -2141,15 +2213,32 @@ class App(tk.Tk):
             return
 
         options = {
-            "pluies":     self.var_pluies.get(),
-            "pdt_pluies": PDT_PLUIES_OPTIONS.get(self.var_pdt_pluies.get(), 60),
-            "hu":         self.var_hu.get(),
-            "pdt_hu":     "journalier_6h" if self.var_pdt_hu.get() == "1 jour à 6:00" else 60,
-            "debits":     self.var_debits.get(),
-            "pdt_debits": PDT_DEBITS_OPTIONS.get(self.var_pdt_debits.get(), 15),
-            "grandeur":   self.var_grandeur.get(),
+            "pluies":           self.var_pluies.get(),
+            "pdt_pluies":       PDT_PLUIES_OPTIONS.get(self.var_pdt_pluies.get(), 60),
+            "pluies_panthere":  self.var_pluies_panthere.get(),
+            "hu":               self.var_hu.get(),
+            "pdt_hu":           "journalier_6h" if self.var_pdt_hu.get() == "1 jour à 6:00" else 60,
+            "debits":           self.var_debits.get(),
+            "pdt_debits":       PDT_DEBITS_OPTIONS.get(self.var_pdt_debits.get(), 15),
+            "grandeur":         self.var_grandeur.get(),
         }
-        if not any([options["pluies"], options["hu"], options["debits"]]):
+        # Sauvegarder les préférences d'extraction dans config
+        self.config_data["extraction"] = {
+            "pluies":          options["pluies"],
+            "pdt_pluies":      options["pdt_pluies"],
+            "pluies_panthere": options["pluies_panthere"],
+            "hu":              options["hu"],
+            "pdt_hu":          options["pdt_hu"],
+            "debits":          options["debits"],
+            "pdt_debits":      options["pdt_debits"],
+            "grandeur":        options["grandeur"],
+        }
+        try:
+            from modules.config_manager import save_config as _save_cfg
+            _save_cfg(self.config_data)
+        except Exception:
+            pass
+        if not any([options["pluies"], options["pluies_panthere"], options["hu"], options["debits"]]):
             messagebox.showwarning("Rien à extraire", "Cochez au moins une donnée à extraire.")
             return
 

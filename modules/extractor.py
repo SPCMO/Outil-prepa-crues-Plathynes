@@ -146,13 +146,16 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
     errs = []
     synthese = {}  # {type: {ok, n, lacunes}}
 
-    # ── Pluies ───────────────────────────────────────────────────────────────
+    # Dossier commun pour les moyennes BV (Antilope + Panthère)
+    bv_dir = os.path.join(base_out, nom_station, "Pluies temps moy BV pour graph")
+
+    # ── Pluies Antilope ───────────────────────────────────────────────────────
     if options.get("pluies"):
         pdt_p = options.get("pdt_pluies", 60)
         out_pluies = os.path.join(base_out, nom_station, "Pluies", f"AntJ1-Ep_{date_tag}_{nom_station}")
-        log_fn(f"\n[Pluies] pdt={pdt_p}mn -> {out_pluies}")
+        log_fn(f"\n[Antilope] pdt={pdt_p}mn -> {out_pluies}")
         try:
-            fichiers = bdi.extraire_pluies(
+            bdi.extraire_pluies(
                 date_debut=date_debut, date_fin=date_fin,
                 ul=ul, lr=lr,
                 pdt_minutes=pdt_p,
@@ -161,19 +164,46 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
             )
             dates_grd = _dates_from_grd_dir(out_pluies)
             lacunes = _check_lacunes(dates_grd, pdt_p)
-            synthese["Pluies"] = {"ok": True, "n": len(dates_grd), "lacunes": lacunes,
-                                   "pdt": pdt_p, "unite": "pas de temps (.grd)"}
-            # Calcul pluie moyenne BV depuis les .grd déjà téléchargés
-            pluie_graphique_dir = os.path.join(base_out, nom_station, "Pluies")
-            out_pluie_bv = os.path.join(pluie_graphique_dir, f"PluieBV-Ep_{date_tag}_{nom_station}.csv")
+            synthese["Antilope"] = {"ok": True, "n": len(dates_grd), "lacunes": lacunes,
+                                    "pdt": pdt_p, "unite": "pas de temps (.grd)"}
+            # Calcul pluie moyenne BV
+            os.makedirs(bv_dir, exist_ok=True)
+            out_pluie_bv = os.path.join(bv_dir, f"AntJ1_BV-Ep_{date_tag}_{nom_station}.csv")
             try:
                 calculer_pluie_bv_csv(out_pluies, out_pluie_bv, log_fn=log_fn)
             except Exception as e:
-                log_fn(f"  [PluieBV] AVERTISSEMENT : calcul moyenne echoue : {e}")
+                log_fn(f"  [AntJ1_BV] AVERTISSEMENT : calcul moyenne echoue : {e}")
         except Exception as e:
-            log_fn(f"  [Pluies] ERREUR : {e}")
-            errs.append(f"Pluies : {e}")
-            synthese["Pluies"] = {"ok": False, "erreur": str(e)}
+            log_fn(f"  [Antilope] ERREUR : {e}")
+            errs.append(f"Antilope : {e}")
+            synthese["Antilope"] = {"ok": False, "erreur": str(e)}
+
+    # ── Pluies Panthère ───────────────────────────────────────────────────────
+    if options.get("pluies_panthere"):
+        out_panth = os.path.join(base_out, nom_station, "Pluies", f"Pant-Ep_{date_tag}_{nom_station}")
+        log_fn(f"\n[Panthère] pdt=60mn -> {out_panth}")
+        try:
+            bdi.extraire_pluies_panthere(
+                date_debut=date_debut, date_fin=date_fin,
+                ul=ul, lr=lr,
+                output_dir=out_panth,
+                log_fn=log_fn,
+            )
+            dates_grd_p = _dates_from_grd_dir(out_panth)
+            lacunes_p = _check_lacunes(dates_grd_p, 60)
+            synthese["Panthère"] = {"ok": True, "n": len(dates_grd_p), "lacunes": lacunes_p,
+                                    "pdt": 60, "unite": "pas de temps (.grd)"}
+            # Calcul pluie moyenne BV
+            os.makedirs(bv_dir, exist_ok=True)
+            out_panth_bv = os.path.join(bv_dir, f"Pant_BV-Ep_{date_tag}_{nom_station}.csv")
+            try:
+                calculer_pluie_bv_csv(out_panth, out_panth_bv, log_fn=log_fn)
+            except Exception as e:
+                log_fn(f"  [Pant_BV] AVERTISSEMENT : calcul moyenne echoue : {e}")
+        except Exception as e:
+            log_fn(f"  [Panthère] ERREUR : {e}")
+            errs.append(f"Panthère : {e}")
+            synthese["Panthère"] = {"ok": False, "erreur": str(e)}
 
     # ── HU ───────────────────────────────────────────────────────────────────
     if options.get("hu"):
