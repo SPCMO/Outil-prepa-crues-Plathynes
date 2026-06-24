@@ -709,7 +709,7 @@ class App(tk.Tk):
     # ── Stats Antilope vs Panthère ──────────────────────────────────────────
 
     @staticmethod
-    def _calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals):
+    def _calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals, seuil=0.0):
         """Calcule les 4 indicateurs de comparaison Ant/Pan pour un épisode.
         Retourne un dict ou None si données insuffisantes."""
         if not p_dates or not pant_dates:
@@ -755,10 +755,19 @@ class App(tk.Tk):
         sum_pan = sum(pan_d[t] for t in common)
         pct_cumul_pan = (sum_pan / sum_ant * 100) if sum_ant > 0 else 100.0
 
+        # Écart moyen sur les pas de forte intensité Antilope (> seuil)
+        forte_idx = [i for i, a in enumerate(ant_c) if a > seuil]
+        if forte_idx:
+            ecart_forte = sum(diffs[i] for i in forte_idx) / len(forte_idx)
+        else:
+            ecart_forte = None
+
         return {
             "ecart_moyen":       ecart_moyen,
             "pct_pan_over":      pct_pan_over,
             "pct_cumul_pan":     pct_cumul_pan,
+            "ecart_forte":       ecart_forte,
+            "seuil":             seuil,
             "ecart_max_1h":      ecart_max_1h,
             "ts_max_1h":         ts_max_1h,
             "ecart_at_ant_peak": ecart_at_ant_peak,
@@ -768,16 +777,18 @@ class App(tk.Tk):
             "ts_3h_end":         ts_3h_end,
         }
 
-    def _get_global_antpan_max(self):
+    def _get_global_antpan_max(self, seuil=0.0):
         """Retourne les maxima globaux (en valeur absolue) sur tous les épisodes.
-        Résultat mis en cache dans self._antpan_global_max."""
-        if getattr(self, "_antpan_global_max", None) is not None:
-            return self._antpan_global_max
+        Cache invalidé si le seuil change."""
+        cache = getattr(self, "_antpan_global_max", None)
+        if cache is not None and cache.get("_seuil_key") == round(seuil, 2):
+            return cache
 
         max_em  = 0.0   # |écart moyen|
         max_e1h = 0.0   # |écart max 1h|
         max_ep  = 0.0   # |écart au pic Ant|
         max_e3h = 0.0   # |écart 3h consécutives|
+        max_ef  = 0.0   # |écart fortes intensités|
 
         def _read_bv(path):
             pairs = []
@@ -806,13 +817,15 @@ class App(tk.Tk):
             try:
                 pd_, pv_ = _read_bv(ep["p_path"])
                 pp_, ppv = _read_bv(ep["pant_path"])
-                s = self._calc_ep_antpan_stats(pd_, pv_, pp_, ppv)
+                s = self._calc_ep_antpan_stats(pd_, pv_, pp_, ppv, seuil)
                 if s is None:
                     continue
                 max_em  = max(max_em,  abs(s["ecart_moyen"]))
                 max_e1h = max(max_e1h, abs(s["ecart_max_1h"]))
                 max_ep  = max(max_ep,  abs(s["ecart_at_ant_peak"]))
                 max_e3h = max(max_e3h, abs(s["ecart_3h"]))
+                if s["ecart_forte"] is not None:
+                    max_ef = max(max_ef, abs(s["ecart_forte"]))
             except Exception:
                 continue
 
@@ -821,6 +834,8 @@ class App(tk.Tk):
             "ecart_max_1h":      max_e1h or 1.0,
             "ecart_at_ant_peak": max_ep  or 1.0,
             "ecart_3h":          max_e3h or 1.0,
+            "ecart_forte":       max_ef  or 1.0,
+            "_seuil_key":        round(seuil, 2),
         }
         return self._antpan_global_max
 
@@ -1094,7 +1109,7 @@ class App(tk.Tk):
             try:
                 self._draw_antpan_stats_panel(
                     self._visu_ax_p, p_dates, p_vals, pant_dates, pant_vals,
-                    C_P, C_PANT)
+                    C_P, C_PANT, seuil)
             except Exception:
                 pass
 
@@ -1242,14 +1257,14 @@ class App(tk.Tk):
     # ── Encart stats Antilope vs Panthère ───────────────────────────────────
 
     def _draw_antpan_stats_panel(self, ax, p_dates, p_vals,
-                                  pant_dates, pant_vals, c_ant, c_pant):
+                                  pant_dates, pant_vals, c_ant, c_pant, seuil=0.0):
         """Dessine l'encart compact de comparaison Ant/Pan en bas-droite."""
         import matplotlib.patches as mpatches
 
-        s = self._calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals)
+        s = self._calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals, seuil)
         if s is None:
             return
-        gmax = self._get_global_antpan_max()
+        gmax = self._get_global_antpan_max(seuil)
 
         C_ANT = c_ant
         C_PAN = c_pant
@@ -1267,9 +1282,10 @@ class App(tk.Tk):
             ref = gmax.get(ref_key, 1.0)
             return min(abs(val) / ref, 1.0) if ref > 0 else 0.0
 
-        # ── Dimensions de l'encart (moitié de l'ancienne taille)
-        x0, y0 = 0.62, 0.01
-        w,  h  = 0.27, 0.26
+        # ── Dimensions de l'encart — collé en bas-droite
+        w, h = 0.27, 0.30
+        x0   = 1.0 - w - 0.005
+        y0   = 0.01
 
         # Fond blanc semi-transparent
         bg = mpatches.FancyBboxPatch(
@@ -1311,20 +1327,23 @@ class App(tk.Tk):
                 color="#CCCCCC", linewidth=0.5,
                 transform=ax.transAxes, zorder=10)
 
-        # ── 4 lignes de données
-        # Layout par ligne : [label  14 chars] [barre] [valeur  horodatage]
-        # Colonnes (en coords axe relatives à x0) :
-        LBL_W = 0.095   # largeur colonne label
-        BAR_X = x0 + LBL_W + 0.008
-        BAR_W = 0.085   # largeur max barre
-        VAL_X = BAR_X + BAR_W + 0.006
+        # ── 5 lignes de données
+        # Layout : [label] [barre] [valeur  horodatage]
+        LBL_W = 0.082   # colonne label (réduite)
+        GAP   = 0.004   # espace entre label et barre
+        BAR_X = x0 + LBL_W + GAP
+        BAR_W = 0.088   # largeur max barre
+        VAL_X = BAR_X + BAR_W + 0.005
 
+        seuil_lbl = f"Forte int. (>{seuil:.0f}mm)"
+        ef_val  = s["ecart_forte"]
         rows = [
-            ("Écart moyen",       s["ecart_moyen"],       None,                             "ecart_moyen"),
-            ("Écart max 1h",      s["ecart_max_1h"],      fmt_ts(s["ts_max_1h"]),           "ecart_max_1h"),
-            ("Cumul 1h max Ant.", s["ecart_at_ant_peak"], fmt_ts(s["ts_ant_peak"]),          "ecart_at_ant_peak"),
+            ("Écart moyen",       s["ecart_moyen"],       None,                              "ecart_moyen"),
+            ("Écart max 1h",      s["ecart_max_1h"],      fmt_ts(s["ts_max_1h"]),            "ecart_max_1h"),
+            ("Cumul 1h max Ant.", s["ecart_at_ant_peak"], fmt_ts(s["ts_ant_peak"]),           "ecart_at_ant_peak"),
             ("3h consécutives",   s["ecart_3h"],
-             f"{fmt_ts(s['ts_3h_start'])}–{s['ts_3h_end'].strftime('%Hh')}",               "ecart_3h"),
+             f"{fmt_ts(s['ts_3h_start'])}–{s['ts_3h_end'].strftime('%Hh')}",                "ecart_3h"),
+            (seuil_lbl,           ef_val,                 None,                              "ecart_forte"),
         ]
 
         data_h  = h - hdr_h - ftr_h
@@ -1334,6 +1353,17 @@ class App(tk.Tk):
         for i, (label, val, ts_txt, ref_key) in enumerate(rows):
             # Centre vertical de la ligne (de bas en haut)
             row_cy = y0 + ftr_h + (len(rows) - i - 0.5) * row_h
+
+            if val is None:
+                # Pas de données (ex : aucun pas > seuil)
+                ax.text(x0 + 0.006, row_cy, label,
+                        transform=ax.transAxes, fontsize=5.8,
+                        color="#AAAAAA", va="center", zorder=12)
+                ax.text(VAL_X, row_cy, "—",
+                        transform=ax.transAxes, fontsize=6,
+                        color="#AAAAAA", va="center", zorder=12)
+                continue
+
             c = color_for(val)
 
             # ── Label (colonne gauche)
