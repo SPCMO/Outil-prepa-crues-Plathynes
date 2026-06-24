@@ -106,6 +106,7 @@
   <button class="tab-btn" onclick="showTab('install')">⚙️ Installation</button>
   <button class="tab-btn active" onclick="showTab('tuto')">🎓 Tutoriel utilisateur</button>
   <button class="tab-btn" onclick="showTab('archi')">🏗️ Architecture</button>
+  <button class="tab-btn" onclick="showTab('archi-visual')">🗺️ Architecture visuelle</button>
   <button class="tab-btn" onclick="showTab('detail')">🔬 Détail technique</button>
   <button class="tab-btn" onclick="showTab('changelog')">📋 Historique des évolutions</button>
   <button class="tab-btn" onclick="showTab('territoire')">🗺️ Bounding box pour un autre territoire</button>
@@ -268,9 +269,9 @@
       <ul>
         <li><strong>Graphique haut</strong> — Hyétogramme inversé (barres vers le bas) + courbe HU en pointillé rouge.
           <ul>
-            <li>Si Antilope est disponible : barres <span style="color:#1F618D;font-weight:600">bleues</span> (valeur ≤ seuil) et <span style="color:#7D3C98;font-weight:600">violettes</span> (valeur &gt; seuil), au premier plan.</li>
-            <li>Si Panthère est disponible : barres <span style="color:#CC5500;font-weight:600">orange</span> semi-transparentes en arrière-plan, avec bordures en pointillés (pas de hachures).</li>
-            <li>La <strong>légende</strong> indique, en entrée fantôme entre les deux lignes Antilope, le <strong>cumul total AJ1</strong> de l'épisode, et sous l'entrée Panthère le <strong>cumul total Pan.</strong>.</li>
+            <li>Si Antilope est disponible : barres <span style="color:#1F618D;font-weight:600">bleues</span> (valeur ≤ seuil) et <span style="color:#7D3C98;font-weight:600">violettes</span> (valeur &gt; seuil), au premier plan (zorder élevé).</li>
+            <li>Si Panthère est disponible : barres <span style="color:#CC5500;font-weight:600">orange</span> semi-transparentes en arrière-plan, bordures en pointillés.</li>
+            <li>La <strong>légende</strong> : le <strong>cumul AJ1</strong> est intégré directement dans le label "Antilope BV ≤ seuil mm" sur la même ligne. Le <strong>cumul Pan.</strong> est intégré dans le label "Panthère BV (mm)" avec un tiret de séparation.</li>
             <li>Les annotations <em>HU début</em> et <em>HU 6h</em> indiquent les humidités clés.</li>
           </ul>
         </li>
@@ -278,15 +279,33 @@
       </ul>
       <p>Le graphique de débit affiche les lignes des <strong>6 seuils de vigilance</strong> (ZT Jaune, Jaune, ZT Orange, Orange, ZT Rouge, Rouge) avec leur valeur en étiquette. Les seuils ZT sont tracés en pointillé/pastel, les seuils principaux en trait plein. <strong>Les étiquettes dont la valeur dépasse la plage visible du graphique sont masquées automatiquement</strong> pour ne pas déborder hors zone.</p>
       <p>Le champ <strong>"Seuil hyétogramme *"</strong> (défaut 10 mm/pas) détermine la limite entre la coloration bleue et violette d'Antilope, <strong>et recalcule à la volée</strong> l'indicateur de fortes intensités dans l'encart de comparaison (voir ci-dessous).</p>
-      <p><strong>Encart "Antilope vs Panthère"</strong> (bas-droite du graphique haut, visible si les deux produits sont présents) — 5 indicateurs comparatifs, chacun avec la valeur en mm et le pourcentage relatif par rapport à la valeur Antilope au même pas de temps :</p>
+      <p><strong>Encart "Antilope vs Panthère"</strong> (bas-droite du graphique haut, visible si les deux produits sont présents) — 4 indicateurs comparatifs, chacun avec la valeur en mm et le pourcentage relatif par rapport à la valeur Antilope au même pas de temps :</p>
       <ul>
-        <li><em>Écart moyen</em> — différence Pan.−Ant. moyennée sur tous les pas de temps communs.</li>
         <li><em>Écart max 1h</em> — pas de temps où l'écart |Pan.−Ant.| est le plus grand, avec horodatage.</li>
         <li><em>Cumul 1h max Ant.</em> — écart au pas de temps où Antilope est au pic, avec horodatage.</li>
         <li><em>3h consécutives max</em> — fenêtre de 3 heures où Antilope est maximale, écart Pan.−Ant. sur cette fenêtre.</li>
         <li><em>Forte int. (&gt;X mm)</em> — écart moyen de Pan. vs Ant. sur les seuls pas de temps où Antilope dépasse le seuil hyétogramme (recalculé si le seuil est modifié).</li>
       </ul>
       <p>Les barres sont colorées en <span style="color:#1F618D;font-weight:600">bleu</span> si Antilope &gt; Panthère, en <span style="color:#CC5500;font-weight:600">orange</span> si Panthère &gt; Antilope. Leur longueur est proportionnelle au maximum observé sur l'ensemble des épisodes (référence globale propre à chaque indicateur). En pied d'encart : <em>"Pan. sous/sur-estime X % des pas de temps (nb : N) soit Y % du cumul global"</em>.</p>
+      <p>En haut à droite de l'encart : le bouton <strong>"Synthèse BV ▶"</strong> ouvre la <strong>fenêtre de synthèse tous épisodes</strong>.</p>
+      <p><strong>Fenêtre "Synthèse BV"</strong> — tableau récapitulatif de tous les épisodes détectés dans le dossier de sorties :</p>
+      <table>
+        <tr><th>Colonne</th><th>Description</th><th>Couleur</th></tr>
+        <tr><td>Date épisode</td><td>Label de l'épisode</td><td>Fond coloré par niveau de vigilance max (même palette que la listbox)</td></tr>
+        <tr><td>Q max (m³/s)</td><td>Débit maximum de l'épisode, lu depuis le fichier extrait</td><td>Idem Vig. max.</td></tr>
+        <tr><td>Cumul Antilope (mm)</td><td>Somme des valeurs du CSV <code>AntJ1_BV-Ep_*.csv</code></td><td>Texte toujours <span style="color:#1F618D;font-weight:600">bleu</span></td></tr>
+        <tr><td>Cumul Panthère (mm)</td><td>Somme des valeurs du CSV <code>Pant_BV-Ep_*.csv</code></td><td>Texte toujours <span style="color:#CC5500;font-weight:600">orange</span></td></tr>
+        <tr><td>Écart (%)</td><td>(∑Pan − ∑Ant) / ∑Ant × 100, signe + si Panthère &gt; Antilope</td><td>Bleu si Ant &gt; Pan, orange si Pan &gt; Ant</td></tr>
+      </table>
+      <p>Les colonnes <strong>Cumul Antilope</strong> et <strong>Cumul Panthère</strong> affichent <code>—</code> si le fichier correspondant est absent pour cet épisode. En-têtes figés (restent visibles lors du défilement). Scrollbar verticale + molette souris.</p>
+      <p><strong>Frise chronologique</strong> (sous le tableau) — diagramme à barres divergentes :</p>
+      <ul>
+        <li>Axe X = temps réel (espacements proportionnels entre les dates d'épisodes)</li>
+        <li>Barres <span style="color:#1F618D;font-weight:600">bleues vers le haut</span> — Antilope &gt; Panthère, hauteur = |écart %|</li>
+        <li>Barres <span style="color:#CC5500;font-weight:600">oranges vers le bas</span> — Panthère &gt; Antilope, hauteur = |écart %|</li>
+        <li>Petite marque grise verticale sur l'axe — épisode sans les deux produits disponibles</li>
+        <li>Largeur des barres calculée automatiquement (40 % de l'intervalle médian entre épisodes)</li>
+      </ul>
       <p><strong>Note sur l'astérisque (*) :</strong> ces hyétogrammes sont une <em>reconstitution</em> de la pluie moyenne de bassin versant calculée à partir des pluies spatialisées téléchargées (fichiers <code>.grd</code>). La moyenne est effectuée sur l'ensemble des pixels de la grille (y compris la marge de 5 km de la bounding box). Il ne s'agit pas d'une mesure directe mais d'une estimation spatiale — valable pour Antilope comme pour Panthère.</p>
       <p>Les deux graphiques partagent la même échelle temporelle (x identique).</p>
     </div>
@@ -548,10 +567,12 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <tr><td><code>_refresh_episodes_table()</code></td><td>Reconstruit le treeview après filtrage et tri</td><td>Appelle <code>_episodes_view()</code> puis applique le tri actif.</td></tr>
     <tr><td><code>_build_tab_extraction()</code></td><td>Options, journal ScrolledText, barre de progression</td><td>—</td></tr>
     <tr><td><code>_lancer_extraction()</code></td><td>Lance <code>run_extraction</code> dans un thread, gère progress + popup synthèse</td><td>Thread worker ; UI mise à jour via <code>after()</code></td></tr>
-    <tr><td><code>_plot_episode(ep)</code></td><td>Trace les 2 sous-graphiques matplotlib pour un épisode</td><td>Marges définies dans <code>GridSpec</code> pour maximiser la zone utile. Panthère tracée en premier (zorder=1, bordures pointillées, alpha 25 %), Antilope par-dessus (zorder=3, bleu <code>#1F618D</code>, alpha 70 %). Légende avec entrées fantômes (handle invisible) pour afficher cumul AJ1 et cumul Pan. entre les lignes concernées. Appelle <code>_draw_antpan_stats_panel()</code> si les deux produits pluie sont présents.</td></tr>
-    <tr><td><code>_calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals, seuil)</code></td><td>Calcule les 5 indicateurs Antilope vs Panthère pour un épisode</td><td>Aligne sur les timestamps communs. Retourne : écart moyen, écart max 1h, écart au pic Ant., écart sur 3h consécutives max, écart sur fortes intensités (Ant &gt; seuil). Chaque écart est accompagné de son % relatif par rapport à la valeur Antilope. Méthode statique.</td></tr>
-    <tr><td><code>_get_global_antpan_max(seuil)</code></td><td>Calcule les maxima globaux des 5 indicateurs sur tous les épisodes</td><td>Résultat mis en cache dans <code>self._antpan_global_max</code>. Cache invalidé si le seuil change (clé <code>_seuil_key</code>). Utilisé pour normaliser les barres de l'encart.</td></tr>
-    <tr><td><code>_draw_antpan_stats_panel(ax, …, seuil)</code></td><td>Dessine l'encart comparatif Ant./Pan. en bas-droite du graphique haut</td><td>5 lignes (label | barre proportionnelle | valeur mm + % | horodatage). Couleur barre : bleu si Ant &gt; Pan, orange si Pan &gt; Ant. Pied d'encart : tendance sur une ligne (% des pas de temps, nb, % cumul global). Utilise <code>matplotlib.patches</code> et coordonnées <code>transAxes</code>.</td></tr>
+    <tr><td><code>_plot_episode(ep)</code></td><td>Trace les 2 sous-graphiques matplotlib pour un épisode</td><td>Marges définies dans <code>GridSpec</code> pour maximiser la zone utile. Panthère tracée en premier (zorder=1, bordures pointillées, alpha 25 %), Antilope par-dessus (zorder=3, bleu <code>#1F618D</code>, alpha 70 %) — l'ordre est impératif pour éviter le mélange alpha gris. Cumuls AJ1 et Pan. intégrés directement dans les labels de la légende (pas de handles fantômes). Appelle <code>_draw_antpan_stats_panel()</code> si les deux produits pluie sont présents.</td></tr>
+    <tr><td><code>_calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals, seuil)</code></td><td>Calcule les 4 indicateurs Antilope vs Panthère pour un épisode</td><td>Aligne sur les timestamps communs. Retourne : écart max 1h, écart au pic Ant., écart sur 3h consécutives max, écart sur fortes intensités (Ant &gt; seuil). Chaque écart accompagné de son % relatif par rapport à la valeur Antilope. Méthode statique.</td></tr>
+    <tr><td><code>_get_global_antpan_max(seuil)</code></td><td>Calcule les maxima globaux des 4 indicateurs sur tous les épisodes</td><td>Résultat mis en cache dans <code>self._antpan_global_max</code>. Cache invalidé si le seuil change (clé <code>_seuil_key</code>) ou si la liste d'épisodes est rechargée. Chaque indicateur possède sa propre référence de normalisation (pas une référence commune).</td></tr>
+    <tr><td><code>_draw_antpan_stats_panel(ax, …, seuil)</code></td><td>Dessine l'encart comparatif Ant./Pan. en bas-droite du graphique haut</td><td>4 lignes de données (label | barre proportionnelle | valeur mm + % | horodatage). Couleur : bleu si Ant &gt; Pan, orange si Pan &gt; Ant. Bouton "Synthèse BV ▶" en haut à droite de l'en-tête (Text matplotlib, détection clic via <code>button_press_event</code> + <code>get_window_extent</code>). Pied d'encart : tendance sur une ligne (% des pas de temps, nb, % cumul global). Coordonnées <code>transAxes</code>, <code>matplotlib.patches</code>.</td></tr>
+    <tr><td><code>_on_synthese_pick(event)</code></td><td>Handler <code>button_press_event</code> matplotlib — ouvre la fenêtre Synthèse BV si le clic tombe dans la bbox du texte "Synthèse BV ▶"</td><td>Détection via <code>get_window_extent(renderer)</code> qui donne la bbox en coordonnées display (pixels). <code>event.x/y</code> sont aussi en pixels. Connecté une seule fois à la création du canvas via <code>mpl_connect</code>.</td></tr>
+    <tr><td><code>_open_synthese_bv_window()</code></td><td>Ouvre la fenêtre modale Toplevel avec tableau + frise chronologique</td><td>Collecte les données en une seule passe (q_max, cumul Ant., cumul Pan.) pour alimenter à la fois le tableau et la frise. En-tête figé dans un Frame séparé hors canvas. Canvas scrollable pour les données. Frise : barres divergentes matplotlib, bleu↑ (Ant&gt;Pan) ou orange↓ (Pan&gt;Ant), largeur proportionnelle à l'intervalle médian entre épisodes.</td></tr>
     <tr><td><code>_refresh_extraction_ui()</code></td><td>Restaure les préférences d'extraction depuis <code>config.json</code></td><td>Relit les clés <code>config_data["extraction"]</code> pour remettre les cases à cocher et pas de temps à leur dernière valeur sauvegardée.</td></tr>
     <tr><td><code>_vig_from_file(q_path)</code></td><td>Lit le Q max d'un fichier extrait et retourne le label de vigilance</td><td>Utilisé par <code>_refresh_visu_list()</code> pour colorier chaque item de la listbox.</td></tr>
     <tr><td><code>_VIG_ITEM_COLORS</code></td><td>Dict label → (bg, fg) pour colorier les items de la listbox Visualisation</td><td>Attribut de classe ; 7 niveaux du vert au rouge foncé.</td></tr>
@@ -634,6 +655,299 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   </pre>
   <p><strong>Compatibilité ascendante :</strong> les anciens JSON avec une clé <code>"seuils"</code> sont lus comme <code>seuils_q</code> au démarrage. Les deux jeux peuvent coexister et sont configurés indépendamment via le sélecteur Q/H dans l'onglet Configuration.</p>
   <p>Les ZT (Zones de Transition) apparaissent en pointillé/pastel sur le graphique ; les seuils principaux en trait plein/couleur prononcée. L'unité de l'axe Y s'adapte automatiquement (m³/s ou m) selon la grandeur de l'épisode affiché.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════ ARCHITECTURE VISUELLE -->
+<div id="tab-archi-visual" class="tab-panel">
+<h1>Architectures visuelles — Propositions</h1>
+<p>Trois représentations complémentaires de l'architecture de l'outil, séparées de la documentation textuelle existante. Choisissez celle qui correspond le mieux à votre besoin de lecture.</p>
+
+<hr>
+<h2 style="color:#2E86C1">Version A — Synoptique de flux de données</h2>
+<p style="color:#555;font-size:13px">Vue bout-en-bout : de l'action utilisateur jusqu'aux fichiers de sortie et à l'affichage. Lecture de gauche à droite, par couche.</p>
+
+<style>
+/* ── Synoptique Version A ── */
+.syn { font-family:'Segoe UI',Arial,sans-serif; font-size:12px; margin:16px 0; }
+.syn-row { display:flex; align-items:center; gap:0; margin-bottom:6px; }
+.syn-cell {
+  padding:7px 12px; border-radius:6px; text-align:center;
+  font-weight:600; min-width:110px; max-width:170px; flex:1;
+  line-height:1.3; white-space:nowrap;
+}
+.syn-arrow { color:#aaa; font-size:18px; flex:0 0 24px; text-align:center; }
+.sc-user  { background:#EBF5FB; color:#1A5276; border:1.5px solid #2E86C1; }
+.sc-ui    { background:#EAF4FB; color:#154360; border:1.5px solid #2980B9; }
+.sc-mod   { background:#EAFAF1; color:#1D6A39; border:1.5px solid #27AE60; }
+.sc-ext   { background:#FDEBD0; color:#784212; border:1.5px solid #E59866; }
+.sc-file  { background:#F4F6F6; color:#2C3E50; border:1.5px solid #AAB7B8; }
+.sc-disp  { background:#F4ECF7; color:#6C3483; border:1.5px solid #8E44AD; }
+.syn-label { font-size:10px; color:#888; min-width:110px; text-align:right; padding-right:10px; flex:0 0 120px; }
+.syn-section { background:#F8F9FA; border-radius:10px; padding:14px 18px; margin-bottom:18px; border:1px solid #E0E0E0; }
+.syn-legend { display:flex; gap:12px; flex-wrap:wrap; margin:10px 0 4px; }
+.syn-leg-item { display:flex; align-items:center; gap:5px; font-size:11px; }
+.syn-leg-sq { width:14px; height:14px; border-radius:3px; border:1.5px solid; }
+</style>
+
+<div class="syn-legend">
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#EBF5FB;border-color:#2E86C1"></div> Utilisateur</div>
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#EAF4FB;border-color:#2980B9"></div> UI tkinter (main.py)</div>
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#EAFAF1;border-color:#27AE60"></div> Module Python</div>
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#FDEBD0;border-color:#E59866"></div> Service externe (réseau)</div>
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#F4F6F6;border-color:#AAB7B8"></div> Fichier disque</div>
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#F4ECF7;border-color:#8E44AD"></div> Affichage matplotlib</div>
+</div>
+
+<div class="syn-section">
+<strong style="font-size:12px;color:#555">① EXTRACTION</strong>
+<div class="syn" style="margin-top:10px">
+  <div class="syn-row">
+    <div class="syn-cell sc-user">Sélection épisodes<br><small>+ cases à cocher</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_lancer_extraction()<br><small>thread worker</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-mod">extractor.py<br><small>run_extraction()</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ext">PHyC SOAP<br><small>Q ou H</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">Q-Ep_*.txt<br><small>Debits/</small></div>
+  </div>
+  <div class="syn-row">
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+    <div class="syn-arrow"></div>
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-mod">bdimage_client.py<br><small>extraire_pluies()</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ext">BDImage SOAP<br><small>Antilope/Panthère</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">*.grd + BV-Ep_*.csv<br><small>Pluies/</small></div>
+  </div>
+  <div class="syn-row">
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+    <div class="syn-arrow"></div>
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-mod">bdimage_client.py<br><small>extraire_hu_bv()</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ext">BDImage SOAP<br><small>HU SIM</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">HU-Ep_*.csv<br><small>HU/</small></div>
+  </div>
+</div>
+</div>
+
+<div class="syn-section">
+<strong style="font-size:12px;color:#555">② VISUALISATION D'UN ÉPISODE</strong>
+<div class="syn" style="margin-top:10px">
+  <div class="syn-row">
+    <div class="syn-cell sc-user">Clic listbox<br><small>épisode</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_on_visu_select()<br><small>→ _plot_episode()</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">Q-Ep_*.txt<br>HU-Ep_*.csv<br>AntJ1_BV / Pant_BV</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-disp">Hyétogramme<br>+ courbe HU<br>+ courbe Q</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-disp">Encart stats<br>Ant vs Pan</div>
+  </div>
+  <div class="syn-row" style="margin-top:6px">
+    <div class="syn-cell sc-user">Clic "Synthèse BV"</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_open_synthese_bv_window()</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">Tous les épisodes<br>du dossier sorties/</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-disp">Tableau + frise<br>chronologique</div>
+    <div class="syn-arrow" style="color:transparent">→</div>
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+  </div>
+</div>
+</div>
+
+<div class="syn-section">
+<strong style="font-size:12px;color:#555">③ ANALYSE COMPARATIVE</strong>
+<div class="syn" style="margin-top:10px">
+  <div class="syn-row">
+    <div class="syn-cell sc-user">Clic "Calculer"<br><small>+ filtres Vig.</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_collect_analyse_data()</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">Q-Ep_*.txt<br>HU-Ep_*.csv<br>AntJ1_BV_*.csv</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_plot_analyse()</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-disp">Bubble chart<br>Q max / HU début<br>/ cumul pluie</div>
+  </div>
+</div>
+</div>
+
+<hr>
+<h2 style="color:#2E86C1">Version B — Carte des modules et interfaces</h2>
+<p style="color:#555;font-size:13px">Vue fichier par fichier : responsabilités, fonctions publiques, dépendances entrantes et sortantes.</p>
+
+<style>
+.mod-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:18px 0; }
+.mod-card { border-radius:10px; padding:14px; border:2px solid; }
+.mc-main  { border-color:#2980B9; background:#F0F8FF; }
+.mc-mod   { border-color:#27AE60; background:#F0FFF4; }
+.mc-ext   { border-color:#E59866; background:#FFFAF5; }
+.mod-card h4 { margin:0 0 6px; font-size:13px; }
+.mod-card ul { margin:0 0 0 14px; padding:0; font-size:11px; color:#444; line-height:1.7; }
+.dep-in  { font-size:10px; color:#2980B9; margin-top:6px; }
+.dep-out { font-size:10px; color:#27AE60; }
+.dep-ext { font-size:10px; color:#E59866; }
+</style>
+
+<div class="mod-grid">
+  <div class="mod-card mc-main" style="grid-column:1/4">
+    <h4>📄 main.py — Interface graphique (App)</h4>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11px">
+      <div><strong>Configuration :</strong> _save_config, _load_config, _refresh_config_ui, _recup_seuils_phyc</div>
+      <div><strong>Épisodes :</strong> _build_tab_episodes, _episodes_view, _sort_by, _vig_max_episode, _refresh_episodes_table</div>
+      <div><strong>Extraction :</strong> _lancer_extraction, _arreter_extraction, _refresh_extraction_ui</div>
+      <div><strong>Visualisation :</strong> _refresh_visu_list, _plot_episode, _draw_antpan_stats_panel, _calc_ep_antpan_stats, _get_global_antpan_max, _on_synthese_pick, _open_synthese_bv_window</div>
+      <div><strong>Analyse :</strong> _collect_analyse_data, _plot_analyse</div>
+      <div><strong>Paramétrage :</strong> _build_tab_parametrage, _save_parametrage, _refresh_parametrage_ui</div>
+    </div>
+    <div class="dep-out">↓ appelle : extractor.py, phyc_client.py, bdimage_client.py, config_manager.py, csv_loader.py, phyc_diag.py</div>
+  </div>
+
+  <div class="mod-card mc-mod">
+    <h4>📦 extractor.py</h4>
+    <ul>
+      <li>run_extraction()</li>
+      <li>_process_episode()</li>
+      <li>_build_synthese_text(duree_s)</li>
+      <li>_check_lacunes()</li>
+      <li>_snap_to_grid()</li>
+    </ul>
+    <div class="dep-in">← appelé par : main.py (_lancer_extraction)</div>
+    <div class="dep-out">↓ appelle : phyc_client, bdimage_client</div>
+  </div>
+
+  <div class="mod-card mc-mod">
+    <h4>📦 bdimage_client.py</h4>
+    <ul>
+      <li>extraire_pluies() — Antilope</li>
+      <li>extraire_pluies_panthere() — Panthère</li>
+      <li>extraire_hu_bv()</li>
+      <li>calculer_pluie_bv_csv()</li>
+      <li>_xml_to_grds()</li>
+      <li>_grd_mean()</li>
+    </ul>
+    <div class="dep-in">← appelé par : extractor.py, main.py (auto-génération BV)</div>
+    <div class="dep-ext">⟶ réseau : BDImage SCHAPI (SOAP, polling async)</div>
+  </div>
+
+  <div class="mod-card mc-mod">
+    <h4>📦 phyc_client.py</h4>
+    <ul>
+      <li>login() / logout()</li>
+      <li>get_debits()</li>
+      <li>get_seuils_vigilance()</li>
+      <li>parse_series_xml()</li>
+    </ul>
+    <div class="dep-in">← appelé par : extractor.py, main.py (_recup_seuils_phyc)</div>
+    <div class="dep-ext">⟶ réseau : PHyC (SOAP/zeep + lxml bypass)</div>
+  </div>
+
+  <div class="mod-card mc-ext">
+    <h4>📦 config_manager.py</h4>
+    <ul><li>load_config(path)</li><li>save_config(path, data)</li></ul>
+    <div class="dep-in">← appelé par : main.py</div>
+    <div class="dep-ext">⟶ fichier : config/config.json</div>
+  </div>
+
+  <div class="mod-card mc-ext">
+    <h4>📦 csv_loader.py</h4>
+    <ul><li>load_episodes(path)</li></ul>
+    <div class="dep-in">← appelé par : main.py (import catalogue OCTAVE)</div>
+    <div class="dep-ext">⟶ fichier : CSV épisodes</div>
+  </div>
+
+  <div class="mod-card mc-ext">
+    <h4>📦 phyc_diag.py</h4>
+    <ul><li>run_diagnostics(config)</li></ul>
+    <div class="dep-in">← appelé par : main.py (bouton Diagnostic)</div>
+    <div class="dep-ext">⟶ réseau : PHyC WSDL</div>
+  </div>
+</div>
+
+<hr>
+<h2 style="color:#2E86C1">Version C — Swimlane par onglet</h2>
+<p style="color:#555;font-size:13px">Vue parcours utilisateur : chaque colonne = un onglet de l'application. Chaque ligne = une couche d'exécution.</p>
+
+<style>
+.swim { width:100%; border-collapse:collapse; font-size:11px; margin:16px 0; }
+.swim th { background:#2C3E50; color:#fff; padding:8px 10px; text-align:center; border:1px solid #444; }
+.swim td { padding:7px 10px; border:1px solid #D5D8DC; vertical-align:top; line-height:1.5; }
+.swim tr:nth-child(even) td { background:#F8F9FA; }
+.sw-row-lbl { font-weight:700; color:#555; background:#EAECEE!important; text-align:center; width:90px; }
+.sw-user { color:#1A5276; }
+.sw-code { color:#1D6A39; font-family:Consolas,monospace; font-size:10px; }
+.sw-file { color:#784212; font-family:Consolas,monospace; font-size:10px; }
+.sw-net  { color:#922B21; }
+</style>
+
+<table class="swim">
+  <tr>
+    <th style="width:90px">Couche</th>
+    <th>⚙ Configuration</th>
+    <th>📋 Épisodes</th>
+    <th>⬇ Extraction</th>
+    <th>📊 Visualisation</th>
+    <th>🔍 Analyse</th>
+  </tr>
+  <tr>
+    <td class="sw-row-lbl">Action utilisateur</td>
+    <td class="sw-user">Saisie codes station/BNBV, seuils PHyC, identifiants</td>
+    <td class="sw-user">Chargement CSV OCTAVE, ajout manuel, sélection multiple, filtres, tri</td>
+    <td class="sw-user">Cocher types de données, pas de temps, lancer / arrêter</td>
+    <td class="sw-user">Sélectionner un épisode, modifier seuil hyétogramme, cliquer "Synthèse BV"</td>
+    <td class="sw-user">Cliquer "Calculer", filtrer par Vig. max.</td>
+  </tr>
+  <tr>
+    <td class="sw-row-lbl">Méthode UI déclenchée</td>
+    <td class="sw-code">_save_config()<br>_recup_seuils_phyc()<br>_recup_info_phyc()</td>
+    <td class="sw-code">_refresh_episodes_table()<br>_sort_by()<br>_vig_max_episode()</td>
+    <td class="sw-code">_lancer_extraction()<br>→ thread worker<br>_build_synthese_text()</td>
+    <td class="sw-code">_plot_episode()<br>_draw_antpan_stats_panel()<br>_open_synthese_bv_window()</td>
+    <td class="sw-code">_collect_analyse_data()<br>_plot_analyse()</td>
+  </tr>
+  <tr>
+    <td class="sw-row-lbl">Module appelé</td>
+    <td class="sw-code">config_manager<br>phyc_client<br>phyc_diag</td>
+    <td class="sw-code">csv_loader</td>
+    <td class="sw-code">extractor<br>→ bdimage_client<br>→ phyc_client</td>
+    <td style="color:#555">— lecture directe fichiers —</td>
+    <td style="color:#555">— lecture directe fichiers —</td>
+  </tr>
+  <tr>
+    <td class="sw-row-lbl">Réseau</td>
+    <td class="sw-net">PHyC (seuils, info station)</td>
+    <td style="color:#aaa">—</td>
+    <td class="sw-net">BDImage (pluies, HU)<br>PHyC (débits / hauteurs)</td>
+    <td style="color:#aaa">—</td>
+    <td style="color:#aaa">—</td>
+  </tr>
+  <tr>
+    <td class="sw-row-lbl">Fichiers lus / écrits</td>
+    <td class="sw-file">config/config.json (W)</td>
+    <td class="sw-file">CSV épisodes (R)<br>Q-Ep_*.txt (R — Vig.)</td>
+    <td class="sw-file">*.grd, AntJ1_BV_*.csv<br>Pant_BV_*.csv, HU-Ep_*.csv<br>Q-Ep_*.txt (W)</td>
+    <td class="sw-file">Q-Ep_*.txt, HU-Ep_*.csv<br>AntJ1_BV_*.csv<br>Pant_BV_*.csv (R)</td>
+    <td class="sw-file">Q-Ep_*.txt, HU-Ep_*.csv<br>AntJ1_BV_*.csv (R)</td>
+  </tr>
+  <tr>
+    <td class="sw-row-lbl">Sortie affichée</td>
+    <td>Champs pré-remplis, labels préfixe mis à jour</td>
+    <td>Treeview coloré par Vig. max., tri ▲/▼</td>
+    <td>Journal temps réel, popup synthèse + durée</td>
+    <td>Hyétogramme + HU + Q + encart stats + Synthèse BV (tableau + frise)</td>
+    <td>Bubble chart avec colorbar, légende bulles, étiquettes épisodes</td>
+  </tr>
+</table>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ HISTORIQUE -->

@@ -30,7 +30,7 @@ except ImportError:
 TITRE = "Outil prépa crues Plathynes"
 PDT_PLUIES_OPTIONS = {"15 minutes": 15, "30 minutes": 30, "1 heure": 60}
 PDT_DEBITS_OPTIONS = {"15 minutes": 15, "30 minutes": 30, "1 heure": 60}
-PDT_HU_OPTIONS = {"1 heure": 60, "Journalier (24h)": 1440}
+# PDT_HU est proposé directement dans _build_tab_extraction sous forme de liste
 
 # Palette couleurs — (fg, bg)
 _C = {
@@ -44,6 +44,28 @@ _C = {
 }
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# App — Classe principale tkinter
+#
+# Architecture générale :
+#   • 6 onglets : Configuration, Épisodes, Extraction, Visualisation, Analyse,
+#     Paramétrage
+#   • Extraction dans un thread séparé (self._extraction_thread) pour ne pas
+#     bloquer l'UI ; les callbacks UI passent par self.after()
+#   • Visualisation matplotlib via FigureCanvasTkAgg (HAS_MPL requis)
+#   • config_data : dict chargé depuis config/config.json au démarrage,
+#     sauvegardé à chaque "Enregistrer la configuration"
+#   • _visu_episodes : liste de dicts {label, _dt, q_path, hu_path,
+#     p_path, pant_path} — alimentée par _refresh_visu_list()
+#
+# Attributs importants :
+#   self.config_data        dict complet de la configuration persistante
+#   self.episodes           liste des épisodes chargés depuis le CSV OCTAVE
+#   self._visu_episodes     liste des épisodes détectés dans les sorties
+#   self._antpan_global_max cache des maxima inter-épisodes Ant./Pan.
+#                           (invalidé si le seuil hyétogramme change)
+#   self._synthese_btn_artist   Text matplotlib "Synthèse BV ▶"
+# ══════════════════════════════════════════════════════════════════════════════
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -56,7 +78,7 @@ class App(tk.Tk):
             try:
                 self.iconbitmap(_ico)
             except Exception:
-                pass
+                pass  # Logo optionnel — ne pas bloquer le démarrage
 
         self.config_data = {}
         self.episodes = []
@@ -66,7 +88,7 @@ class App(tk.Tk):
         try:
             ttk.Style().theme_use("clam")
         except Exception:
-            pass
+            pass  # Thème "clam" non disponible sur certaines installations minimales
 
         self._build_ui()
         self._load_config()
@@ -712,8 +734,27 @@ class App(tk.Tk):
 
     @staticmethod
     def _calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals, seuil=0.0):
-        """Calcule les 4 indicateurs de comparaison Ant/Pan pour un épisode.
-        Retourne un dict ou None si données insuffisantes."""
+        """Calcule les 4 indicateurs de comparaison Antilope vs Panthère pour un épisode.
+
+        Les deux séries sont alignées sur leurs timestamps COMMUNS (intersection).
+        Conventions : écart = Pan − Ant → positif si Pan > Ant (sur-estimation Panthère).
+        Le % relatif est calculé par rapport à la valeur Antilope au même pas de temps.
+
+        Paramètres
+        ----------
+        p_dates / p_vals    : liste de datetime / float pour Antilope (BV moyen, mm/pdt)
+        pant_dates / pant_vals : idem pour Panthère
+        seuil               : seuil hyétogramme (mm/pdt) pour l'indicateur "forte intensité"
+                              — dynamique, peut changer à la volée via le champ UI
+
+        Retourne dict avec clés :
+          ecart_max_1h, pct_ecart_max_1h, ts_max_1h
+          ecart_at_ant_peak, pct_ecart_at_peak, ts_ant_peak
+          ecart_3h, pct_ecart_3h, ts_3h_start, ts_3h_end
+          ecart_forte, pct_ecart_forte            (None si aucun pas > seuil)
+          pct_pan_over, n_common, pct_ecart_cumul
+        Retourne None si < 2 timestamps communs.
+        """
         if not p_dates or not pant_dates:
             return None
         ant_d = dict(zip(p_dates, p_vals))
@@ -801,8 +842,17 @@ class App(tk.Tk):
         }
 
     def _get_global_antpan_max(self, seuil=0.0):
-        """Retourne les maxima globaux (en valeur absolue) sur tous les épisodes.
-        Cache invalidé si le seuil change."""
+        """Retourne les maxima globaux (|valeur|) pour chaque indicateur sur tous les épisodes.
+
+        Utilisé pour normaliser les barres proportionnelles de l'encart Ant./Pan. :
+        chaque indicateur a SA propre référence (le max de cet indicateur sur tous
+        les épisodes), pas une référence commune.
+
+        Le résultat est mis en cache dans self._antpan_global_max.
+        La clé de cache _seuil_key permet d'invalider si l'utilisateur
+        change le seuil hyétogramme (qui influe sur ecart_forte).
+        Invalidation explicite dans _refresh_visu_list() : self._antpan_global_max = None.
+        """
         cache = getattr(self, "_antpan_global_max", None)
         if cache is not None and cache.get("_seuil_key") == round(seuil, 2):
             return cache
@@ -827,8 +877,9 @@ class App(tk.Tk):
                                     float(row[1].strip())))
                             except (ValueError, IndexError):
                                 pass
-            except Exception:
-                pass
+            except Exception as _e:
+                print(f"[WARN] _get_global_antpan_max/_read_bv : "
+                      f"lecture impossible de '{path}' — {type(_e).__name__}: {_e}")
             pairs.sort(key=lambda x: x[0])
             return [r[0] for r in pairs], [r[1] for r in pairs]
 
@@ -925,8 +976,9 @@ class App(tk.Tk):
                             from modules.bdimage_client import calculer_pluie_bv_csv
                             calculer_pluie_bv_csv(grd_dir, p_path)
                             ep["p_path"] = p_path
-                        except Exception:
-                            pass
+                        except Exception as _e:
+                            print(f"[WARN] _refresh_visu_list : calcul BV échoué "
+                                  f"pour {key} ({grd_dir}) — {type(_e).__name__}: {_e}")
                         break
 
         # Trier par date décroissante
@@ -962,14 +1014,32 @@ class App(tk.Tk):
             self._plot_episode(ep)
 
     def _plot_episode(self, ep):
+        """Trace les deux sous-graphiques (pluies+HU / débit) pour l'épisode ep.
+
+        Sous-graphique du haut (_visu_ax_p + _visu_ax_hu) :
+          - Barres Antilope : bleu ≤ seuil (C_P), violet > seuil (C_P_EXCESS), zorder=3
+          - Barres Panthère : orange semi-transparent (alpha=0.25), zorder=1 (arrière-plan)
+            → Panthère DOIT être dessinée EN PREMIER pour éviter la superposition grise
+              due à l'alpha compositing de matplotlib
+          - Courbe HU : axe Y droit (twinx), rouge, pointillé
+          - Légende : cumuls intégrés dans les labels (pas de handles fantômes)
+          - Encart "Antilope vs Panthère" (bas-droite) si les deux produits présents
+
+        Sous-graphique du bas (_visu_ax_q) :
+          - Courbe Q ou H selon grandeur de l'épisode
+          - Zones de vigilance (axhspan) + lignes de seuil (axhline)
+          - Annotations Q début / Q max avec horodatage
+
+        L'axe X est commun et synchronisé entre les deux graphiques.
+        """
         self._visu_ax_p.cla()
         self._visu_ax_hu.cla()
         self._visu_ax_q.cla()
 
         C_Q  = "#1A5276"
         C_HU = "#C0392B"
-        C_P  = "#1F618D"   # bleu foncé pluie Antilope
-        C_P_EXCESS = "#7D3C98"  # violet dépassement seuil
+        C_P  = "#1F618D"   # bleu foncé Antilope
+        C_P_EXCESS = "#7D3C98"  # violet : Antilope dépasse le seuil hyétogramme
 
         def _read_csv(path, has_header=True):
             pairs = []
@@ -1106,8 +1176,8 @@ class App(tk.Tk):
                     (i for i, d in enumerate(hu_dates) if d.hour >= 6), None)
             else:
                 # Épisode commence >= 6h : chercher le prochain jour à 6h
-                from datetime import timedelta as _td2
-                lendemain_6h = (debut_dt + _td2(days=1)).replace(
+                from datetime import timedelta as _td
+                lendemain_6h = (debut_dt + _td(days=1)).replace(
                     hour=6, minute=0, second=0, microsecond=0)
                 hu_6h_idx = next(
                     (i for i, d in enumerate(hu_dates) if d >= lendemain_6h), None)
@@ -1156,8 +1226,9 @@ class App(tk.Tk):
                 self._draw_antpan_stats_panel(
                     self._visu_ax_p, p_dates, p_vals, pant_dates, pant_vals,
                     C_P, C_PANT, seuil)
-            except Exception:
-                pass
+            except Exception as _e:
+                print(f"[WARN] _plot_episode : encart Ant/Pan non affiché "
+                      f"(épisode {ep.get('label','?')}) — {type(_e).__name__}: {_e}")
 
         # ── Graphique bas : débit Q ou H ─────────────────────────────────────
         grandeur_ep = ep.get("grandeur", self.config_data.get("extraction", {}).get("grandeur", "Q"))
@@ -1475,8 +1546,9 @@ class App(tk.Tk):
             bbox = self._synthese_btn_artist.get_window_extent(renderer=renderer)
             if bbox.contains(event.x, event.y):
                 self._open_synthese_bv_window()
-        except Exception:
-            pass
+        except Exception as _e:
+            print(f"[WARN] _on_synthese_pick : détection clic échouée "
+                  f"— {type(_e).__name__}: {_e}")
 
     def _open_synthese_bv_window(self):
         """Ouvre la fenêtre tableau synthèse BV + frise chronologique."""
@@ -1987,7 +2059,6 @@ class App(tk.Tk):
         return episodes
 
     def _plot_analyse(self, episodes):
-        import math
         # Effacer toute la figure (colorbars comprises) et recréer le subplot
         self._analyse_fig.clear()
         ax = self._analyse_fig.add_subplot(111)
