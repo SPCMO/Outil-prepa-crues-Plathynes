@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Test rapide extraction pluies spatialisées Panthère (radar temps-différé).
+"""Test extraction pluies spatialisées Panthère (radar temps-différé).
+
+Sonde les sous-types BDImage possibles pour Panthère car la nomenclature
+diffère de celle d'Antilope. Lance le script pour identifier lesquels fonctionnent.
 
 Usage : python test_pluie_panthere.py
-Produits testés :
-  panthere/france-td-5mn  (pdt=5mn)
-  panthere/france-td-60mn (pdt=60mn)
-
-Modifier CODE_BNBV, DATE_DEBUT/FIN et les bounding boxes UL/LR selon l'épisode souhaité.
 """
 
 import os
@@ -16,57 +14,66 @@ from datetime import datetime
 sys.path.insert(0, r"D:\charles-eddy.piot\Documents\Perso CEP\Git-Claude IA\Outil prépa crues Plathynes")
 from modules.bdimage_client import BdimageClient
 
-# ── Paramètres à adapter ──────────────────────────────────────────────────────
-# Épisode Cassaignes — à ajuster selon l'épisode souhaité
+# ── Paramètres ────────────────────────────────────────────────────────────────
 DATE_DEBUT = datetime(2022, 11, 5, 0, 0)
-DATE_FIN   = datetime(2022, 11, 5, 6, 0)   # 6 h pour limiter le volume du test
+DATE_FIN   = datetime(2022, 11, 5, 1, 0)   # 1 h seulement pour la découverte
 
-# Bounding box Cassaignes en Lambert 93 (UL=haut-gauche, LR=bas-droite)
+# Bounding box Cassaignes Lambert 93
 UL = "594815,6236216"
 LR = "645123,6189500"
 
-# Dossier de sortie des .grd
-OUT_DIR_5MN  = r"D:\charles-eddy.piot\Documents\Perso CEP\Git-Claude IA\Outil prépa crues Plathynes\sorties\test_panthere_5mn"
-OUT_DIR_60MN = r"D:\charles-eddy.piot\Documents\Perso CEP\Git-Claude IA\Outil prépa crues Plathynes\sorties\test_panthere_60mn"
+OUT_BASE = r"D:\charles-eddy.piot\Documents\Perso CEP\Git-Claude IA\Outil prépa crues Plathynes\sorties"
 
-# ── Test ─────────────────────────────────────────────────────────────────────
+# Candidats à tester : (sous_type, pdt_minutes)
+CANDIDATS = [
+    ("td",              5),
+    ("td",             60),
+    ("j1",             60),
+    ("j0",              5),
+    ("j0",             60),
+    ("france",         60),
+    ("france-td",      60),
+    ("td-5mn",          5),
+    ("td-60mn",        60),
+]
+
+# ── Sonde ─────────────────────────────────────────────────────────────────────
 def log(msg): print(msg, flush=True)
 
 bdi = BdimageClient()
 
+print("Sonde des sous-types Panthère disponibles sur BDImage")
 print("=" * 60)
-print("TEST Panthère 5mn")
-print("=" * 60)
-try:
-    fichiers = bdi.extraire_pluies_panthere(
-        date_debut=DATE_DEBUT, date_fin=DATE_FIN,
-        ul=UL, lr=LR,
-        pdt_minutes=5,
-        output_dir=OUT_DIR_5MN,
-        log_fn=log,
-    )
-    print(f"\n✓ {len(fichiers)} fichier(s) .grd écrits dans {OUT_DIR_5MN}")
-    for f in fichiers[:5]:
-        print(f"  {os.path.basename(f)}")
-    if len(fichiers) > 5:
-        print(f"  ... ({len(fichiers) - 5} autres)")
-except Exception as e:
-    print(f"\n✗ ERREUR 5mn : {e}")
+ok_list = []
+
+for sous_type, pdt in CANDIDATS:
+    label = f"panthere/{sous_type} pdt={pdt}mn"
+    print(f"\n── Test : {label}")
+    out_dir = os.path.join(OUT_BASE, f"test_panthere_{sous_type}_{pdt}mn")
+    try:
+        fichiers = bdi._extraire_bbox(
+            type_img="panthere", sous_type=sous_type,
+            date_debut=DATE_DEBUT, date_fin=DATE_FIN,
+            ul=UL, lr=LR,
+            pdt=pdt, duree=pdt,
+            bandes="rr",
+            facteur=0.1, force_integer=True,
+            output_dir=out_dir,
+            log_fn=log,
+        )
+        print(f"  ✓ OK — {len(fichiers)} fichier(s) .grd")
+        ok_list.append(label)
+    except Exception as e:
+        # Afficher seulement la première ligne de l'erreur pour ne pas noyer la sortie
+        msg = str(e).splitlines()[0]
+        print(f"  ✗ {msg}")
 
 print()
 print("=" * 60)
-print("TEST Panthère 60mn")
-print("=" * 60)
-try:
-    fichiers = bdi.extraire_pluies_panthere(
-        date_debut=DATE_DEBUT, date_fin=DATE_FIN,
-        ul=UL, lr=LR,
-        pdt_minutes=60,
-        output_dir=OUT_DIR_60MN,
-        log_fn=log,
-    )
-    print(f"\n✓ {len(fichiers)} fichier(s) .grd écrits dans {OUT_DIR_60MN}")
-    for f in fichiers[:5]:
-        print(f"  {os.path.basename(f)}")
-except Exception as e:
-    print(f"\n✗ ERREUR 60mn : {e}")
+if ok_list:
+    print("Sous-types fonctionnels :")
+    for s in ok_list:
+        print(f"  ✓ {s}")
+else:
+    print("Aucun sous-type n'a fonctionné — vérifier la connectivité RIE")
+    print("ou consulter la doc BDImage pour les identifiants Panthère exacts.")
