@@ -669,7 +669,7 @@ class App(tk.Tk):
             self._visu_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
             self._visu_canvas.draw()
             self._synthese_btn_artist = None
-            self._visu_canvas.mpl_connect('pick_event', self._on_synthese_pick)
+            self._visu_canvas.mpl_connect('button_press_event', self._on_synthese_pick)
         else:
             tk.Label(right,
                      text="matplotlib n'est pas installé.\n\npip install matplotlib",
@@ -1121,31 +1121,29 @@ class App(tk.Tk):
         self._visu_ax_hu.tick_params(axis="y", labelcolor=C_HU)
 
         # Légende : Antilope inf / sup → Panthère → HU moyen
-        # Cumul totaux pour annotation légende
-        from matplotlib.lines import Line2D as _L2D
+        # Cumuls intégrés directement dans les labels (pas de phantom entries)
         _sum_ant  = round(sum(p_vals))    if p_vals    else None
         _sum_pant = round(sum(pant_vals)) if pant_vals else None
 
         h_hu, l_hu = self._visu_ax_hu.get_legend_handles_labels()
 
-        # Entrée fantôme cumul Antilope insérée après la 1ère ligne Ant.
-        # (handle invisible → aucun carré coloré dans la légende)
-        _phantom_ant  = _L2D([], [], color="none")
-        _phantom_pant = _L2D([], [], color="none")
-        _lbl_cum_ant  = (f"     cumul AJ1 : {_sum_ant} mm" if _sum_ant  is not None else "")
-        _lbl_cum_pant = (f"     cumul Pan. : {_sum_pant} mm" if _sum_pant is not None else "")
+        # Label Antilope inf : on y colle le cumul AJ1 directement
+        _cum_ant_sfx = (f"      cumul AJ1 : {_sum_ant} mm" if _sum_ant is not None else "")
+        # Label Panthère : cumul Pan. sur la même ligne, précédé d'un tiret
+        _cum_pan_sfx = (f"  -  cumul Pan. : {_sum_pant} mm" if _sum_pant is not None else "")
 
         all_h, all_l = [], []
         if ant_handles:
-            all_h.append(ant_handles[0]);  all_l.append(ant_labels[0])
-            if _sum_ant is not None:
-                all_h.append(_phantom_ant); all_l.append(_lbl_cum_ant)
+            # 1ère entrée Antilope (inf ≤ seuil) : label + cumul AJ1
+            all_h.append(ant_handles[0])
+            all_l.append(ant_labels[0] + _cum_ant_sfx)
+            # 2ème entrée Antilope (sup > seuil) si présente
             if len(ant_handles) > 1:
-                all_h.append(ant_handles[1]); all_l.append(ant_labels[1])
+                all_h.append(ant_handles[1])
+                all_l.append(ant_labels[1])
         for ph, pl in zip(pant_handles, pant_labels):
-            all_h.append(ph); all_l.append(pl)
-        if _sum_pant is not None and pant_handles:
-            all_h.append(_phantom_pant); all_l.append(_lbl_cum_pant)
+            all_h.append(ph)
+            all_l.append(pl + _cum_pan_sfx)
         all_h += h_hu;  all_l += l_hu
 
         if all_h:
@@ -1356,7 +1354,6 @@ class App(tk.Tk):
                 "Synthèse BV ▶",
                 transform=ax.transAxes, fontsize=5.5, fontweight="bold",
                 color="#1A5276", va="center", ha="right", zorder=13,
-                picker=True,
                 bbox=dict(boxstyle="round,pad=0.15", facecolor="#D6EAF8",
                           edgecolor="#1A5276", linewidth=0.5, alpha=0.85))
         self._synthese_btn_artist = synthese_btn
@@ -1473,9 +1470,16 @@ class App(tk.Tk):
     # ── Synthèse BV (fenêtre tableau tous épisodes) ──────────────────────────
 
     def _on_synthese_pick(self, event):
-        """Détecte le clic sur le bouton 'Synthèse BV ▶' dans l'encart."""
-        if event.artist is self._synthese_btn_artist:
-            self._open_synthese_bv_window()
+        """Détecte le clic sur le texte 'Synthèse BV ▶' dans l'encart."""
+        if self._synthese_btn_artist is None:
+            return
+        try:
+            renderer = self._visu_fig.canvas.get_renderer()
+            bbox = self._synthese_btn_artist.get_window_extent(renderer=renderer)
+            if bbox.contains(event.x, event.y):
+                self._open_synthese_bv_window()
+        except Exception:
+            pass
 
     def _open_synthese_bv_window(self):
         """Ouvre la fenêtre tableau synthèse BV de tous les épisodes."""
