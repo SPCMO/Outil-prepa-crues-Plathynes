@@ -811,8 +811,8 @@ class App(tk.Tk):
 
         C_Q  = "#1A5276"
         C_HU = "#C0392B"
-        C_P  = "#2E86C1"   # bleu moyen pluie Antilope
-        C_P_EXCESS = "#8E44AD"  # violet dépassement seuil
+        C_P  = "#1F618D"   # bleu foncé pluie Antilope
+        C_P_EXCESS = "#7D3C98"  # violet dépassement seuil
 
         def _read_csv(path, has_header=True):
             pairs = []
@@ -859,28 +859,7 @@ class App(tk.Tk):
                         (max(pant_vals) if pant_vals else 0))
         y_bottom = max(all_p_max, 5) * 1.15
 
-        # ── Antilope (premier plan, barres légèrement transparentes)
-        ant_handles, ant_labels = [], []
-        if p_dates:
-            bar_w = (p_dates[1] - p_dates[0]) * 0.8 if len(p_dates) >= 2 else _td(hours=1)
-            base_vals = [min(v, seuil) for v in p_vals]
-            b1 = self._visu_ax_p.bar(p_dates, base_vals, width=bar_w,
-                                      color=C_P, alpha=0.65, align="center",
-                                      label=f"Antilope BV ≤ {seuil:.0f} mm")
-            ant_handles.append(b1)
-            ant_labels.append(f"Antilope BV ≤ {seuil:.0f} mm")
-            excess_vals = [max(v - seuil, 0) for v in p_vals]
-            if any(v > 0 for v in excess_vals):
-                b2 = self._visu_ax_p.bar(p_dates, excess_vals, width=bar_w,
-                                          bottom=base_vals,
-                                          color=C_P_EXCESS, alpha=0.80, align="center",
-                                          label=f"Antilope BV > {seuil:.0f} mm")
-                ant_handles.append(b2)
-                ant_labels.append(f"Antilope BV > {seuil:.0f} mm")
-            self._visu_ax_p.axhline(seuil, color=C_P_EXCESS, linewidth=0.9,
-                                     linestyle="--", alpha=0.6)
-
-        # ── Panthère (arrière-plan, bordures pointillées, sans hachure)
+        # ── Panthère en premier (arrière-plan, zorder bas)
         pant_handles, pant_labels = [], []
         if pant_dates:
             bar_w_pant = (pant_dates[1] - pant_dates[0]) * 0.85 if len(pant_dates) >= 2 else _td(hours=1)
@@ -892,6 +871,27 @@ class App(tk.Tk):
                 patch.set_linestyle("--")
             pant_handles.append(bp)
             pant_labels.append("Panthère BV (mm)")
+
+        # ── Antilope par-dessus (zorder élevé, alpha légèrement augmenté)
+        ant_handles, ant_labels = [], []
+        if p_dates:
+            bar_w = (p_dates[1] - p_dates[0]) * 0.8 if len(p_dates) >= 2 else _td(hours=1)
+            base_vals = [min(v, seuil) for v in p_vals]
+            b1 = self._visu_ax_p.bar(p_dates, base_vals, width=bar_w,
+                                      color=C_P, alpha=0.70, align="center",
+                                      zorder=3, label=f"Antilope BV ≤ {seuil:.0f} mm")
+            ant_handles.append(b1)
+            ant_labels.append(f"Antilope BV ≤ {seuil:.0f} mm")
+            excess_vals = [max(v - seuil, 0) for v in p_vals]
+            if any(v > 0 for v in excess_vals):
+                b2 = self._visu_ax_p.bar(p_dates, excess_vals, width=bar_w,
+                                          bottom=base_vals,
+                                          color=C_P_EXCESS, alpha=0.82, align="center",
+                                          zorder=3, label=f"Antilope BV > {seuil:.0f} mm")
+                ant_handles.append(b2)
+                ant_labels.append(f"Antilope BV > {seuil:.0f} mm")
+            self._visu_ax_p.axhline(seuil, color=C_P_EXCESS, linewidth=0.9,
+                                     linestyle="--", alpha=0.6, zorder=4)
 
         if p_dates or pant_dates:
             self._visu_ax_p.set_ylim(y_bottom, 0)
@@ -963,10 +963,10 @@ class App(tk.Tk):
         self._visu_ax_hu.yaxis.set_label_position("right")
         self._visu_ax_hu.tick_params(axis="y", labelcolor=C_HU)
 
-        # Légende : Antilope en premier, puis HU, puis Panthère
+        # Légende : Antilope inf / sup → Panthère → HU moyen
         h_hu, l_hu = self._visu_ax_hu.get_legend_handles_labels()
-        all_h = ant_handles + h_hu + pant_handles
-        all_l = ant_labels  + l_hu + pant_labels
+        all_h = ant_handles + pant_handles + h_hu
+        all_l = ant_labels  + pant_labels  + l_hu
         if all_h:
             self._visu_ax_p.legend(all_h, all_l, loc="upper right", fontsize=8)
 
@@ -1569,7 +1569,7 @@ class App(tk.Tk):
                 fig_w_px = self._analyse_fig.get_figwidth()  * self._analyse_fig.dpi
                 fig_h_px = self._analyse_fig.get_figheight() * self._analyse_fig.dpi
                 cb_bb = cb.ax.get_window_extent()            # bbox colorbar en px
-                lx = cb_bb.x0 / fig_w_px - 0.03             # légèrement décalé pour que la note tienne
+                lx = cb_bb.x0 / fig_w_px - 0.01             # légèrement décalé pour que la note tienne
                 cy = cb_bb.y0 / fig_h_px - 0.06             # sous le bas de la colorbar
             except Exception:
                 lx, cy = 0.88, 0.38
