@@ -1555,6 +1555,13 @@ class App(tk.Tk):
         win = tk.Toplevel(self)
         win.title("Synthèse BV — Antilope vs Panthère")
         win.geometry("860x740")
+        _ico = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "logo_lancer_outil.ico")
+        if os.path.isfile(_ico):
+            try:
+                win.iconbitmap(_ico)
+            except Exception:
+                pass
         win.resizable(True, True)
 
         C_ANT = "#1F618D"
@@ -1692,65 +1699,65 @@ class App(tk.Tk):
 
         fig = Figure(figsize=(10, 2.4), dpi=96, facecolor="white")
         ax  = fig.add_subplot(111)
-        fig.subplots_adjust(left=0.06, right=0.98, top=0.82, bottom=0.22)
+        # Marge gauche plus large pour loger les labels Antilope/Panthère
+        fig.subplots_adjust(left=0.10, right=0.98, top=0.82, bottom=0.28)
 
-        # Filtre épisodes avec date valide
+        # Filtre épisodes avec date valide, ordre chronologique (ancien→récent)
         valid = [(dt, pct) for dt, pct in chart_data if dt is not None]
         if valid:
-            dts  = [d for d, _ in valid]
-            pcts = [p for _, p in valid]
+            # Trier du plus ancien au plus récent pour l'axe X gauche→droite
+            valid_sorted = sorted(valid, key=lambda t: t[0])
+            dts  = [d for d, _ in valid_sorted]
+            pcts = [p for _, p in valid_sorted]
+            n    = len(dts)
 
-            # Largeur de barre = 40 % de l'intervalle médian entre épisodes
-            if len(dts) > 1:
-                from datetime import timedelta as _tdfr
-                gaps = sorted([(dts[k+1] - dts[k]).days for k in range(len(dts)-1)])
-                med_gap = gaps[len(gaps) // 2]
-                bar_days = max(3, int(med_gap * 0.4))
-            else:
-                bar_days = 15
+            # Positions entières séquentielles → barres identiques quelle que
+            # soit la densité temporelle réelle
+            xs   = list(range(n))
+            BW   = 0.6   # largeur fixe en unités "indice"
 
-            for dt, pct in zip(dts, pcts):
-                x = mdates.date2num(dt)
-                bw = bar_days          # mdates uses days as float unit
+            for xi, pct in zip(xs, pcts):
                 if pct is None:
-                    # Marque sur l'axe : petite ligne verticale grise
-                    ax.vlines(x, -3, 3, colors=C_NEU, linewidth=3, zorder=3)
+                    # Épisode sans données : marque grise sur l'axe
+                    ax.vlines(xi, -3, 3, colors=C_NEU, linewidth=3, zorder=3)
                 elif pct >= 0:
                     # Panthère > Antilope → barre orange vers le bas
-                    ax.bar(x, -abs(pct), width=bw, color=C_PAN,
+                    ax.bar(xi, -abs(pct), width=BW, color=C_PAN,
                            alpha=0.88, align="center", zorder=2,
                            edgecolor=C_PAN, linewidth=0.5)
                 else:
                     # Antilope > Panthère → barre bleue vers le haut
-                    ax.bar(x, abs(pct), width=bw, color=C_ANT,
+                    ax.bar(xi, abs(pct), width=BW, color=C_ANT,
                            alpha=0.88, align="center", zorder=2,
                            edgecolor=C_ANT, linewidth=0.5)
 
             # Axe horizontal (ligne 0)
             ax.axhline(0, color="#444444", linewidth=0.8, zorder=4)
 
-            # Annotations latérales Antilope / Panthère
+            # ── Labels Antilope / Panthère à gauche (coordonnées axes)
             y_max = max((abs(p) for p in pcts if p is not None), default=10) or 10
-            ax.text(mdates.date2num(dts[0]) - bar_days * 0.6,
-                    y_max * 0.55, "Antilope",
-                    fontsize=7, color=C_ANT, va="center", ha="right",
-                    fontweight="bold")
-            ax.text(mdates.date2num(dts[0]) - bar_days * 0.6,
-                    -y_max * 0.55, "Panthère",
-                    fontsize=7, color=C_PAN, va="center", ha="right",
-                    fontweight="bold")
+            ax.text(-0.01, 0.75, "Antilope",
+                    transform=ax.transAxes, fontsize=7.5, color=C_ANT,
+                    va="center", ha="right", fontweight="bold")
+            ax.text(-0.01, 0.25, "Panthère",
+                    transform=ax.transAxes, fontsize=7.5, color=C_PAN,
+                    va="center", ha="right", fontweight="bold")
 
-            # Axe X : dates
-            ax.xaxis_date()
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m/%Y"))
-            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-            fig.autofmt_xdate(rotation=35, ha="right")
+            # ── Axe X : étiquettes de dates espacées lisiblement
+            # On n'affiche pas toutes les dates si trop nombreuses
+            max_labels = 20
+            step = max(1, n // max_labels)
+            tick_pos   = xs[::step]
+            tick_lbls  = [dts[i].strftime("%m/%Y") for i in range(0, n, step)]
+            ax.set_xticks(tick_pos)
+            ax.set_xticklabels(tick_lbls, rotation=35, ha="right", fontsize=7)
+            ax.set_xlim(-0.8, n - 0.2)
 
-            # Axe Y : symétrique, label "Écart (%)"
+            # ── Axe Y : symétrique, label "Écart (%)"
             lim = y_max * 1.15
             ax.set_ylim(-lim, lim)
             ax.set_ylabel("Écart (%)", fontsize=7, color="#555555")
-            ax.tick_params(axis="both", labelsize=7)
+            ax.tick_params(axis="y", labelsize=7)
             ax.set_facecolor("#FAFAFA")
             ax.spines["top"].set_visible(False)
             ax.spines["right"].set_visible(False)
