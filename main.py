@@ -1356,18 +1356,18 @@ class App(tk.Tk):
                 transform=ax.transAxes, zorder=10)
 
         # ── Pied (tendance)
-        ftr_h  = 0.048
+        ftr_h  = 0.038
         pct_po  = s["pct_pan_over"]
         n_pts   = s["n_common"]
         pct_cum = s["pct_ecart_cumul"]   # (∑Pan−∑Ant)/∑Ant × 100
         cum_sgn = "+" if pct_cum >= 0 else ""
         if pct_po >= 50:
-            tend_txt = (f"Pan. sur-estime {pct_po:.0f} % des pas de temps ({n_pts})\n"
-                        f"cumul Pan. : {cum_sgn}{pct_cum:.0f} % vs Ant.")
+            tend_txt = (f"Pan. sur-estime {pct_po:.0f} % des pas de temps"
+                        f" (nb : {n_pts}) soit {cum_sgn}{pct_cum:.0f} % du cumul global")
             tc = C_PAN
         else:
-            tend_txt = (f"Pan. sous-estime {100-pct_po:.0f} % des pas de temps ({n_pts})\n"
-                        f"cumul Pan. : {cum_sgn}{pct_cum:.0f} % vs Ant.")
+            tend_txt = (f"Pan. sous-estime {100-pct_po:.0f} % des pas de temps"
+                        f" (nb : {n_pts}) soit {cum_sgn}{pct_cum:.0f} % du cumul global")
             tc = C_ANT
         ax.text(x0 + w / 2, y0 + ftr_h / 2,
                 tend_txt,
