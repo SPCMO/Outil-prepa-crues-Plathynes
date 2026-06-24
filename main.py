@@ -750,31 +750,52 @@ class App(tk.Tk):
         ts_3h_start   = common[best_i]
         ts_3h_end     = common[best_i + 2]
 
-        # % du cumul total Pan sur cumul total Ant
+        # Cumuls et écart relatif du cumul
         sum_ant = sum(ant_c)
         sum_pan = sum(pan_d[t] for t in common)
-        pct_cumul_pan = (sum_pan / sum_ant * 100) if sum_ant > 0 else 100.0
+        pct_ecart_cumul = ((sum_pan - sum_ant) / sum_ant * 100) if sum_ant > 0 else 0.0
+        n_common = len(common)
+
+        # % par rapport à la valeur Antilope au pas de temps concerné
+        mean_ant = sum_ant / n_common if n_common > 0 else 1.0
+        def _pct(ecart, ref):
+            return (ecart / ref * 100) if ref and ref != 0 else None
+
+        pct_em  = _pct(ecart_moyen,       mean_ant)
+        pct_e1h = _pct(ecart_max_1h,      ant_c[idx_max1h])
+        pct_ep  = _pct(ecart_at_ant_peak, ant_c[idx_ant_max])
+        sum_ant_3h = sum(ant_c[best_i:best_i+3])
+        pct_e3h = _pct(ecart_3h,          sum_ant_3h) if sum_ant_3h else None
 
         # Écart moyen sur les pas de forte intensité Antilope (> seuil)
         forte_idx = [i for i, a in enumerate(ant_c) if a > seuil]
         if forte_idx:
-            ecart_forte = sum(diffs[i] for i in forte_idx) / len(forte_idx)
+            ecart_forte   = sum(diffs[i] for i in forte_idx) / len(forte_idx)
+            mean_ant_forte = sum(ant_c[i] for i in forte_idx) / len(forte_idx)
+            pct_ef        = _pct(ecart_forte, mean_ant_forte)
         else:
             ecart_forte = None
+            pct_ef      = None
 
         return {
             "ecart_moyen":       ecart_moyen,
+            "pct_ecart_moyen":   pct_em,
             "pct_pan_over":      pct_pan_over,
-            "pct_cumul_pan":     pct_cumul_pan,
-            "ecart_forte":       ecart_forte,
-            "seuil":             seuil,
-            "ecart_max_1h":      ecart_max_1h,
-            "ts_max_1h":         ts_max_1h,
-            "ecart_at_ant_peak": ecart_at_ant_peak,
-            "ts_ant_peak":       ts_ant_peak,
-            "ecart_3h":          ecart_3h,
-            "ts_3h_start":       ts_3h_start,
-            "ts_3h_end":         ts_3h_end,
+            "n_common":          n_common,
+            "pct_ecart_cumul":   pct_ecart_cumul,
+            "ecart_forte":        ecart_forte,
+            "pct_ecart_forte":    pct_ef,
+            "seuil":              seuil,
+            "ecart_max_1h":       ecart_max_1h,
+            "pct_ecart_max_1h":   pct_e1h,
+            "ts_max_1h":          ts_max_1h,
+            "ecart_at_ant_peak":  ecart_at_ant_peak,
+            "pct_ecart_at_peak":  pct_ep,
+            "ts_ant_peak":        ts_ant_peak,
+            "ecart_3h":           ecart_3h,
+            "pct_ecart_3h":       pct_e3h,
+            "ts_3h_start":        ts_3h_start,
+            "ts_3h_end":          ts_3h_end,
         }
 
     def _get_global_antpan_max(self, seuil=0.0):
@@ -1098,11 +1119,36 @@ class App(tk.Tk):
         self._visu_ax_hu.tick_params(axis="y", labelcolor=C_HU)
 
         # Légende : Antilope inf / sup → Panthère → HU moyen
+        # Cumul totaux pour annotation légende
+        from matplotlib.lines import Line2D as _L2D
+        _sum_ant  = round(sum(p_vals))    if p_vals    else None
+        _sum_pant = round(sum(pant_vals)) if pant_vals else None
+
         h_hu, l_hu = self._visu_ax_hu.get_legend_handles_labels()
-        all_h = ant_handles + pant_handles + h_hu
-        all_l = ant_labels  + pant_labels  + l_hu
+
+        # Entrée fantôme cumul Antilope insérée après la 1ère ligne Ant.
+        # (handle invisible → aucun carré coloré dans la légende)
+        _phantom_ant  = _L2D([], [], color="none")
+        _phantom_pant = _L2D([], [], color="none")
+        _lbl_cum_ant  = (f"     cumul AJ1 : {_sum_ant} mm" if _sum_ant  is not None else "")
+        _lbl_cum_pant = (f"     cumul Pan. : {_sum_pant} mm" if _sum_pant is not None else "")
+
+        all_h, all_l = [], []
+        if ant_handles:
+            all_h.append(ant_handles[0]);  all_l.append(ant_labels[0])
+            if _sum_ant is not None:
+                all_h.append(_phantom_ant); all_l.append(_lbl_cum_ant)
+            if len(ant_handles) > 1:
+                all_h.append(ant_handles[1]); all_l.append(ant_labels[1])
+        for ph, pl in zip(pant_handles, pant_labels):
+            all_h.append(ph); all_l.append(pl)
+        if _sum_pant is not None and pant_handles:
+            all_h.append(_phantom_pant); all_l.append(_lbl_cum_pant)
+        all_h += h_hu;  all_l += l_hu
+
         if all_h:
-            self._visu_ax_p.legend(all_h, all_l, loc="upper right", fontsize=8)
+            self._visu_ax_p.legend(all_h, all_l, loc="upper right", fontsize=8,
+                                    handlelength=1.5)
 
         # ── Encart stats Ant. vs Pan. (bas-droite) ────────────────────────────
         if p_dates and pant_dates:
@@ -1272,8 +1318,11 @@ class App(tk.Tk):
         def color_for(val):
             return C_PAN if val > 0 else C_ANT
 
-        def fmt_val(val):
-            return f"{'+'if val>0 else ''}{val:.1f} mm"
+        def fmt_val(val, pct=None):
+            v = f"{'+'if val>0 else ''}{val:.1f} mm"
+            if pct is not None:
+                v += f"  / {'+'if pct>0 else ''}{pct:.0f}%"
+            return v
 
         def fmt_ts(ts):
             return ts.strftime("%d/%m %Hh")
@@ -1283,7 +1332,7 @@ class App(tk.Tk):
             return min(abs(val) / ref, 1.0) if ref > 0 else 0.0
 
         # ── Dimensions de l'encart — collé en bas-droite
-        w, h = 0.27, 0.30
+        w, h = 0.30, 0.32
         x0   = 1.0 - w - 0.005
         y0   = 0.01
 
@@ -1307,16 +1356,18 @@ class App(tk.Tk):
                 transform=ax.transAxes, zorder=10)
 
         # ── Pied (tendance)
-        ftr_h  = 0.038
-        pct_po = s["pct_pan_over"]
-        pct_cu = s["pct_cumul_pan"]
+        ftr_h  = 0.048
+        pct_po  = s["pct_pan_over"]
+        n_pts   = s["n_common"]
+        pct_cum = s["pct_ecart_cumul"]   # (∑Pan−∑Ant)/∑Ant × 100
+        cum_sgn = "+" if pct_cum >= 0 else ""
         if pct_po >= 50:
-            tend_txt = (f"Pan. sur-estime {pct_po:.0f} % des pas "
-                        f"({pct_cu:.0f} % du cumul Ant.)")
+            tend_txt = (f"Pan. sur-estime {pct_po:.0f} % des pas de temps ({n_pts})\n"
+                        f"cumul Pan. : {cum_sgn}{pct_cum:.0f} % vs Ant.")
             tc = C_PAN
         else:
-            tend_txt = (f"Pan. sous-estime {100-pct_po:.0f} % des pas "
-                        f"({pct_cu:.0f} % du cumul Ant.)")
+            tend_txt = (f"Pan. sous-estime {100-pct_po:.0f} % des pas de temps ({n_pts})\n"
+                        f"cumul Pan. : {cum_sgn}{pct_cum:.0f} % vs Ant.")
             tc = C_ANT
         ax.text(x0 + w / 2, y0 + ftr_h / 2,
                 tend_txt,
@@ -1336,25 +1387,34 @@ class App(tk.Tk):
         VAL_X = BAR_X + BAR_W + 0.005
 
         seuil_lbl = f"Forte int. (>{seuil:.0f}mm)"
-        ef_val  = s["ecart_forte"]
         rows = [
-            ("Écart moyen",       s["ecart_moyen"],       None,                              "ecart_moyen"),
-            ("Écart max 1h",      s["ecart_max_1h"],      fmt_ts(s["ts_max_1h"]),            "ecart_max_1h"),
-            ("Cumul 1h max Ant.", s["ecart_at_ant_peak"], fmt_ts(s["ts_ant_peak"]),           "ecart_at_ant_peak"),
-            ("3h consécutives",   s["ecart_3h"],
-             f"{fmt_ts(s['ts_3h_start'])}–{s['ts_3h_end'].strftime('%Hh')}",                "ecart_3h"),
-            (seuil_lbl,           ef_val,                 None,                              "ecart_forte"),
+            ("Écart moyen",
+             fmt_val(s["ecart_moyen"],       s["pct_ecart_moyen"]),
+             None,                                                       "ecart_moyen",      s["ecart_moyen"]),
+            ("Écart max 1h",
+             fmt_val(s["ecart_max_1h"],      s["pct_ecart_max_1h"]),
+             fmt_ts(s["ts_max_1h"]),                                     "ecart_max_1h",     s["ecart_max_1h"]),
+            ("Cumul 1h max Ant.",
+             fmt_val(s["ecart_at_ant_peak"], s["pct_ecart_at_peak"]),
+             fmt_ts(s["ts_ant_peak"]),                                   "ecart_at_ant_peak",s["ecart_at_ant_peak"]),
+            ("3h consécutives",
+             fmt_val(s["ecart_3h"],          s["pct_ecart_3h"]),
+             f"{fmt_ts(s['ts_3h_start'])}–{s['ts_3h_end'].strftime('%Hh')}",
+                                                                         "ecart_3h",         s["ecart_3h"]),
+            (seuil_lbl,
+             fmt_val(s["ecart_forte"], s["pct_ecart_forte"]) if s["ecart_forte"] is not None else None,
+             None,                                                       "ecart_forte",      s["ecart_forte"]),
         ]
 
         data_h  = h - hdr_h - ftr_h
         row_h   = data_h / len(rows)
         bar_th  = row_h * 0.32   # épaisseur barre
 
-        for i, (label, val, ts_txt, ref_key) in enumerate(rows):
+        for i, (label, val_txt, ts_txt, ref_key, val_raw) in enumerate(rows):
             # Centre vertical de la ligne (de bas en haut)
             row_cy = y0 + ftr_h + (len(rows) - i - 0.5) * row_h
 
-            if val is None:
+            if val_txt is None or val_raw is None:
                 # Pas de données (ex : aucun pas > seuil)
                 ax.text(x0 + 0.006, row_cy, label,
                         transform=ax.transAxes, fontsize=5.8,
@@ -1364,7 +1424,7 @@ class App(tk.Tk):
                         color="#AAAAAA", va="center", zorder=12)
                 continue
 
-            c = color_for(val)
+            c = color_for(val_raw)
 
             # ── Label (colonne gauche)
             ax.text(x0 + 0.006, row_cy,
@@ -1379,15 +1439,14 @@ class App(tk.Tk):
                 facecolor="#E8E8E8", alpha=0.85, zorder=10))
 
             # ── Barre colorée
-            frac = bar_frac(val, ref_key)
+            frac = bar_frac(val_raw, ref_key)
             if frac > 0:
                 ax.add_patch(mpatches.Rectangle(
                     (BAR_X, row_cy - bar_th / 2), BAR_W * frac, bar_th,
                     transform=ax.transAxes, clip_on=False,
                     facecolor=c, alpha=0.60, zorder=11))
 
-            # ── Valeur (colonne droite)
-            val_txt = fmt_val(val)
+            # ── Valeur + % (colonne droite)
             ax.text(VAL_X, row_cy,
                     val_txt,
                     transform=ax.transAxes, fontsize=6, fontweight="bold",
