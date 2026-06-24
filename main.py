@@ -1482,17 +1482,15 @@ class App(tk.Tk):
             pass
 
     def _open_synthese_bv_window(self):
-        """Ouvre la fenêtre tableau synthèse BV de tous les épisodes."""
+        """Ouvre la fenêtre tableau synthèse BV + frise chronologique."""
         win = tk.Toplevel(self)
         win.title("Synthèse BV — Antilope vs Panthère")
-        win.geometry("860x520")
+        win.geometry("860x740")
         win.resizable(True, True)
 
         C_ANT = "#1F618D"
         C_PAN = "#CC5500"
         C_NEU = "#888888"
-
-        # Largeurs fixes des colonnes (pixels) — partagées entre header et données
         COL_W = [230, 100, 155, 155, 100]
 
         # ── Lecture données ──────────────────────────────────────────────────
@@ -1533,11 +1531,35 @@ class App(tk.Tk):
                 return None
             return best
 
-        # ── En-tête figé (hors canvas) ───────────────────────────────────────
+        # ── Collecte des données (une seule lecture) ─────────────────────────
+        rows_data = []   # (date_lbl, vig_bg, vig_fg, q_txt, ant_txt, pan_txt, pct_txt, c_p)
+        chart_data = []  # (dt, pct_ecart_or_None) — None = données manquantes
+        for ep in self._visu_episodes:
+            date_lbl = ep.get("label", "—")
+            vig_lbl  = self._vig_from_file(ep["q_path"]) if ep.get("q_path") else "Vert"
+            vig_bg, vig_fg = self._VIG_ITEM_COLORS.get(vig_lbl, ("#EBF5FB", "#1A5276"))
+            q_val = _q_max(ep.get("q_path"))
+            s_ant = _bv_sum(ep.get("p_path"))
+            s_pan = _bv_sum(ep.get("pant_path"))
+            q_txt   = f"{q_val:.1f}" if q_val is not None else "—"
+            ant_txt = f"{s_ant:.0f}" if s_ant is not None else "—"
+            pan_txt = f"{s_pan:.0f}" if s_pan is not None else "—"
+            if s_ant is not None and s_pan is not None and s_ant > 0:
+                pct     = (s_pan - s_ant) / s_ant * 100
+                pct_txt = f"{'+'if pct >= 0 else ''}{pct:.0f} %"
+                c_p     = C_PAN if s_pan > s_ant else C_ANT
+            else:
+                pct     = None
+                pct_txt = "—"
+                c_p     = C_NEU
+            rows_data.append((date_lbl, vig_bg, vig_fg, q_txt,
+                               ant_txt, pan_txt, pct_txt, c_p))
+            chart_data.append((ep.get("_dt"), pct))
+
+        # ── En-tête figé ─────────────────────────────────────────────────────
         HDR_BG = "#E4E8ED"
         hdr_frame = tk.Frame(win, bg=HDR_BG)
         hdr_frame.pack(fill=tk.X, side=tk.TOP)
-
         col_defs = [
             ("Date épisode",        "#333333"),
             ("Q max (m³/s)",        "#333333"),
@@ -1553,7 +1575,7 @@ class App(tk.Tk):
                      ).grid(row=0, column=j, sticky="nsew", padx=1, pady=0)
             hdr_frame.columnconfigure(j, weight=1, minsize=COL_W[j])
 
-        # ── Canvas scrollable (données uniquement) ───────────────────────────
+        # ── Canvas scrollable (tableau) ──────────────────────────────────────
         container = tk.Frame(win)
         container.pack(fill=tk.BOTH, expand=True)
 
@@ -1569,7 +1591,6 @@ class App(tk.Tk):
                    lambda e: canv.configure(scrollregion=canv.bbox("all")))
         canv.bind("<Configure>",
                   lambda e: canv.itemconfig(wid, width=e.width))
-
         for j, w in enumerate(COL_W):
             frame.columnconfigure(j, weight=1, minsize=w)
 
@@ -1578,43 +1599,94 @@ class App(tk.Tk):
         canv.bind_all("<MouseWheel>", _scroll)
         win.bind("<Destroy>", lambda e: canv.unbind_all("<MouseWheel>"))
 
-        # ── Lignes de données ────────────────────────────────────────────────
-        for i, ep in enumerate(self._visu_episodes):
-            ri = i
-
-            date_lbl = ep.get("label", "—")
-            vig_lbl  = self._vig_from_file(ep["q_path"]) if ep.get("q_path") else "Vert"
-            vig_bg, vig_fg = self._VIG_ITEM_COLORS.get(vig_lbl, ("#EBF5FB", "#1A5276"))
-
-            q_val  = _q_max(ep.get("q_path"))
-            s_ant  = _bv_sum(ep.get("p_path"))
-            s_pan  = _bv_sum(ep.get("pant_path"))
-
-            q_txt   = f"{q_val:.1f}" if q_val is not None else "—"
-            ant_txt = f"{s_ant:.0f}" if s_ant is not None else "—"
-            pan_txt = f"{s_pan:.0f}" if s_pan is not None else "—"
-
-            if s_ant is not None and s_pan is not None and s_ant > 0:
-                pct     = (s_pan - s_ant) / s_ant * 100
-                pct_txt = f"{'+'if pct >= 0 else ''}{pct:.0f} %"
-                c_p     = C_PAN if s_pan > s_ant else C_ANT
-            else:
-                pct_txt = "—"
-                c_p     = C_NEU
-
-            row_bg = "#F0F3F4" if ri % 2 == 0 else "white"
-
+        for i, (date_lbl, vig_bg, vig_fg,
+                q_txt, ant_txt, pan_txt, pct_txt, c_p) in enumerate(rows_data):
+            row_bg = "#F0F3F4" if i % 2 == 0 else "white"
             tk.Label(frame, text=date_lbl, bg=vig_bg, fg=vig_fg,
                      font=("TkDefaultFont", 8), anchor="center", padx=8, pady=5
-                     ).grid(row=ri, column=0, sticky="nsew", padx=1, pady=0)
+                     ).grid(row=i, column=0, sticky="nsew", padx=1, pady=0)
             tk.Label(frame, text=q_txt, bg=vig_bg, fg=vig_fg,
                      font=("TkDefaultFont", 8), anchor="center", padx=8, pady=5
-                     ).grid(row=ri, column=1, sticky="nsew", padx=1, pady=0)
+                     ).grid(row=i, column=1, sticky="nsew", padx=1, pady=0)
             for j, (txt, fg) in enumerate(
                     [(ant_txt, C_ANT), (pan_txt, C_PAN), (pct_txt, c_p)], start=2):
                 tk.Label(frame, text=txt, bg=row_bg, fg=fg,
                          font=("TkDefaultFont", 8, "bold"), anchor="center", padx=8, pady=5
-                         ).grid(row=ri, column=j, sticky="nsew", padx=1, pady=0)
+                         ).grid(row=i, column=j, sticky="nsew", padx=1, pady=0)
+
+        # ── Frise chronologique ──────────────────────────────────────────────
+        if not HAS_MPL:
+            return
+        chart_frame = tk.Frame(win, bg="white", height=220)
+        chart_frame.pack(fill=tk.X, side=tk.BOTTOM, padx=4, pady=(2, 4))
+        chart_frame.pack_propagate(False)
+
+        fig = Figure(figsize=(10, 2.4), dpi=96, facecolor="white")
+        ax  = fig.add_subplot(111)
+        fig.subplots_adjust(left=0.06, right=0.98, top=0.82, bottom=0.22)
+
+        # Filtre épisodes avec date valide
+        valid = [(dt, pct) for dt, pct in chart_data if dt is not None]
+        if valid:
+            dts  = [d for d, _ in valid]
+            pcts = [p for _, p in valid]
+
+            # Largeur de barre = 40 % de l'intervalle médian entre épisodes
+            if len(dts) > 1:
+                from datetime import timedelta as _tdfr
+                gaps = sorted([(dts[k+1] - dts[k]).days for k in range(len(dts)-1)])
+                med_gap = gaps[len(gaps) // 2]
+                bar_days = max(3, int(med_gap * 0.4))
+            else:
+                bar_days = 15
+
+            for dt, pct in zip(dts, pcts):
+                x = mdates.date2num(dt)
+                bw = bar_days          # mdates uses days as float unit
+                if pct is None:
+                    # Marque sur l'axe : petite ligne verticale grise
+                    ax.vlines(x, -2, 2, colors=C_NEU, linewidth=1.5, zorder=3)
+                elif pct >= 0:
+                    # Panthère > Antilope → barre orange vers le bas
+                    ax.bar(x, -abs(pct), width=bw, color=C_PAN,
+                           alpha=0.75, align="center", zorder=2)
+                else:
+                    # Antilope > Panthère → barre bleue vers le haut
+                    ax.bar(x, abs(pct), width=bw, color=C_ANT,
+                           alpha=0.75, align="center", zorder=2)
+
+            # Axe horizontal (ligne 0)
+            ax.axhline(0, color="#444444", linewidth=0.8, zorder=4)
+
+            # Annotations latérales Antilope / Panthère
+            y_max = max((abs(p) for p in pcts if p is not None), default=10) or 10
+            ax.text(mdates.date2num(dts[0]) - bar_days * 0.6,
+                    y_max * 0.55, "Antilope",
+                    fontsize=7, color=C_ANT, va="center", ha="right",
+                    fontweight="bold")
+            ax.text(mdates.date2num(dts[0]) - bar_days * 0.6,
+                    -y_max * 0.55, "Panthère",
+                    fontsize=7, color=C_PAN, va="center", ha="right",
+                    fontweight="bold")
+
+            # Axe X : dates
+            ax.xaxis_date()
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m/%Y"))
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+            fig.autofmt_xdate(rotation=35, ha="right")
+
+            # Axe Y : symétrique, label "Écart (%)"
+            lim = y_max * 1.15
+            ax.set_ylim(-lim, lim)
+            ax.set_ylabel("Écart (%)", fontsize=7, color="#555555")
+            ax.tick_params(axis="both", labelsize=7)
+            ax.set_facecolor("#FAFAFA")
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+
+        frise_canv = FigureCanvasTkAgg(fig, master=chart_frame)
+        frise_canv.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        frise_canv.draw()
 
     # ── Onglet Paramétrage ───────────────────────────────────────────────────
 
