@@ -248,7 +248,7 @@
       <h3>Onglet <span class="badge badge-extract">Extraction</span></h3>
       <p>Cochez les types de données à télécharger :</p>
       <ul>
-        <li><strong>Pluies spatialisées</strong> (AntilopeJ1, pas de temps configurable) — génère des fichiers <code>.grd</code> (ESRI ASCII Grid, entiers)</li>
+        <li><strong>Pluies spatialisées</strong> (Antilope temps-différé, pas de temps configurable) — génère des fichiers <code>.grd</code> (ESRI ASCII Grid, entiers). <em>Produit BDImage utilisé selon la date de l'épisode : <code>antilope/j1</code> (Antilope J+1, 60 mn) pour les épisodes antérieurs au 12/10/2020 ; <code>antilope/france-td-60mn</code> ou <code>france-td-15mn</code> (nouvelle nomenclature temps-différé) pour les épisodes postérieurs. Le dossier de sortie est nommé <code>AntJ1-Ep_…</code> par convention, ce terme étant un abus de langage pour les épisodes récents.</em></li>
         <li><strong>HU moyen BV</strong> (humidité des sols) — fichier CSV, pas de temps : 1 heure (défaut) ou 1 jour à 06:00 (heure de production et d'actualisation de la donnée SIM HU)</li>
         <li><strong>Débits / Hauteurs PHyC</strong> (Q ou H, pas de temps configurable) — fichier TXT</li>
       </ul>
@@ -269,7 +269,7 @@
       </ul>
       <p>Le graphique de débit affiche les lignes des <strong>6 seuils de vigilance</strong> (ZT Jaune, Jaune, ZT Orange, Orange, ZT Rouge, Rouge) avec leur valeur en étiquette. Les seuils ZT sont tracés en pointillé/pastel, les seuils principaux en trait plein. <strong>Les étiquettes dont la valeur dépasse la plage visible du graphique sont masquées automatiquement</strong> pour ne pas déborder hors zone.</p>
       <p>Le champ <strong>"Seuil hyétogramme *"</strong> (défaut 10 mm/pas) détermine la limite entre la coloration <span style="color:#1F618D;font-weight:600">bleue</span> (pluie sous le seuil) et <span style="color:#7D3C98;font-weight:600">violette</span> (dépassement). Ce changement de couleur aide à repérer visuellement les pas de temps à fortes précipitations intenses, particulièrement significatifs pour la genèse des crues.</p>
-      <p><strong>Note sur l'astérisque (*) :</strong> ces hyétogrammes sont une <em>reconstitution</em> de la pluie moyenne de bassin versant calculée à partir des pluies spatialisées AntilopeJ1 téléchargées (fichiers <code>.grd</code>). La moyenne est effectuée sur l'ensemble des pixels de la grille, y compris ceux issus de la marge de 5 km de la bounding box autour du bassin. Il ne s'agit donc pas d'une mesure directe mais d'une estimation spatiale.</p>
+      <p><strong>Note sur l'astérisque (*) :</strong> ces hyétogrammes sont une <em>reconstitution</em> de la pluie moyenne de bassin versant calculée à partir des pluies spatialisées Antilope temps-différé téléchargées (fichiers <code>.grd</code>). La moyenne est effectuée sur l'ensemble des pixels de la grille, y compris ceux issus de la marge de 5 km de la bounding box autour du bassin. Il ne s'agit donc pas d'une mesure directe mais d'une estimation spatiale.</p>
       <p>Les deux graphiques partagent la même échelle temporelle (x identique).</p>
     </div>
   </div>
@@ -444,7 +444,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <table>
     <tr><th>Service</th><th>Protocole</th><th>Données</th><th>Port WSDL</th></tr>
     <tr><td>PHyC</td><td>SOAP/XML (zeep + raw lxml)</td><td>Débits, Seuils vigilance</td><td>ObservationsHydroPublicationPort, SeuilHydroPublicationPort</td></tr>
-    <tr><td>BDImage</td><td>SOAP/XML</td><td>Pluies AntilopeJ1 (.grd), HU SIM</td><td>getObsByZonesAsync, getObsStatsByZonesAsync</td></tr>
+    <tr><td>BDImage</td><td>SOAP/XML</td><td>Pluies Antilope temps-différé (.grd), HU SIM</td><td>getObsByZonesAsync, getObsStatsByZonesAsync</td></tr>
   </table>
 
   <h2>Packages Python utilisés</h2>
@@ -551,7 +551,8 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <h2>modules/bdimage_client.py</h2>
   <table>
     <tr><th>Méthode / Fonction</th><th>Rôle</th><th>Notes</th></tr>
-    <tr><td><code>extraire_pluies()</code></td><td>Télécharge les images AntilopeJ1, écrit des .grd entiers</td><td><code>force_integer=True</code> — valeurs arrondies pour compatibilité logiciel calage</td></tr>
+    <tr><td><code>extraire_pluies()</code></td><td>Télécharge les images Antilope temps-différé, écrit des .grd entiers</td><td>Produit <code>antilope/j1</code> (60 mn) avant le 12/10/2020 ; <code>antilope/france-td-60mn</code> ou <code>france-td-15mn</code> après. <code>force_integer=True</code> — valeurs arrondies pour compatibilité logiciel calage.</td></tr>
+    <tr><td><code>extraire_pluies_panthere()</code></td><td>Télécharge les images Panthère temps-différé, écrit des .grd entiers</td><td>Produit <code>panthere/france-td-5mn</code> (défaut) ou <code>panthere/france-td-60mn</code>.</td></tr>
     <tr><td><code>extraire_hu_bv()</code></td><td>Extrait la moyenne spatiale HU via <code>getObsStatsByZonesAsync</code></td><td>Retourne directement la moyenne BV (pas de .grd)</td></tr>
     <tr><td><code>_xml_to_grds()</code></td><td>Parse XML BDImage → fichiers .grd (ESRI ASCII Grid)</td><td>Facteur 0.1 (1/10e mm → mm). Nodata = -1.</td></tr>
     <tr><td><code>calculer_pluie_bv_csv()</code></td><td>Moyenne spatiale de tous les .grd d'un dossier → CSV</td><td>Ignore les pixels nodata=-1. Format date AAAAMMJJhhmm.</td></tr>
@@ -630,7 +631,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <div class="change-entry">
     <span class="change-tag ct-feat">Fonctionnalité</span>
     <strong>Extraction pluies BDImage (.grd) et HU</strong>
-    <p>Client BDImage pour téléchargement AntilopeJ1 (pluies spatialisées) et HU SIM par bassin versant. Écriture ESRI ASCII Grid.</p>
+    <p>Client BDImage pour téléchargement Antilope temps-différé (pluies spatialisées) et HU SIM par bassin versant. Écriture ESRI ASCII Grid.</p>
   </div>
 
   <div class="change-entry">
