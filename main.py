@@ -1569,7 +1569,7 @@ class App(tk.Tk):
                 fig_w_px = self._analyse_fig.get_figwidth()  * self._analyse_fig.dpi
                 fig_h_px = self._analyse_fig.get_figheight() * self._analyse_fig.dpi
                 cb_bb = cb.ax.get_window_extent()            # bbox colorbar en px
-                lx = cb_bb.x0 / fig_w_px - 0.10             # décalé vers le graphique pour que la note tienne
+                lx = cb_bb.x0 / fig_w_px - 0.03             # légèrement décalé pour que la note tienne
                 cy = cb_bb.y0 / fig_h_px - 0.06             # sous le bas de la colorbar
             except Exception:
                 lx, cy = 0.88, 0.38
@@ -1589,7 +1589,7 @@ class App(tk.Tk):
                 leg = self._analyse_fig.legends[-1]
                 leg_bottom_fig = leg.get_window_extent().y0 / fig_h_px
                 self._analyse_fig.text(
-                    lx, leg_bottom_fig - 0.025,
+                    lx - 0.06, leg_bottom_fig - 0.025,
                     "* 25 %, 50 % et 100 % du cumul max des épisodes\n"
                     "  (Antilope — cumul total sur l'ensemble de la BBox)",
                     ha="left", va="top", fontsize=6, color="#777777",
