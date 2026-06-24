@@ -248,12 +248,14 @@
       <h3>Onglet <span class="badge badge-extract">Extraction</span></h3>
       <p>Cochez les types de données à télécharger :</p>
       <ul>
-        <li><strong>Pluies spatialisées</strong> (Antilope temps-différé, pas de temps configurable) — génère des fichiers <code>.grd</code> (ESRI ASCII Grid, entiers). <em>Produit BDImage utilisé selon la date de l'épisode : <code>antilope/j1</code> (Antilope J+1, 60 mn) pour les épisodes antérieurs au 12/10/2020 ; <code>antilope/france-td-60mn</code> ou <code>france-td-15mn</code> (nouvelle nomenclature temps-différé) pour les épisodes postérieurs. Le dossier de sortie est nommé <code>AntJ1-Ep_…</code> par convention, ce terme étant un abus de langage pour les épisodes récents.</em></li>
-        <li><strong>HU moyen BV</strong> (humidité des sols) — fichier CSV, pas de temps : 1 heure (défaut) ou 1 jour à 06:00 (heure de production et d'actualisation de la donnée SIM HU)</li>
-        <li><strong>Débits / Hauteurs PHyC</strong> (Q ou H, pas de temps configurable) — fichier TXT</li>
+        <li><strong>Antilope</strong> (case à cocher, pas de temps configurable) — pluies spatialisées temps-différé. Génère des fichiers <code>.grd</code> (ESRI ASCII Grid) dans <code>{station}/Pluies/AntJ1-Ep_{date}/</code> et un CSV de pluie moyenne BV dans <code>Pluies temps moy BV pour graph/AntJ1_BV-Ep_{date}.csv</code>. <em>Produit BDImage : <code>antilope/j1</code> (60 mn) avant le 12/10/2020 ; <code>antilope/france-td-60mn</code> ou <code>france-td-15mn</code> après.</em></li>
+        <li><strong>Panthère</strong> (case à cocher, pas de temps fixé à 1 heure — seul produit disponible sur BDImage : <code>panthere/france</code>) — pluies radar temps-différé. Génère des <code>.grd</code> dans <code>{station}/Pluies/Pant-Ep_{date}/</code> et un CSV dans <code>Pluies temps moy BV pour graph/Pant_BV-Ep_{date}.csv</code>.</li>
+        <li><strong>HU moyen BV</strong> (humidité des sols) — fichier CSV dans <code>{station}/HU/</code>, pas de temps : 1 heure (défaut) ou 1 jour à 06:00.</li>
+        <li><strong>Débits / Hauteurs PHyC</strong> (Q ou H, pas de temps configurable) — fichier TXT dans <code>{station}/Debits/</code>.</li>
       </ul>
-      <p>Cliquez <strong>"Lancer l'extraction"</strong>. Le journal affiche la progression en temps réel. En cas d'erreur sur un épisode, une relance automatique est effectuée. À la fin, une fenêtre de synthèse récapitule les téléchargements et signale les éventuelles lacunes.</p>
-      <div class="note note-info">Les fichiers sont écrits dans le dossier de sortie défini en Configuration, organisés par épisode.</div>
+      <p>Les préférences d'extraction (cases cochées, pas de temps) sont <strong>mémorisées automatiquement</strong> dans <code>config.json</code> à chaque lancement.</p>
+      <p>Cliquez <strong>"Lancer l'extraction"</strong>. Le journal affiche la progression en temps réel. À la fin, une fenêtre de synthèse récapitule les téléchargements et signale les éventuelles lacunes.</p>
+      <div class="note note-info">La liste Visualisation s'actualise dès qu'un fichier débit, Antilope ou Panthère est présent — il n'est pas nécessaire d'avoir extrait les 3 types de données pour visualiser un épisode.</div>
     </div>
   </div>
 
@@ -262,9 +264,9 @@
     <div class="step-num">4</div>
     <div class="step-content">
       <h3>Onglet <span class="badge badge-visu">Visualisation</span></h3>
-      <p>La liste de gauche affiche les épisodes disponibles, <strong>triés du plus récent au plus ancien</strong>. Chaque ligne débute par une <strong>pastille colorée (●)</strong> dont la couleur indique le niveau de vigilance maximal atteint (vert / jaune / orange / rouge), cohérente avec la colonne Vig. max. de l'onglet Épisodes. Un indicateur entre crochets précise les données disponibles (<code>[Q+HU+P]</code>). Cliquez sur un épisode pour afficher :</p>
+      <p>La liste de gauche affiche les épisodes disponibles, <strong>triés du plus récent au plus ancien</strong>. Chaque ligne débute par une <strong>pastille colorée (●)</strong> dont la couleur indique le niveau de vigilance maximal atteint. Un indicateur entre crochets précise les données disponibles : <code>[Q]</code> débit, <code>[HU]</code> humidité des sols, <code>[Ant]</code> pluie Antilope, <code>[Pan]</code> pluie Panthère. Un épisode peut apparaître dès qu'une seule de ces données est présente. Cliquez sur un épisode pour afficher :</p>
       <ul>
-        <li><strong>Graphique haut</strong> — Hyétogramme (barres vers le bas) + courbe HU en pointillé rouge. Les annotations <em>HU début</em> et <em>HU 6h</em> indiquent les humidités clés.</li>
+        <li><strong>Graphique haut</strong> — Hyétogramme (barres vers le bas) + courbe HU en pointillé rouge. Si les deux produits pluie sont disponibles : <strong>Panthère</strong> en arrière-plan (barres hachurées orange semi-transparentes) et <strong>Antilope</strong> au premier plan (barres pleines bleues/violettes). Les annotations <em>HU début</em> et <em>HU 6h</em> indiquent les humidités clés.</li>
         <li><strong>Graphique bas</strong> — Courbe de débit Q avec zones de vigilance colorées. Les annotations <em>Q début</em> et <em>Q max</em> sont affichées avec horodatage.</li>
       </ul>
       <p>Le graphique de débit affiche les lignes des <strong>6 seuils de vigilance</strong> (ZT Jaune, Jaune, ZT Orange, Orange, ZT Rouge, Rouge) avec leur valeur en étiquette. Les seuils ZT sont tracés en pointillé/pastel, les seuils principaux en trait plein. <strong>Les étiquettes dont la valeur dépasse la plage visible du graphique sont masquées automatiquement</strong> pour ne pas déborder hors zone.</p>
