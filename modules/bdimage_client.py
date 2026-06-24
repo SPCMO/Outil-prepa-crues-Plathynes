@@ -95,6 +95,37 @@ class BdimageClient:
             log_fn=log_fn,
         )
 
+    def extraire_pluies_panthere(self, date_debut, date_fin, ul, lr,
+                                pdt_minutes=5, output_dir=".", log_fn=None):
+        """Extrait les pluies spatialisées Panthère sur une bbox.
+
+        Panthère (radar temps-différé) est disponible avec les sous-types :
+          france-td-5mn  — cumul 5 mn  (défaut)
+          france-td-60mn — cumul 60 mn
+
+        Arguments identiques à extraire_pluies().
+        Retourne list[str] : chemins des fichiers .grd créés.
+        """
+        if pdt_minutes <= 5:
+            sous_type, effective_pdt = "france-td-5mn", 5
+        else:
+            sous_type, effective_pdt = "france-td-60mn", 60
+        if effective_pdt != pdt_minutes and log_fn:
+            log_fn(f"  ⚠ Pas de produit Panthère {pdt_minutes}mn — "
+                   f"utilisation de panthere/{sous_type} (pdt={effective_pdt}mn)")
+
+        return self._extraire_bbox(
+            type_img="panthere", sous_type=sous_type,
+            date_debut=date_debut, date_fin=date_fin,
+            ul=ul, lr=lr,
+            pdt=effective_pdt, duree=effective_pdt,
+            bandes="rr",
+            facteur=0.1,
+            force_integer=True,
+            output_dir=output_dir,
+            log_fn=log_fn,
+        )
+
     def extraire_hu_bv(self, code_bnbv, date_debut, date_fin,
                        output_file, mode_journalier_6h=False, log_fn=None):
         """Extrait l'HU moyen pour un bassin versant (code BNBV).
