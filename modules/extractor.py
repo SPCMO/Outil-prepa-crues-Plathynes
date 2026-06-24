@@ -149,7 +149,7 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
     # ── Pluies ───────────────────────────────────────────────────────────────
     if options.get("pluies"):
         pdt_p = options.get("pdt_pluies", 60)
-        out_pluies = os.path.join(base_out, f"Pluie-Ep_{date_tag}_{nom_station}")
+        out_pluies = os.path.join(base_out, nom_station, "Pluies", f"AntJ1-Ep_{date_tag}_{nom_station}")
         log_fn(f"\n[Pluies] pdt={pdt_p}mn -> {out_pluies}")
         try:
             fichiers = bdi.extraire_pluies(
@@ -164,7 +164,7 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
             synthese["Pluies"] = {"ok": True, "n": len(dates_grd), "lacunes": lacunes,
                                    "pdt": pdt_p, "unite": "pas de temps (.grd)"}
             # Calcul pluie moyenne BV depuis les .grd déjà téléchargés
-            pluie_graphique_dir = os.path.join(base_out, "Pluie temp pr graphique")
+            pluie_graphique_dir = os.path.join(base_out, nom_station, "Pluies")
             out_pluie_bv = os.path.join(pluie_graphique_dir, f"PluieBV-Ep_{date_tag}_{nom_station}.csv")
             try:
                 calculer_pluie_bv_csv(out_pluies, out_pluie_bv, log_fn=log_fn)
@@ -179,7 +179,9 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
     if options.get("hu"):
         pdt_hu = options.get("pdt_hu", 60)
         mode_journalier = (pdt_hu == "journalier_6h")
-        out_hu_file = os.path.join(base_out, f"HU-Ep_{date_tag}_{nom_station}.csv")
+        out_hu_dir = os.path.join(base_out, nom_station, "HU")
+        os.makedirs(out_hu_dir, exist_ok=True)
+        out_hu_file = os.path.join(out_hu_dir, f"HU-Ep_{date_tag}_{nom_station}.csv")
         mode_lbl = "journalier 6h" if mode_journalier else "horaire"
         log_fn(f"\n[HU] BV={code_bnbv or '?'} mode={mode_lbl} -> {out_hu_file}")
         try:
@@ -206,7 +208,9 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
     if options.get("debits") and phyc and code_phyc:
         pdt_q = options.get("pdt_debits", 15)
         grandeur = options.get("grandeur", "Q")
-        filename = os.path.join(base_out, f"{grandeur}-Ep_{date_tag}_{nom_station}.txt")
+        debits_dir = os.path.join(base_out, nom_station, "Debits")
+        os.makedirs(debits_dir, exist_ok=True)
+        filename = os.path.join(debits_dir, f"{grandeur}-Ep_{date_tag}_{nom_station}.txt")
         log_fn(f"\n[PHyC] grandeur={grandeur}, code={code_phyc}, pdt={pdt_q}mn -> {filename}")
         try:
             _extraire_debits(

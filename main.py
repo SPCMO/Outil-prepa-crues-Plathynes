@@ -680,11 +680,12 @@ class App(tk.Tk):
 
     def _refresh_visu_list(self):
         """Scanne le dossier de sortie et remplit la liste des épisodes extraits."""
-        outdir = self.config_data.get("output_dir", "./sorties")
         self.visu_listbox.delete(0, tk.END)
         self._visu_episodes.clear()
 
-        if not os.path.isdir(outdir):
+        debits_dir, hu_dir, pluies_dir = self._get_out_dirs()
+
+        if not os.path.isdir(debits_dir):
             return
 
         def _fname_date(fn):
@@ -694,18 +695,17 @@ class App(tk.Tk):
             except Exception:
                 return datetime.min
 
-        p_dir = os.path.join(outdir, "Pluie temp pr graphique")
-        for fname in sorted(os.listdir(outdir), key=_fname_date, reverse=True):
+        for fname in sorted(os.listdir(debits_dir), key=_fname_date, reverse=True):
             if not (fname.startswith("Q-Ep_") and fname.endswith(".txt")):
                 continue
-            q_path   = os.path.join(outdir, fname)
+            q_path   = os.path.join(debits_dir, fname)
             hu_fname = fname.replace("Q-Ep_", "HU-Ep_").replace(".txt", ".csv")
-            hu_path  = os.path.join(outdir, hu_fname)
+            hu_path  = os.path.join(hu_dir, hu_fname)
             p_fname  = fname.replace("Q-Ep_", "PluieBV-Ep_").replace(".txt", ".csv")
-            p_path   = os.path.join(p_dir, p_fname)
+            p_path   = os.path.join(pluies_dir, p_fname)
             # Générer le CSV pluie BV à la volée si le dossier .grd existe mais le CSV non
             if not os.path.exists(p_path):
-                grd_dir = os.path.join(outdir, fname.replace("Q-Ep_", "Pluie-Ep_").replace(".txt", ""))
+                grd_dir = os.path.join(pluies_dir, fname.replace("Q-Ep_", "AntJ1-Ep_").replace(".txt", ""))
                 if os.path.isdir(grd_dir):
                     try:
                         from modules.bdimage_client import calculer_pluie_bv_csv
@@ -1262,22 +1262,21 @@ class App(tk.Tk):
     def _refresh_analyse(self):
         if not HAS_MPL:
             return
-        outdir = self.config_data.get("output_dir", "./sorties")
-        p_dir  = os.path.join(outdir, "Pluie temp pr graphique")
-        episodes = self._collect_analyse_data(outdir, p_dir)
+        debits_dir, hu_dir, pluies_dir = self._get_out_dirs()
+        episodes = self._collect_analyse_data(debits_dir, hu_dir, pluies_dir)
         vig_on = {v for v, bv in self._analyse_vig_chk.items() if bv.get()}
         if len(vig_on) < len(self._analyse_vig_chk):
             episodes = [ep for ep in episodes
                         if ep.get("vig") in vig_on]
         self._plot_analyse(episodes)
 
-    def _collect_analyse_data(self, outdir, p_dir):
+    def _collect_analyse_data(self, debits_dir, hu_dir, pluies_dir):
         """Lit les CSV de chaque épisode et retourne la liste des métriques."""
         episodes = []
-        if not os.path.isdir(outdir):
+        if not os.path.isdir(debits_dir):
             return episodes
 
-        for fname in sorted(os.listdir(outdir)):
+        for fname in sorted(os.listdir(debits_dir)):
             # Accepte Q-Ep_*.txt et H-Ep_*.txt
             if not (fname.endswith(".txt") and
                     (fname.startswith("Q-Ep_") or fname.startswith("H-Ep_"))):
@@ -1293,9 +1292,9 @@ class App(tk.Tk):
                 except ValueError:
                     pass
 
-            q_path  = os.path.join(outdir, fname)
-            hu_path = os.path.join(outdir, fname.replace(prefix, "HU-Ep_").replace(".txt", ".csv"))
-            p_path  = os.path.join(p_dir,  fname.replace(prefix, "PluieBV-Ep_").replace(".txt", ".csv"))
+            q_path  = os.path.join(debits_dir, fname)
+            hu_path = os.path.join(hu_dir,     fname.replace(prefix, "HU-Ep_").replace(".txt", ".csv"))
+            p_path  = os.path.join(pluies_dir, fname.replace(prefix, "PluieBV-Ep_").replace(".txt", ".csv"))
 
             def read_col(path, col=1, has_header=True):
                 vals = []
@@ -1689,9 +1688,9 @@ class App(tk.Tk):
                      self.config_data.get("seuils", {}))
         nom_station = self.config_data.get("station", {}).get("nom_station", "") or \
                       self.config_data.get("station", {}).get("code_site", "")
-        base_out = self.config_data.get("output_dir", "./sorties")
+        debits_dir, _, _ = self._get_out_dirs()
         date_tag = ep["date_debut"].strftime("%d_%m_%Y")
-        q_file = os.path.join(base_out, f"{grandeur}-Ep_{date_tag}_{nom_station}.txt")
+        q_file = os.path.join(debits_dir, f"{grandeur}-Ep_{date_tag}_{nom_station}.txt")
 
         if not os.path.isfile(q_file):
             return "—", ""
@@ -1891,6 +1890,17 @@ class App(tk.Tk):
         """Ouvre le fichier aide.html dans le navigateur par défaut."""
         html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aide.html")
         webbrowser.open(f"file:///{html_path.replace(os.sep, '/')}")
+
+    def _get_out_dirs(self):
+        """Retourne (debits_dir, hu_dir, pluies_dir) selon la config courante."""
+        base = self.config_data.get("output_dir", "./sorties")
+        nom  = (self.config_data.get("station", {}).get("nom_station", "")
+                or self.config_data.get("station", {}).get("code_site", "")
+                or "station")
+        root = os.path.join(base, nom)
+        return (os.path.join(root, "Debits"),
+                os.path.join(root, "HU"),
+                os.path.join(root, "Pluies"))
 
     def _browse_outdir(self):
         d = filedialog.askdirectory(title="Dossier de sortie")
