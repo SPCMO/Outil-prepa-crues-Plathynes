@@ -811,8 +811,8 @@ class App(tk.Tk):
 
         C_Q  = "#1A5276"
         C_HU = "#C0392B"
-        C_P  = "#1F618D"   # bleu foncé pluie
-        C_P_EXCESS = "#7D3C98"  # violet dépassement seuil
+        C_P  = "#2E86C1"   # bleu moyen pluie Antilope
+        C_P_EXCESS = "#8E44AD"  # violet dépassement seuil
 
         def _read_csv(path, has_header=True):
             pairs = []
@@ -859,35 +859,41 @@ class App(tk.Tk):
                         (max(pant_vals) if pant_vals else 0))
         y_bottom = max(all_p_max, 5) * 1.15
 
-        # Panthère en premier (en arrière-plan) — hachures + transparence
-        if pant_dates:
-            bar_w_pant = (pant_dates[1] - pant_dates[0]) * 0.85 if len(pant_dates) >= 2 else _td(hours=1)
-            self._visu_ax_p.bar(pant_dates, pant_vals, width=bar_w_pant,
-                                 color=C_PANT, alpha=0.30, align="center",
-                                 hatch="///", edgecolor=C_PANT, linewidth=0.5,
-                                 label="Panthère BV (mm)")
-
-        # Antilope par-dessus (premier plan) — barres pleines
+        # ── Antilope (premier plan, barres légèrement transparentes)
+        ant_handles, ant_labels = [], []
         if p_dates:
             bar_w = (p_dates[1] - p_dates[0]) * 0.8 if len(p_dates) >= 2 else _td(hours=1)
-            # Partie sous le seuil (bleu foncé)
             base_vals = [min(v, seuil) for v in p_vals]
-            self._visu_ax_p.bar(p_dates, base_vals, width=bar_w,
-                                 color=C_P, alpha=0.75, align="center",
-                                 label=f"Antilope BV ≤ {seuil:.0f} mm")
-            # Partie au-dessus du seuil (violet), empilée
+            b1 = self._visu_ax_p.bar(p_dates, base_vals, width=bar_w,
+                                      color=C_P, alpha=0.65, align="center",
+                                      label=f"Antilope BV ≤ {seuil:.0f} mm")
+            ant_handles.append(b1)
+            ant_labels.append(f"Antilope BV ≤ {seuil:.0f} mm")
             excess_vals = [max(v - seuil, 0) for v in p_vals]
             if any(v > 0 for v in excess_vals):
-                self._visu_ax_p.bar(p_dates, excess_vals, width=bar_w,
-                                     bottom=base_vals,
-                                     color=C_P_EXCESS, alpha=0.85, align="center",
-                                     label=f"Antilope BV > {seuil:.0f} mm")
-            # Ligne seuil
+                b2 = self._visu_ax_p.bar(p_dates, excess_vals, width=bar_w,
+                                          bottom=base_vals,
+                                          color=C_P_EXCESS, alpha=0.80, align="center",
+                                          label=f"Antilope BV > {seuil:.0f} mm")
+                ant_handles.append(b2)
+                ant_labels.append(f"Antilope BV > {seuil:.0f} mm")
             self._visu_ax_p.axhline(seuil, color=C_P_EXCESS, linewidth=0.9,
                                      linestyle="--", alpha=0.6)
 
+        # ── Panthère (arrière-plan, bordures pointillées, sans hachure)
+        pant_handles, pant_labels = [], []
+        if pant_dates:
+            bar_w_pant = (pant_dates[1] - pant_dates[0]) * 0.85 if len(pant_dates) >= 2 else _td(hours=1)
+            bp = self._visu_ax_p.bar(pant_dates, pant_vals, width=bar_w_pant,
+                                      color=C_PANT, alpha=0.25, align="center",
+                                      edgecolor=C_PANT, linewidth=1.4,
+                                      label="Panthère BV (mm)", zorder=1)
+            for patch in bp:
+                patch.set_linestyle("--")
+            pant_handles.append(bp)
+            pant_labels.append("Panthère BV (mm)")
+
         if p_dates or pant_dates:
-            # Axe inversé : 0 en haut, barres tombent vers le bas
             self._visu_ax_p.set_ylim(y_bottom, 0)
         self._visu_ax_p.set_ylabel("Pluie BV (mm)", color=C_P, fontsize=9)
         self._visu_ax_p.tick_params(axis="y", labelcolor=C_P)
@@ -957,10 +963,12 @@ class App(tk.Tk):
         self._visu_ax_hu.yaxis.set_label_position("right")
         self._visu_ax_hu.tick_params(axis="y", labelcolor=C_HU)
 
-        h1, l1 = self._visu_ax_p.get_legend_handles_labels()
-        h2, l2 = self._visu_ax_hu.get_legend_handles_labels()
-        if h1 or h2:
-            self._visu_ax_p.legend(h1 + h2, l1 + l2, loc="upper right", fontsize=8)
+        # Légende : Antilope en premier, puis HU, puis Panthère
+        h_hu, l_hu = self._visu_ax_hu.get_legend_handles_labels()
+        all_h = ant_handles + h_hu + pant_handles
+        all_l = ant_labels  + l_hu + pant_labels
+        if all_h:
+            self._visu_ax_p.legend(all_h, all_l, loc="upper right", fontsize=8)
 
         # ── Graphique bas : débit Q ou H ─────────────────────────────────────
         grandeur_ep = ep.get("grandeur", self.config_data.get("extraction", {}).get("grandeur", "Q"))

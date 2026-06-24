@@ -3,6 +3,7 @@
 
 import csv
 import os
+import time
 from datetime import datetime, timedelta
 
 from .bdimage_client import BdimageClient, BdimageError, calculer_pluie_bv_csv
@@ -72,6 +73,7 @@ def run_extraction(config, episodes, options, log_fn, progress_fn=None):
     errors = []
     syntheses = []   # liste de (label, synthese_dict) par épisode
     total = len(episodes)
+    _t0 = time.time()
 
     try:
         for idx, episode in enumerate(episodes, 1):
@@ -134,7 +136,8 @@ def run_extraction(config, episodes, options, log_fn, progress_fn=None):
     else:
         log_fn(f"\nExtraction terminee - {total} episode(s) traite(s).")
 
-    return errors, _build_synthese_text(syntheses)
+    duree_s = int(time.time() - _t0)
+    return errors, _build_synthese_text(syntheses, duree_s)
 
 
 def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
@@ -374,11 +377,17 @@ def _dates_from_csv(filepath, fmt="%d/%m/%Y %H:%M", has_header=True):
     return sorted(dates)
 
 
-def _build_synthese_text(syntheses):
+def _build_synthese_text(syntheses, duree_s=0):
     """Formate le texte de synthèse globale pour la popup post-extraction."""
+    if duree_s < 60:
+        duree_lbl = f"{duree_s} seconde(s)"
+    else:
+        m, s = divmod(duree_s, 60)
+        duree_lbl = f"{m} min {s:02d} s" if s else f"{m} minute(s)"
     lines = []
     lines.append("=" * 58)
-    lines.append(f"  SYNTHESE DES TELECHARGEMENTS — {len(syntheses)} episode(s)")
+    lines.append(f"  SYNTHESE DES TELECHARGEMENTS — {len(syntheses)} episode(s)"
+                 f" — Charges en {duree_lbl}")
     lines.append("=" * 58)
     for label, syn in syntheses:
         lines.append(f"\nEpisode : {label}")
