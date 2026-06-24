@@ -705,13 +705,15 @@ class App(tk.Tk):
             p_path   = os.path.join(pluies_dir, p_fname)
             # Générer le CSV pluie BV à la volée si le dossier .grd existe mais le CSV non
             if not os.path.exists(p_path):
-                grd_dir = os.path.join(pluies_dir, fname.replace("Q-Ep_", "AntJ1-Ep_").replace(".txt", ""))
-                if os.path.isdir(grd_dir):
-                    try:
-                        from modules.bdimage_client import calculer_pluie_bv_csv
-                        calculer_pluie_bv_csv(grd_dir, p_path)
-                    except Exception:
-                        pass
+                for _pfx in ("AntJ1-Ep_", "Pluie-Ep_"):
+                    grd_dir = os.path.join(pluies_dir, fname.replace("Q-Ep_", _pfx).replace(".txt", ""))
+                    if os.path.isdir(grd_dir):
+                        try:
+                            from modules.bdimage_client import calculer_pluie_bv_csv
+                            calculer_pluie_bv_csv(grd_dir, p_path)
+                        except Exception:
+                            pass
+                        break
 
             # Label depuis le nom de fichier : Q-Ep_DD_MM_YYYY_Station.txt
             base  = fname[5:-4]  # "DD_MM_YYYY_Station"
@@ -1892,15 +1894,22 @@ class App(tk.Tk):
         webbrowser.open(f"file:///{html_path.replace(os.sep, '/')}")
 
     def _get_out_dirs(self):
-        """Retourne (debits_dir, hu_dir, pluies_dir) selon la config courante."""
+        """Retourne (debits_dir, hu_dir, pluies_dir) selon la config courante.
+
+        Utilise la nouvelle structure {nom}/Debits|HU|Pluies/ si elle existe,
+        sinon replie sur l'ancienne structure plate pour la rétro-compatibilité.
+        """
         base = self.config_data.get("output_dir", "./sorties")
         nom  = (self.config_data.get("station", {}).get("nom_station", "")
                 or self.config_data.get("station", {}).get("code_site", "")
                 or "station")
-        root = os.path.join(base, nom)
-        return (os.path.join(root, "Debits"),
-                os.path.join(root, "HU"),
-                os.path.join(root, "Pluies"))
+        new_debits = os.path.join(base, nom, "Debits")
+        if os.path.isdir(new_debits):
+            return (new_debits,
+                    os.path.join(base, nom, "HU"),
+                    os.path.join(base, nom, "Pluies"))
+        # Ancienne structure plate (rétro-compatibilité)
+        return (base, base, os.path.join(base, "Pluie temp pr graphique"))
 
     def _browse_outdir(self):
         d = filedialog.askdirectory(title="Dossier de sortie")
