@@ -96,29 +96,21 @@ class BdimageClient:
         )
 
     def extraire_pluies_panthere(self, date_debut, date_fin, ul, lr,
-                                pdt_minutes=5, output_dir=".", log_fn=None):
+                                output_dir=".", log_fn=None):
         """Extrait les pluies spatialisées Panthère sur une bbox.
 
-        Panthère (radar temps-différé) est disponible avec les sous-types :
-          france-td-5mn  — cumul 5 mn  (défaut)
-          france-td-60mn — cumul 60 mn
+        Seul le produit panthere/france (60 mn) est disponible sur BDImage SCHAPI
+        (confirmé par sondage — les sous-types td, j0, j1, france-td, td-5mn
+        retournent tous une erreur de type).
 
         Arguments identiques à extraire_pluies().
         Retourne list[str] : chemins des fichiers .grd créés.
         """
-        if pdt_minutes <= 5:
-            sous_type, effective_pdt = "france-td-5mn", 5
-        else:
-            sous_type, effective_pdt = "france-td-60mn", 60
-        if effective_pdt != pdt_minutes and log_fn:
-            log_fn(f"  ⚠ Pas de produit Panthère {pdt_minutes}mn — "
-                   f"utilisation de panthere/{sous_type} (pdt={effective_pdt}mn)")
-
         return self._extraire_bbox(
-            type_img="panthere", sous_type=sous_type,
+            type_img="panthere", sous_type="france",
             date_debut=date_debut, date_fin=date_fin,
             ul=ul, lr=lr,
-            pdt=effective_pdt, duree=effective_pdt,
+            pdt=60, duree=60,
             bandes="rr",
             facteur=0.1,
             force_integer=True,
