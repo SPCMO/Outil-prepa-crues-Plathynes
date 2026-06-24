@@ -254,7 +254,7 @@
         <li><strong>Débits / Hauteurs PHyC</strong> (Q ou H, pas de temps configurable) — fichier TXT dans <code>{station}/Debits/</code>.</li>
       </ul>
       <p>Les préférences d'extraction (cases cochées, pas de temps) sont <strong>mémorisées automatiquement</strong> dans <code>config.json</code> à chaque lancement.</p>
-      <p>Cliquez <strong>"Lancer l'extraction"</strong>. Le journal affiche la progression en temps réel. À la fin, une fenêtre de synthèse récapitule les téléchargements et signale les éventuelles lacunes.</p>
+      <p>La barre de boutons propose à gauche <strong>"Lancer l'extraction"</strong> et <strong>"Arrêter"</strong>, et à droite <strong>"Enregistrer la configuration"</strong> et <strong>"ℹ Aide"</strong> (identiques à ceux de l'onglet Configuration). Le journal affiche la progression en temps réel. À la fin, une fenêtre de synthèse récapitule les téléchargements épisode par épisode et indique la <strong>durée totale de l'extraction</strong> (ex. : <em>Chargés en 12 min 34 s</em>).</p>
       <div class="note note-info">La liste Visualisation s'actualise dès qu'un fichier débit, Antilope ou Panthère est présent — il n'est pas nécessaire d'avoir extrait les 3 types de données pour visualiser un épisode.</div>
     </div>
   </div>
@@ -266,12 +266,28 @@
       <h3>Onglet <span class="badge badge-visu">Visualisation</span></h3>
       <p>La liste de gauche affiche les épisodes disponibles, <strong>triés du plus récent au plus ancien</strong>. Chaque ligne débute par une <strong>pastille colorée (●)</strong> dont la couleur indique le niveau de vigilance maximal atteint. Un indicateur entre crochets précise les données disponibles : <code>[Q]</code> débit, <code>[HU]</code> humidité des sols, <code>[Ant]</code> pluie Antilope, <code>[Pan]</code> pluie Panthère. Un épisode peut apparaître dès qu'une seule de ces données est présente. Cliquez sur un épisode pour afficher :</p>
       <ul>
-        <li><strong>Graphique haut</strong> — Hyétogramme (barres vers le bas) + courbe HU en pointillé rouge. Si les deux produits pluie sont disponibles : <strong>Panthère</strong> en arrière-plan (barres hachurées orange semi-transparentes) et <strong>Antilope</strong> au premier plan (barres pleines bleues/violettes). Les annotations <em>HU début</em> et <em>HU 6h</em> indiquent les humidités clés.</li>
+        <li><strong>Graphique haut</strong> — Hyétogramme inversé (barres vers le bas) + courbe HU en pointillé rouge.
+          <ul>
+            <li>Si Antilope est disponible : barres <span style="color:#1F618D;font-weight:600">bleues</span> (valeur ≤ seuil) et <span style="color:#7D3C98;font-weight:600">violettes</span> (valeur &gt; seuil), au premier plan.</li>
+            <li>Si Panthère est disponible : barres <span style="color:#CC5500;font-weight:600">orange</span> semi-transparentes en arrière-plan, avec bordures en pointillés (pas de hachures).</li>
+            <li>La <strong>légende</strong> indique, en entrée fantôme entre les deux lignes Antilope, le <strong>cumul total AJ1</strong> de l'épisode, et sous l'entrée Panthère le <strong>cumul total Pan.</strong>.</li>
+            <li>Les annotations <em>HU début</em> et <em>HU 6h</em> indiquent les humidités clés.</li>
+          </ul>
+        </li>
         <li><strong>Graphique bas</strong> — Courbe de débit Q avec zones de vigilance colorées. Les annotations <em>Q début</em> et <em>Q max</em> sont affichées avec horodatage.</li>
       </ul>
       <p>Le graphique de débit affiche les lignes des <strong>6 seuils de vigilance</strong> (ZT Jaune, Jaune, ZT Orange, Orange, ZT Rouge, Rouge) avec leur valeur en étiquette. Les seuils ZT sont tracés en pointillé/pastel, les seuils principaux en trait plein. <strong>Les étiquettes dont la valeur dépasse la plage visible du graphique sont masquées automatiquement</strong> pour ne pas déborder hors zone.</p>
-      <p>Le champ <strong>"Seuil hyétogramme *"</strong> (défaut 10 mm/pas) détermine la limite entre la coloration <span style="color:#1F618D;font-weight:600">bleue</span> (pluie sous le seuil) et <span style="color:#7D3C98;font-weight:600">violette</span> (dépassement). Ce changement de couleur aide à repérer visuellement les pas de temps à fortes précipitations intenses, particulièrement significatifs pour la genèse des crues.</p>
-      <p><strong>Note sur l'astérisque (*) :</strong> ces hyétogrammes sont une <em>reconstitution</em> de la pluie moyenne de bassin versant calculée à partir des pluies spatialisées Antilope temps-différé téléchargées (fichiers <code>.grd</code>). La moyenne est effectuée sur l'ensemble des pixels de la grille, y compris ceux issus de la marge de 5 km de la bounding box autour du bassin. Il ne s'agit donc pas d'une mesure directe mais d'une estimation spatiale.</p>
+      <p>Le champ <strong>"Seuil hyétogramme *"</strong> (défaut 10 mm/pas) détermine la limite entre la coloration bleue et violette d'Antilope, <strong>et recalcule à la volée</strong> l'indicateur de fortes intensités dans l'encart de comparaison (voir ci-dessous).</p>
+      <p><strong>Encart "Antilope vs Panthère"</strong> (bas-droite du graphique haut, visible si les deux produits sont présents) — 5 indicateurs comparatifs, chacun avec la valeur en mm et le pourcentage relatif par rapport à la valeur Antilope au même pas de temps :</p>
+      <ul>
+        <li><em>Écart moyen</em> — différence Pan.−Ant. moyennée sur tous les pas de temps communs.</li>
+        <li><em>Écart max 1h</em> — pas de temps où l'écart |Pan.−Ant.| est le plus grand, avec horodatage.</li>
+        <li><em>Cumul 1h max Ant.</em> — écart au pas de temps où Antilope est au pic, avec horodatage.</li>
+        <li><em>3h consécutives max</em> — fenêtre de 3 heures où Antilope est maximale, écart Pan.−Ant. sur cette fenêtre.</li>
+        <li><em>Forte int. (&gt;X mm)</em> — écart moyen de Pan. vs Ant. sur les seuls pas de temps où Antilope dépasse le seuil hyétogramme (recalculé si le seuil est modifié).</li>
+      </ul>
+      <p>Les barres sont colorées en <span style="color:#1F618D;font-weight:600">bleu</span> si Antilope &gt; Panthère, en <span style="color:#CC5500;font-weight:600">orange</span> si Panthère &gt; Antilope. Leur longueur est proportionnelle au maximum observé sur l'ensemble des épisodes (référence globale propre à chaque indicateur). En pied d'encart : <em>"Pan. sous/sur-estime X % des pas de temps (nb : N) soit Y % du cumul global"</em>.</p>
+      <p><strong>Note sur l'astérisque (*) :</strong> ces hyétogrammes sont une <em>reconstitution</em> de la pluie moyenne de bassin versant calculée à partir des pluies spatialisées téléchargées (fichiers <code>.grd</code>). La moyenne est effectuée sur l'ensemble des pixels de la grille (y compris la marge de 5 km de la bounding box). Il ne s'agit pas d'une mesure directe mais d'une estimation spatiale — valable pour Antilope comme pour Panthère.</p>
       <p>Les deux graphiques partagent la même échelle temporelle (x identique).</p>
     </div>
   </div>
@@ -407,11 +423,14 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
       <code>bbox_bnbv.json</code> — table bounding-box par BNBV
     </div>
     <div class="arch-box tool">
-      <strong>📁 sorties/</strong> (généré)<br>
-      <code>Pluie-Ep_*/</code> — fichiers .grd par épisode<br>
-      <code>Pluie temp pr graphique/</code> — PluieBV-Ep_*.csv<br>
-      <code>HU-Ep_*.csv</code> — humidité sols<br>
-      <code>Q-Ep_*.txt</code> — débits
+      <strong>📁 sorties/{station}/</strong> (généré)<br>
+      <code>Pluies/AntJ1-Ep_*/</code> — .grd Antilope<br>
+      <code>Pluies/Pant-Ep_*/</code> — .grd Panthère<br>
+      <code>Pluies temps moy BV pour graph/</code><br>
+      &nbsp;&nbsp;<code>AntJ1_BV-Ep_*.csv</code> — pluie moy. BV Antilope<br>
+      &nbsp;&nbsp;<code>Pant_BV-Ep_*.csv</code> — pluie moy. BV Panthère<br>
+      <code>HU/HU-Ep_*.csv</code> — humidité sols<br>
+      <code>Debits/Q-Ep_*.txt</code> — débits
     </div>
   </div>
 
@@ -435,7 +454,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
 
   <h2>Flux de données — Visualisation</h2>
   <div class="flow">
-    <div class="flow-node fn-file">Q-Ep_*.txt<br>HU-Ep_*.csv<br>PluieBV-Ep_*.csv</div>
+    <div class="flow-node fn-file">Debits/Q-Ep_*.txt<br>HU/HU-Ep_*.csv<br>AntJ1_BV-Ep_*.csv<br>Pant_BV-Ep_*.csv</div>
     <div class="fn-arrow">→</div>
     <div class="flow-node fn-ui">_plot_episode()</div>
     <div class="fn-arrow">→</div>
@@ -446,7 +465,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <table>
     <tr><th>Service</th><th>Protocole</th><th>Données</th><th>Port WSDL</th></tr>
     <tr><td>PHyC</td><td>SOAP/XML (zeep + raw lxml)</td><td>Débits, Seuils vigilance</td><td>ObservationsHydroPublicationPort, SeuilHydroPublicationPort</td></tr>
-    <tr><td>BDImage</td><td>SOAP/XML</td><td>Pluies Antilope temps-différé (.grd), HU SIM</td><td>getObsByZonesAsync, getObsStatsByZonesAsync</td></tr>
+    <tr><td>BDImage</td><td>SOAP/XML</td><td>Pluies Antilope et Panthère temps-différé (.grd), HU SIM</td><td>getObsByZonesAsync, getObsStatsByZonesAsync</td></tr>
   </table>
 
   <h2>Packages Python utilisés</h2>
@@ -529,7 +548,11 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <tr><td><code>_refresh_episodes_table()</code></td><td>Reconstruit le treeview après filtrage et tri</td><td>Appelle <code>_episodes_view()</code> puis applique le tri actif.</td></tr>
     <tr><td><code>_build_tab_extraction()</code></td><td>Options, journal ScrolledText, barre de progression</td><td>—</td></tr>
     <tr><td><code>_lancer_extraction()</code></td><td>Lance <code>run_extraction</code> dans un thread, gère progress + popup synthèse</td><td>Thread worker ; UI mise à jour via <code>after()</code></td></tr>
-    <tr><td><code>_plot_episode(ep)</code></td><td>Trace les 2 sous-graphiques matplotlib pour un épisode</td><td>Marges définies dans <code>GridSpec</code> (<code>left/right/top/bottom/hspace</code>) pour maximiser la zone utile. Les 6 seuils de vigilance (ZT + principaux) sont tracés avec étiquette ; les labels dont la valeur dépasse <code>Q_max × 1.20</code> sont masqués. Unité dynamique (<code>m³/s</code> ou <code>m</code>). Warning <code>tight_layout</code>/twinx supprimé par <code>warnings.catch_warnings()</code>.</td></tr>
+    <tr><td><code>_plot_episode(ep)</code></td><td>Trace les 2 sous-graphiques matplotlib pour un épisode</td><td>Marges définies dans <code>GridSpec</code> pour maximiser la zone utile. Panthère tracée en premier (zorder=1, bordures pointillées, alpha 25 %), Antilope par-dessus (zorder=3, bleu <code>#1F618D</code>, alpha 70 %). Légende avec entrées fantômes (handle invisible) pour afficher cumul AJ1 et cumul Pan. entre les lignes concernées. Appelle <code>_draw_antpan_stats_panel()</code> si les deux produits pluie sont présents.</td></tr>
+    <tr><td><code>_calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals, seuil)</code></td><td>Calcule les 5 indicateurs Antilope vs Panthère pour un épisode</td><td>Aligne sur les timestamps communs. Retourne : écart moyen, écart max 1h, écart au pic Ant., écart sur 3h consécutives max, écart sur fortes intensités (Ant &gt; seuil). Chaque écart est accompagné de son % relatif par rapport à la valeur Antilope. Méthode statique.</td></tr>
+    <tr><td><code>_get_global_antpan_max(seuil)</code></td><td>Calcule les maxima globaux des 5 indicateurs sur tous les épisodes</td><td>Résultat mis en cache dans <code>self._antpan_global_max</code>. Cache invalidé si le seuil change (clé <code>_seuil_key</code>). Utilisé pour normaliser les barres de l'encart.</td></tr>
+    <tr><td><code>_draw_antpan_stats_panel(ax, …, seuil)</code></td><td>Dessine l'encart comparatif Ant./Pan. en bas-droite du graphique haut</td><td>5 lignes (label | barre proportionnelle | valeur mm + % | horodatage). Couleur barre : bleu si Ant &gt; Pan, orange si Pan &gt; Ant. Pied d'encart : tendance sur une ligne (% des pas de temps, nb, % cumul global). Utilise <code>matplotlib.patches</code> et coordonnées <code>transAxes</code>.</td></tr>
+    <tr><td><code>_refresh_extraction_ui()</code></td><td>Restaure les préférences d'extraction depuis <code>config.json</code></td><td>Relit les clés <code>config_data["extraction"]</code> pour remettre les cases à cocher et pas de temps à leur dernière valeur sauvegardée.</td></tr>
     <tr><td><code>_vig_from_file(q_path)</code></td><td>Lit le Q max d'un fichier extrait et retourne le label de vigilance</td><td>Utilisé par <code>_refresh_visu_list()</code> pour colorier chaque item de la listbox.</td></tr>
     <tr><td><code>_VIG_ITEM_COLORS</code></td><td>Dict label → (bg, fg) pour colorier les items de la listbox Visualisation</td><td>Attribut de classe ; 7 niveaux du vert au rouge foncé.</td></tr>
     <tr><td><code>_refresh_visu_list()</code></td><td>Scanne le dossier de sortie, trie par date décroissante (date parsée DD/MM/YYYY), colorise chaque item via <code>itemconfig</code></td><td>Préfixe <code>●</code> + couleurs bg/fg selon <code>_vig_from_file()</code>. Génère PluieBV manquants à la volée.</td></tr>
@@ -554,7 +577,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <table>
     <tr><th>Méthode / Fonction</th><th>Rôle</th><th>Notes</th></tr>
     <tr><td><code>extraire_pluies()</code></td><td>Télécharge les images Antilope temps-différé, écrit des .grd entiers</td><td>Produit <code>antilope/j1</code> (60 mn) avant le 12/10/2020 ; <code>antilope/france-td-60mn</code> ou <code>france-td-15mn</code> après. <code>force_integer=True</code> — valeurs arrondies pour compatibilité logiciel calage.</td></tr>
-    <tr><td><code>extraire_pluies_panthere()</code></td><td>Télécharge les images Panthère temps-différé, écrit des .grd entiers</td><td>Produit <code>panthere/france-td-5mn</code> (défaut) ou <code>panthere/france-td-60mn</code>.</td></tr>
+    <tr><td><code>extraire_pluies_panthere()</code></td><td>Télécharge les images Panthère temps-différé, écrit des .grd entiers</td><td>Produit <code>panthere/france</code>, pas de temps fixé à 60 mn — seul sous-type valide sur BDImage SCHAPI (validé par sondage le 24/06/2026).</td></tr>
     <tr><td><code>extraire_hu_bv()</code></td><td>Extrait la moyenne spatiale HU via <code>getObsStatsByZonesAsync</code></td><td>Retourne directement la moyenne BV (pas de .grd)</td></tr>
     <tr><td><code>_xml_to_grds()</code></td><td>Parse XML BDImage → fichiers .grd (ESRI ASCII Grid)</td><td>Facteur 0.1 (1/10e mm → mm). Nodata = -1.</td></tr>
     <tr><td><code>calculer_pluie_bv_csv()</code></td><td>Moyenne spatiale de tous les .grd d'un dossier → CSV</td><td>Ignore les pixels nodata=-1. Format date AAAAMMJJhhmm.</td></tr>
@@ -568,14 +591,16 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <tr><td><code>_process_episode()</code></td><td>Extrait pluies, HU et Q/H pour un épisode</td><td>Reçoit <code>code_phyc</code> déjà résolu selon la grandeur. Remplit <code>synthese_out</code> dict par type de données.</td></tr>
     <tr><td><code>_check_lacunes()</code></td><td>Détecte les pas de temps manquants dans une série</td><td>Retourne liste de datetimes manquants</td></tr>
     <tr><td><code>_snap_to_grid()</code></td><td>Arrondit un datetime au multiple de pdt_minutes</td><td>Assure des horodatages "heures rondes"</td></tr>
-    <tr><td><code>_build_synthese_text()</code></td><td>Formate le texte de la popup post-extraction</td><td>Signale les lacunes, les erreurs et les relances échouées</td></tr>
+    <tr><td><code>_build_synthese_text(syntheses, duree_s)</code></td><td>Formate le texte de la popup post-extraction</td><td>Affiche en première ligne le nombre d'épisodes et la <strong>durée totale</strong> (ex. <em>Chargés en 12 min 34 s</em>). Signale les lacunes, les erreurs et les relances échouées.</td></tr>
   </table>
 
   <h2>Format des fichiers de sortie</h2>
   <table>
     <tr><th>Fichier</th><th>Format</th><th>Délimiteur / Entête</th></tr>
-    <tr><td><code>Pluie-Ep_*/*.grd</code></td><td>ESRI ASCII Grid, valeurs entières</td><td>6 lignes NCOLS/NROWS/XLL/YLL/CELLSIZE/NODATA, puis données</td></tr>
-    <tr><td><code>PluieBV-Ep_*.csv</code></td><td>CSV 2 colonnes</td><td>Entête <code>date;pluie_mm</code>, format date <code>%Y-%m-%d %H:%M</code></td></tr>
+    <tr><td><code>{station}/Pluies/AntJ1-Ep_*/*.grd</code></td><td>ESRI ASCII Grid, valeurs entières</td><td>Antilope. 6 lignes NCOLS/NROWS/XLL/YLL/CELLSIZE/NODATA, puis données</td></tr>
+    <tr><td><code>{station}/Pluies/Pant-Ep_*/*.grd</code></td><td>ESRI ASCII Grid, valeurs entières</td><td>Panthère. Même format que ci-dessus.</td></tr>
+    <tr><td><code>AntJ1_BV-Ep_*.csv</code></td><td>CSV 2 colonnes</td><td>Pluie moy. BV Antilope. Entête <code>date;pluie_mm</code>, format date <code>%d/%m/%Y %H:%M</code></td></tr>
+    <tr><td><code>Pant_BV-Ep_*.csv</code></td><td>CSV 2 colonnes</td><td>Pluie moy. BV Panthère. Même format.</td></tr>
     <tr><td><code>HU-Ep_*.csv</code></td><td>CSV 2 colonnes</td><td>Entête <code>date;hu</code>, format date <code>%d/%m/%Y %H:%M</code></td></tr>
     <tr><td><code>Q-Ep_*.txt</code> / <code>H-Ep_*.txt</code></td><td>CSV sans entête</td><td>Format date <code>%d/%m/%Y %H:%M</code>, valeur en m³/s (Q) ou en m (H). Le préfixe du fichier correspond à la grandeur extraite.</td></tr>
   </table>
