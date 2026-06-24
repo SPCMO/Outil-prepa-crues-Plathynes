@@ -668,6 +668,8 @@ class App(tk.Tk):
             self._visu_canvas = FigureCanvasTkAgg(self._visu_fig, master=right)
             self._visu_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
             self._visu_canvas.draw()
+            self._synthese_btn_artist = None
+            self._visu_canvas.mpl_connect('pick_event', self._on_synthese_pick)
         else:
             tk.Label(right,
                      text="matplotlib n'est pas installé.\n\npip install matplotlib",
@@ -1350,6 +1352,14 @@ class App(tk.Tk):
                 "Antilope vs Panthère",
                 transform=ax.transAxes, fontsize=6.5, fontweight="bold",
                 color="#444444", va="center", ha="center", zorder=12)
+        synthese_btn = ax.text(x0 + w - 0.005, y0 + h - hdr_h / 2,
+                "Synthèse BV ▶",
+                transform=ax.transAxes, fontsize=5.5, fontweight="bold",
+                color="#1A5276", va="center", ha="right", zorder=13,
+                picker=True,
+                bbox=dict(boxstyle="round,pad=0.15", facecolor="#D6EAF8",
+                          edgecolor="#1A5276", linewidth=0.5, alpha=0.85))
+        self._synthese_btn_artist = synthese_btn
         ax.plot([x0 + 0.005, x0 + w - 0.005],
                 [y0 + h - hdr_h, y0 + h - hdr_h],
                 color="#CCCCCC", linewidth=0.5,
@@ -1459,6 +1469,138 @@ class App(tk.Tk):
                         ts_txt,
                         transform=ax.transAxes, fontsize=5.5,
                         color="#888888", va="center", zorder=12)
+
+    # ── Synthèse BV (fenêtre tableau tous épisodes) ──────────────────────────
+
+    def _on_synthese_pick(self, event):
+        """Détecte le clic sur le bouton 'Synthèse BV ▶' dans l'encart."""
+        if event.artist is self._synthese_btn_artist:
+            self._open_synthese_bv_window()
+
+    def _open_synthese_bv_window(self):
+        """Ouvre la fenêtre tableau synthèse BV de tous les épisodes."""
+        win = tk.Toplevel(self)
+        win.title("Synthèse BV — Antilope vs Panthère")
+        win.geometry("830x520")
+        win.resizable(True, True)
+
+        C_ANT = "#1F618D"
+        C_PAN = "#CC5500"
+        C_NEU = "#888888"
+
+        # ── Lecture données ──────────────────────────────────────────────────
+        def _bv_sum(path):
+            if not path or not os.path.exists(path):
+                return None
+            total, found = 0.0, False
+            try:
+                with open(path, encoding="utf-8") as f:
+                    rdr = csv.reader(f, delimiter=";")
+                    next(rdr, None)          # skip header
+                    for row in rdr:
+                        if len(row) >= 2:
+                            try:
+                                total += float(row[1].strip())
+                                found = True
+                            except ValueError:
+                                pass
+            except Exception:
+                return None
+            return total if found else None
+
+        def _q_max(path):
+            if not path or not os.path.exists(path):
+                return None
+            best = None
+            try:
+                with open(path, encoding="utf-8") as f:
+                    for row in csv.reader(f, delimiter=";"):
+                        if len(row) >= 2:
+                            try:
+                                v = float(row[1])
+                                if best is None or v > best:
+                                    best = v
+                            except ValueError:
+                                pass
+            except Exception:
+                return None
+            return best
+
+        # ── Canvas scrollable ────────────────────────────────────────────────
+        container = tk.Frame(win)
+        container.pack(fill=tk.BOTH, expand=True)
+
+        canv = tk.Canvas(container, bg="white", highlightthickness=0)
+        vsb  = ttk.Scrollbar(container, orient="vertical", command=canv.yview)
+        canv.configure(yscrollcommand=vsb.set)
+        vsb.pack(side=tk.RIGHT, fill=tk.Y)
+        canv.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        frame = tk.Frame(canv, bg="white")
+        wid   = canv.create_window((0, 0), window=frame, anchor="nw")
+        frame.bind("<Configure>",
+                   lambda e: canv.configure(scrollregion=canv.bbox("all")))
+        canv.bind("<Configure>",
+                  lambda e: canv.itemconfig(wid, width=e.width))
+
+        def _scroll(e):
+            canv.yview_scroll(int(-1 * (e.delta / 120)), "units")
+        canv.bind_all("<MouseWheel>", _scroll)
+        win.bind("<Destroy>", lambda e: canv.unbind_all("<MouseWheel>"))
+
+        # ── En-tête colonnes ─────────────────────────────────────────────────
+        HDR_BG = "#2E4057"
+        HDR_FG = "white"
+        col_defs = [
+            ("Date épisode",    26, "w"),
+            ("Q max (m³/s)",    12, "e"),
+            ("Cumul Ant. (mm)", 15, "e"),
+            ("Cumul Pan. (mm)", 15, "e"),
+            ("Écart (%)",       10, "e"),
+        ]
+        for j, (lbl, ww, anch) in enumerate(col_defs):
+            tk.Label(frame, text=lbl, bg=HDR_BG, fg=HDR_FG,
+                     font=("TkDefaultFont", 9, "bold"),
+                     width=ww, anchor=anch, padx=8, pady=6
+                     ).grid(row=0, column=j, sticky="nsew", padx=1, pady=1)
+            frame.columnconfigure(j, weight=1)
+
+        # ── Lignes de données ────────────────────────────────────────────────
+        for i, ep in enumerate(self._visu_episodes):
+            ri = i + 1
+
+            date_lbl = ep.get("label", "—")
+            vig_lbl  = self._vig_from_file(ep["q_path"]) if ep.get("q_path") else "Vert"
+            vig_bg, vig_fg = self._VIG_ITEM_COLORS.get(vig_lbl, ("#EBF5FB", "#1A5276"))
+
+            q_val  = _q_max(ep.get("q_path"))
+            s_ant  = _bv_sum(ep.get("p_path"))
+            s_pan  = _bv_sum(ep.get("pant_path"))
+
+            q_txt   = f"{q_val:.1f}" if q_val is not None else "—"
+            ant_txt = f"{s_ant:.0f}" if s_ant is not None else "—"
+            pan_txt = f"{s_pan:.0f}" if s_pan is not None else "—"
+
+            if s_ant is not None and s_pan is not None and s_ant > 0:
+                pct     = (s_pan - s_ant) / s_ant * 100
+                pct_txt = f"{'+'if pct >= 0 else ''}{pct:.0f} %"
+                c_p     = C_PAN if s_pan > s_ant else C_ANT
+            else:
+                pct_txt = "—"
+                c_p     = C_NEU
+
+            row_bg = "#F0F3F4" if ri % 2 == 0 else "white"
+
+            tk.Label(frame, text=date_lbl, bg=vig_bg, fg=vig_fg,
+                     font=("TkDefaultFont", 8), anchor="w", padx=8, pady=4
+                     ).grid(row=ri, column=0, sticky="nsew", padx=1, pady=0)
+            tk.Label(frame, text=q_txt, bg=vig_bg, fg=vig_fg,
+                     font=("TkDefaultFont", 8), anchor="e", padx=8, pady=4
+                     ).grid(row=ri, column=1, sticky="nsew", padx=1, pady=0)
+            for j, txt in enumerate([ant_txt, pan_txt, pct_txt], start=2):
+                tk.Label(frame, text=txt, bg=row_bg, fg=c_p,
+                         font=("TkDefaultFont", 8, "bold"), anchor="e", padx=8, pady=4
+                         ).grid(row=ri, column=j, sticky="nsew", padx=1, pady=0)
 
     # ── Onglet Paramétrage ───────────────────────────────────────────────────
 
