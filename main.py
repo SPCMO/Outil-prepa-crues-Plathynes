@@ -750,9 +750,15 @@ class App(tk.Tk):
         ts_3h_start   = common[best_i]
         ts_3h_end     = common[best_i + 2]
 
+        # % du cumul total Pan sur cumul total Ant
+        sum_ant = sum(ant_c)
+        sum_pan = sum(pan_d[t] for t in common)
+        pct_cumul_pan = (sum_pan / sum_ant * 100) if sum_ant > 0 else 100.0
+
         return {
             "ecart_moyen":       ecart_moyen,
             "pct_pan_over":      pct_pan_over,
+            "pct_cumul_pan":     pct_cumul_pan,
             "ecart_max_1h":      ecart_max_1h,
             "ts_max_1h":         ts_max_1h,
             "ecart_at_ant_peak": ecart_at_ant_peak,
@@ -1237,7 +1243,7 @@ class App(tk.Tk):
 
     def _draw_antpan_stats_panel(self, ax, p_dates, p_vals,
                                   pant_dates, pant_vals, c_ant, c_pant):
-        """Dessine l'encart de comparaison Ant/Pan en bas-droite du graphique."""
+        """Dessine l'encart compact de comparaison Ant/Pan en bas-droite."""
         import matplotlib.patches as mpatches
 
         s = self._calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals)
@@ -1245,15 +1251,14 @@ class App(tk.Tk):
             return
         gmax = self._get_global_antpan_max()
 
-        C_ANT  = c_ant
-        C_PAN  = c_pant
+        C_ANT = c_ant
+        C_PAN = c_pant
 
         def color_for(val):
             return C_PAN if val > 0 else C_ANT
 
         def fmt_val(val):
-            sign = "+" if val > 0 else ""
-            return f"{sign}{val:.1f} mm"
+            return f"{'+'if val>0 else ''}{val:.1f} mm"
 
         def fmt_ts(ts):
             return ts.strftime("%d/%m %Hh")
@@ -1262,101 +1267,109 @@ class App(tk.Tk):
             ref = gmax.get(ref_key, 1.0)
             return min(abs(val) / ref, 1.0) if ref > 0 else 0.0
 
-        # Position et dimensions de l'encart (coordonnées axes 0–1)
-        x0, y0 = 0.54, 0.01
-        w,  h  = 0.45, 0.36
+        # ── Dimensions de l'encart (moitié de l'ancienne taille)
+        x0, y0 = 0.62, 0.01
+        w,  h  = 0.27, 0.26
 
         # Fond blanc semi-transparent
         bg = mpatches.FancyBboxPatch(
-            (x0, y0), w, h, boxstyle="round,pad=0.008",
+            (x0, y0), w, h, boxstyle="round,pad=0.006",
             transform=ax.transAxes, clip_on=False,
             facecolor="white", edgecolor="#BBBBBB",
-            linewidth=0.8, alpha=0.90, zorder=9)
+            linewidth=0.7, alpha=0.90, zorder=9)
         ax.add_patch(bg)
 
-        # En-tête
-        ax.text(x0 + 0.012, y0 + h - 0.025,
+        # ── En-tête
+        hdr_h = 0.038
+        ax.text(x0 + w / 2, y0 + h - hdr_h / 2,
                 "Antilope vs Panthère",
-                transform=ax.transAxes, fontsize=7, fontweight="bold",
-                color="#444444", va="top", zorder=12)
-
-        rows = [
-            ("Écart moyen",          s["ecart_moyen"],       None,
-             None,                    "ecart_moyen"),
-            ("Écart max 1h",         s["ecart_max_1h"],      fmt_ts(s["ts_max_1h"]),
-             None,                    "ecart_max_1h"),
-            ("Cumul 1h max Ant.",    s["ecart_at_ant_peak"], fmt_ts(s["ts_ant_peak"]),
-             None,                    "ecart_at_ant_peak"),
-            ("3h consécutives max",  s["ecart_3h"],
-             f"{fmt_ts(s['ts_3h_start'])}–{s['ts_3h_end'].strftime('%Hh')}",
-             None,                    "ecart_3h"),
-        ]
-
-        n_rows    = len(rows)
-        header_h  = 0.055
-        row_h     = (h - header_h - 0.01) / n_rows
-        bar_x     = x0 + 0.012
-        bar_max_w = w - 0.024
-        bar_thick = row_h * 0.28
-
-        # Ligne de séparation en-tête
-        ax.plot([x0 + 0.008, x0 + w - 0.008],
-                [y0 + h - header_h, y0 + h - header_h],
+                transform=ax.transAxes, fontsize=6.5, fontweight="bold",
+                color="#444444", va="center", ha="center", zorder=12)
+        ax.plot([x0 + 0.005, x0 + w - 0.005],
+                [y0 + h - hdr_h, y0 + h - hdr_h],
                 color="#CCCCCC", linewidth=0.5,
                 transform=ax.transAxes, zorder=10)
 
-        for i, (label, val, ts_txt, _, ref_key) in enumerate(rows):
-            row_cy = y0 + h - header_h - (i + 0.5) * row_h
+        # ── Pied (tendance)
+        ftr_h  = 0.038
+        pct_po = s["pct_pan_over"]
+        pct_cu = s["pct_cumul_pan"]
+        if pct_po >= 50:
+            tend_txt = (f"Pan. sur-estime {pct_po:.0f} % des pas "
+                        f"({pct_cu:.0f} % du cumul Ant.)")
+            tc = C_PAN
+        else:
+            tend_txt = (f"Pan. sous-estime {100-pct_po:.0f} % des pas "
+                        f"({pct_cu:.0f} % du cumul Ant.)")
+            tc = C_ANT
+        ax.text(x0 + w / 2, y0 + ftr_h / 2,
+                tend_txt,
+                transform=ax.transAxes, fontsize=5.5, fontstyle="italic",
+                color=tc, va="center", ha="center", zorder=12)
+        ax.plot([x0 + 0.005, x0 + w - 0.005],
+                [y0 + ftr_h, y0 + ftr_h],
+                color="#CCCCCC", linewidth=0.5,
+                transform=ax.transAxes, zorder=10)
 
+        # ── 4 lignes de données
+        # Layout par ligne : [label  14 chars] [barre] [valeur  horodatage]
+        # Colonnes (en coords axe relatives à x0) :
+        LBL_W = 0.095   # largeur colonne label
+        BAR_X = x0 + LBL_W + 0.008
+        BAR_W = 0.085   # largeur max barre
+        VAL_X = BAR_X + BAR_W + 0.006
+
+        rows = [
+            ("Écart moyen",       s["ecart_moyen"],       None,                             "ecart_moyen"),
+            ("Écart max 1h",      s["ecart_max_1h"],      fmt_ts(s["ts_max_1h"]),           "ecart_max_1h"),
+            ("Cumul 1h max Ant.", s["ecart_at_ant_peak"], fmt_ts(s["ts_ant_peak"]),          "ecart_at_ant_peak"),
+            ("3h consécutives",   s["ecart_3h"],
+             f"{fmt_ts(s['ts_3h_start'])}–{s['ts_3h_end'].strftime('%Hh')}",               "ecart_3h"),
+        ]
+
+        data_h  = h - hdr_h - ftr_h
+        row_h   = data_h / len(rows)
+        bar_th  = row_h * 0.32   # épaisseur barre
+
+        for i, (label, val, ts_txt, ref_key) in enumerate(rows):
+            # Centre vertical de la ligne (de bas en haut)
+            row_cy = y0 + ftr_h + (len(rows) - i - 0.5) * row_h
             c = color_for(val)
 
-            # ── Fond barre (gris clair)
-            bg_bar = mpatches.Rectangle(
-                (bar_x, row_cy - bar_thick / 2), bar_max_w, bar_thick,
-                transform=ax.transAxes, clip_on=False,
-                facecolor="#EEEEEE", alpha=0.75, zorder=10)
-            ax.add_patch(bg_bar)
+            # ── Label (colonne gauche)
+            ax.text(x0 + 0.006, row_cy,
+                    label,
+                    transform=ax.transAxes, fontsize=5.8,
+                    color="#555555", va="center", zorder=12)
 
-            # ── Barre colorée proportionnelle
+            # ── Barre fond gris
+            ax.add_patch(mpatches.Rectangle(
+                (BAR_X, row_cy - bar_th / 2), BAR_W, bar_th,
+                transform=ax.transAxes, clip_on=False,
+                facecolor="#E8E8E8", alpha=0.85, zorder=10))
+
+            # ── Barre colorée
             frac = bar_frac(val, ref_key)
             if frac > 0:
-                fg_bar = mpatches.Rectangle(
-                    (bar_x, row_cy - bar_thick / 2), bar_max_w * frac, bar_thick,
+                ax.add_patch(mpatches.Rectangle(
+                    (BAR_X, row_cy - bar_th / 2), BAR_W * frac, bar_th,
                     transform=ax.transAxes, clip_on=False,
-                    facecolor=c, alpha=0.55, zorder=11)
-                ax.add_patch(fg_bar)
+                    facecolor=c, alpha=0.60, zorder=11))
 
-            # ── Label (au-dessus de la barre)
-            ax.text(bar_x, row_cy + bar_thick / 2 + 0.005,
-                    label,
-                    transform=ax.transAxes, fontsize=6,
-                    color="#666666", va="bottom", zorder=12)
-
-            # ── Valeur (dans / sous la barre)
+            # ── Valeur (colonne droite)
             val_txt = fmt_val(val)
-            ax.text(bar_x + 0.004, row_cy,
+            ax.text(VAL_X, row_cy,
                     val_txt,
-                    transform=ax.transAxes, fontsize=6.5, fontweight="bold",
+                    transform=ax.transAxes, fontsize=6, fontweight="bold",
                     color=c, va="center", zorder=12)
 
-            # ── Horodatage (aligné après la valeur, même hauteur)
+            # ── Horodatage (aligné après la valeur)
             if ts_txt:
-                # largeur approx de la valeur pour décaler l'horodatage
-                val_offset = 0.002 + len(val_txt) * 0.0055
-                ax.text(bar_x + val_offset, row_cy,
+                ts_offset = len(val_txt) * 0.0048 + 0.003
+                ax.text(VAL_X + ts_offset, row_cy,
                         ts_txt,
-                        transform=ax.transAxes, fontsize=5.8,
+                        transform=ax.transAxes, fontsize=5.5,
                         color="#888888", va="center", zorder=12)
-
-        # Ligne de tendance sous les rows
-        tendance_txt = (f"Pan. sur-estime {s['pct_pan_over']:.0f} % des pas de temps"
-                        if s["pct_pan_over"] >= 50
-                        else f"Pan. sous-estime {100 - s['pct_pan_over']:.0f} % des pas de temps")
-        tc = C_PAN if s["pct_pan_over"] >= 50 else C_ANT
-        ax.text(x0 + 0.012, y0 + 0.008,
-                tendance_txt,
-                transform=ax.transAxes, fontsize=5.8, fontstyle="italic",
-                color=tc, va="bottom", zorder=12)
 
     # ── Onglet Paramétrage ───────────────────────────────────────────────────
 
