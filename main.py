@@ -558,6 +558,22 @@ class App(tk.Tk):
                                     font=("TkDefaultFont", 9))
         self.lbl_status.pack(side=tk.LEFT, padx=8)
 
+        # Boutons Enregistrer + Aide — centrés à droite
+        right_btns = tk.Frame(btn_frame, bg="#F0F0F0")
+        right_btns.pack(side=tk.RIGHT)
+        tk.Button(right_btns, text="  ✓   Enregistrer la configuration  ",
+                  bg="#2E86C1", fg="white",
+                  activebackground="#1A5276", activeforeground="white",
+                  relief="flat", bd=0, padx=16, pady=8,
+                  font=("TkDefaultFont", 9, "bold"), cursor="hand2",
+                  command=self._save_config).pack(side=tk.LEFT, padx=(0, 8))
+        tk.Button(right_btns, text="  ℹ  Aide",
+                  bg="#F0F3F4", fg="#1A5276",
+                  activebackground="#D6EAF8", activeforeground="#1A5276",
+                  relief="groove", bd=1, padx=12, pady=7,
+                  font=("TkDefaultFont", 9), cursor="hand2",
+                  command=self._ouvrir_aide).pack(side=tk.LEFT)
+
         self.progress = ttk.Progressbar(frm, mode="determinate")
         self.progress.pack(fill=tk.X, padx=12, pady=(0, 4))
 
