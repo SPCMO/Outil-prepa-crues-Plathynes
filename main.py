@@ -1485,12 +1485,15 @@ class App(tk.Tk):
         """Ouvre la fenêtre tableau synthèse BV de tous les épisodes."""
         win = tk.Toplevel(self)
         win.title("Synthèse BV — Antilope vs Panthère")
-        win.geometry("830x520")
+        win.geometry("860x520")
         win.resizable(True, True)
 
         C_ANT = "#1F618D"
         C_PAN = "#CC5500"
         C_NEU = "#888888"
+
+        # Largeurs fixes des colonnes (pixels) — partagées entre header et données
+        COL_W = [230, 100, 155, 155, 100]
 
         # ── Lecture données ──────────────────────────────────────────────────
         def _bv_sum(path):
@@ -1500,7 +1503,7 @@ class App(tk.Tk):
             try:
                 with open(path, encoding="utf-8") as f:
                     rdr = csv.reader(f, delimiter=";")
-                    next(rdr, None)          # skip header
+                    next(rdr, None)
                     for row in rdr:
                         if len(row) >= 2:
                             try:
@@ -1530,7 +1533,27 @@ class App(tk.Tk):
                 return None
             return best
 
-        # ── Canvas scrollable ────────────────────────────────────────────────
+        # ── En-tête figé (hors canvas) ───────────────────────────────────────
+        HDR_BG = "#E4E8ED"
+        hdr_frame = tk.Frame(win, bg=HDR_BG)
+        hdr_frame.pack(fill=tk.X, side=tk.TOP)
+
+        col_defs = [
+            ("Date épisode",        "#333333"),
+            ("Q max (m³/s)",        "#333333"),
+            ("Cumul Antilope (mm)", C_ANT),
+            ("Cumul Panthère (mm)", C_PAN),
+            ("Écart (%)",           "#333333"),
+        ]
+        for j, (lbl, fg) in enumerate(col_defs):
+            tk.Label(hdr_frame, text=lbl, bg=HDR_BG, fg=fg,
+                     font=("TkDefaultFont", 9, "bold"),
+                     width=COL_W[j] // 7, anchor="center",
+                     padx=6, pady=7, relief="flat"
+                     ).grid(row=0, column=j, sticky="nsew", padx=1, pady=0)
+            hdr_frame.columnconfigure(j, weight=1, minsize=COL_W[j])
+
+        # ── Canvas scrollable (données uniquement) ───────────────────────────
         container = tk.Frame(win)
         container.pack(fill=tk.BOTH, expand=True)
 
@@ -1547,31 +1570,17 @@ class App(tk.Tk):
         canv.bind("<Configure>",
                   lambda e: canv.itemconfig(wid, width=e.width))
 
+        for j, w in enumerate(COL_W):
+            frame.columnconfigure(j, weight=1, minsize=w)
+
         def _scroll(e):
             canv.yview_scroll(int(-1 * (e.delta / 120)), "units")
         canv.bind_all("<MouseWheel>", _scroll)
         win.bind("<Destroy>", lambda e: canv.unbind_all("<MouseWheel>"))
 
-        # ── En-tête colonnes ─────────────────────────────────────────────────
-        HDR_BG = "#2E4057"
-        HDR_FG = "white"
-        col_defs = [
-            ("Date épisode",    26, "w"),
-            ("Q max (m³/s)",    12, "e"),
-            ("Cumul Ant. (mm)", 15, "e"),
-            ("Cumul Pan. (mm)", 15, "e"),
-            ("Écart (%)",       10, "e"),
-        ]
-        for j, (lbl, ww, anch) in enumerate(col_defs):
-            tk.Label(frame, text=lbl, bg=HDR_BG, fg=HDR_FG,
-                     font=("TkDefaultFont", 9, "bold"),
-                     width=ww, anchor=anch, padx=8, pady=6
-                     ).grid(row=0, column=j, sticky="nsew", padx=1, pady=1)
-            frame.columnconfigure(j, weight=1)
-
         # ── Lignes de données ────────────────────────────────────────────────
         for i, ep in enumerate(self._visu_episodes):
-            ri = i + 1
+            ri = i
 
             date_lbl = ep.get("label", "—")
             vig_lbl  = self._vig_from_file(ep["q_path"]) if ep.get("q_path") else "Vert"
@@ -1596,14 +1605,14 @@ class App(tk.Tk):
             row_bg = "#F0F3F4" if ri % 2 == 0 else "white"
 
             tk.Label(frame, text=date_lbl, bg=vig_bg, fg=vig_fg,
-                     font=("TkDefaultFont", 8), anchor="w", padx=8, pady=4
+                     font=("TkDefaultFont", 8), anchor="center", padx=8, pady=5
                      ).grid(row=ri, column=0, sticky="nsew", padx=1, pady=0)
             tk.Label(frame, text=q_txt, bg=vig_bg, fg=vig_fg,
-                     font=("TkDefaultFont", 8), anchor="e", padx=8, pady=4
+                     font=("TkDefaultFont", 8), anchor="center", padx=8, pady=5
                      ).grid(row=ri, column=1, sticky="nsew", padx=1, pady=0)
             for j, txt in enumerate([ant_txt, pan_txt, pct_txt], start=2):
                 tk.Label(frame, text=txt, bg=row_bg, fg=c_p,
-                         font=("TkDefaultFont", 8, "bold"), anchor="e", padx=8, pady=4
+                         font=("TkDefaultFont", 8, "bold"), anchor="center", padx=8, pady=5
                          ).grid(row=ri, column=j, sticky="nsew", padx=1, pady=0)
 
     # ── Onglet Paramétrage ───────────────────────────────────────────────────
