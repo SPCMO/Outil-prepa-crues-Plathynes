@@ -1875,43 +1875,45 @@ class App(tk.Tk):
                  font=("TkDefaultFont", 8), fg="#1A5276").pack(
                      anchor=tk.W, padx=2, pady=(0, 1))
 
-        # ── Section dossiers de données (2 pickers sur 1 ligne) ─────────────
-        inn_d, bg_d = self._make_section(
-            frm, "Dossiers de données à importer  —  Données sources extraites par l'outil", "teal")
+        # ── Section dossiers (sources extraites + installation Plathynes) ────
+        inn_d, bg_d = self._make_section(frm, "Dossiers", "teal")
 
+        # Ligne 1 : sources extraites par l'outil
         r = self._row(inn_d, bg_d)
-        self._lbl(r, "Pluies (GRD) :", bg_d, w=14)
+        tk.Label(r, text="Sources :", bg=bg_d, font=("TkDefaultFont", 8, "bold"),
+                 width=9, anchor="w").pack(side=tk.LEFT)
+        self._lbl(r, "Pluies (GRD) :", bg_d, w=13)
         self.var_plath_pluies_dir = tk.StringVar()
-        ttk.Entry(r, textvariable=self.var_plath_pluies_dir, width=30).pack(
+        ttk.Entry(r, textvariable=self.var_plath_pluies_dir, width=26).pack(
             side=tk.LEFT, fill=tk.X, expand=True)
         tk.Button(r, text="Parcourir…",
                   bg="#0E6655", fg="white", activebackground="#0A5244", activeforeground="white",
-                  relief="flat", bd=0, padx=6, pady=2, cursor="hand2",
+                  relief="flat", bd=0, padx=5, pady=2, cursor="hand2",
                   command=lambda: self._plath_browse_dir(self.var_plath_pluies_dir)
-                  ).pack(side=tk.LEFT, padx=(5, 16))
-        self._lbl(r, "Débits (Q-Ep_*.txt) :", bg_d, w=20)
+                  ).pack(side=tk.LEFT, padx=(4, 12))
+        self._lbl(r, "Débits :", bg_d, w=8)
         self.var_plath_debits_dir = tk.StringVar()
-        ttk.Entry(r, textvariable=self.var_plath_debits_dir, width=30).pack(
+        ttk.Entry(r, textvariable=self.var_plath_debits_dir, width=26).pack(
             side=tk.LEFT, fill=tk.X, expand=True)
         tk.Button(r, text="Parcourir…",
                   bg="#0E6655", fg="white", activebackground="#0A5244", activeforeground="white",
-                  relief="flat", bd=0, padx=6, pady=2, cursor="hand2",
+                  relief="flat", bd=0, padx=5, pady=2, cursor="hand2",
                   command=lambda: self._plath_browse_dir(self.var_plath_debits_dir)
-                  ).pack(side=tk.LEFT, padx=(5, 0))
+                  ).pack(side=tk.LEFT, padx=(4, 0))
 
-        # ── Section dossier installation Plathynes ───────────────────────────
-        inn_pl, bg_pl = self._make_section(
-            frm, "Dossier d'installation de Plathynes  (plathynes.bat)", "teal")
-
-        r_pl = self._row(inn_pl, bg_pl)
+        # Ligne 2 : installation Plathynes
+        r2 = self._row(inn_d, bg_d)
+        tk.Label(r2, text="Plathynes :", bg=bg_d, font=("TkDefaultFont", 8, "bold"),
+                 width=9, anchor="w").pack(side=tk.LEFT)
+        self._lbl(r2, "Installation (plathynes.bat) :", bg_d, w=28)
         self.var_plath_install_dir = tk.StringVar(value=r"C:\plathynes_v1.10.2")
-        ttk.Entry(r_pl, textvariable=self.var_plath_install_dir, width=60).pack(
+        ttk.Entry(r2, textvariable=self.var_plath_install_dir, width=40).pack(
             side=tk.LEFT, fill=tk.X, expand=True)
-        tk.Button(r_pl, text="Parcourir…",
+        tk.Button(r2, text="Parcourir…",
                   bg="#0E6655", fg="white", activebackground="#0A5244", activeforeground="white",
-                  relief="flat", bd=0, padx=6, pady=2, cursor="hand2",
+                  relief="flat", bd=0, padx=5, pady=2, cursor="hand2",
                   command=lambda: self._plath_browse_dir(self.var_plath_install_dir)
-                  ).pack(side=tk.LEFT, padx=(5, 0))
+                  ).pack(side=tk.LEFT, padx=(4, 0))
 
         # ── Section sélection des crues ──────────────────────────────────────
         inn2, bg2 = self._make_section(frm, "Crues extraites disponibles", "vert",
