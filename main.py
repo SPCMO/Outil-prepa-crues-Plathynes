@@ -2005,6 +2005,10 @@ class App(tk.Tk):
                      font=("TkDefaultFont", 9)).pack(side=tk.LEFT, padx=(10, 2))
             ttk.Combobox(r_pdt, textvariable=var, values=_PDT_VALS,
                          state="readonly", width=7).pack(side=tk.LEFT)
+        tk.Button(r_pdt, text="ℹ",
+                  bg=bg_pdt, fg="#7D6608", relief="flat", bd=0,
+                  font=("TkDefaultFont", 11, "bold"), cursor="hand2",
+                  command=self._plath_aide_pdt).pack(side=tk.LEFT, padx=(10, 0))
 
         # ── Section options et lancement (une seule ligne compacte) ─────────
         inn3, bg3 = self._make_section(frm, "Lancer l'import", "violet")
@@ -2381,6 +2385,28 @@ class App(tk.Tk):
         # Ouvrir Plathynes si demandé
         if self._var_plath_ouvrir.get():
             self._plath_ouvrir_avec_projet(prj_path)
+
+    def _plath_aide_pdt(self):
+        """Ouvre l'aide Plathynes sur les formats de fichier .evt."""
+        import webbrowser
+        install_dir = self.var_plath_install_dir.get().strip()
+        if not install_dir:
+            messagebox.showinfo(
+                "Dossier Plathynes non renseigné",
+                "Pour accéder à l'aide Plathynes, renseignez d'abord le champ\n"
+                "« Dossier d'installation de Plathynes » dans la section Dossiers\n"
+                "de cet onglet (ex. : C:\\plathynes_v1.10.2).",
+            )
+            return
+        toc = os.path.join(install_dir, "bin", "doc", "help", "TOC_PLATHYNES_new.html")
+        if not os.path.isfile(toc):
+            messagebox.showwarning(
+                "Aide introuvable",
+                f"Le fichier d'aide n'a pas été trouvé :\n{toc}\n\n"
+                "Vérifiez que le dossier d'installation de Plathynes est correct.",
+            )
+            return
+        webbrowser.open(toc)
 
     def _aide_dossier_sortie_local(self):
         messagebox.showinfo(
