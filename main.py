@@ -18,7 +18,8 @@ from modules.extractor import run_extraction, ExtractionError
 from modules.phyc_client import PhycClient, PhycAuthError
 from modules.phyc_diag import run_diagnostics
 from modules.plathynes_importer import (
-    lire_info_projet, importer_evenement, nom_evt_from_date_vig,
+    lire_info_projet, lire_plages_evenements, _dates_se_chevauchent,
+    importer_evenement, nom_evt_from_date_vig,
 )
 
 try:
@@ -2101,6 +2102,8 @@ class App(tk.Tk):
             self._var_prj_evts.set("")
 
         evts_existants = set(prj_info.get("evenements", []))
+        # Plages de dates des évènements déjà dans le .prj (pour détection chevauchement)
+        plages_existantes = lire_plages_evenements(prj_path, prj_info) if prj_info else []
 
         # ── Scan des dossiers source ─────────────────────────────────────────
         pluies_dir = self.var_plath_pluies_dir.get().strip()
@@ -2174,22 +2177,41 @@ class App(tk.Tk):
             if d["q_path"]  and os.path.isfile(d["q_path"]):  dispo.append("Q")
             if d["hu_path"] and os.path.isfile(d["hu_path"]): dispo.append("HU")
 
-            statut, statut_col = ("✓ déjà importé", "#1D6A39") \
-                if nom_evt in evts_existants else ("", "")
+            deja_importe = nom_evt in evts_existants
 
-            var = tk.BooleanVar(value=(nom_evt not in evts_existants))
+            # Date de fin réelle depuis le Q (pour chevauchement)
+            dt_fin = None
+            if d["q_path"] and os.path.isfile(d["q_path"]):
+                from modules.plathynes_importer import _lire_dates_q
+                _, dt_fin = _lire_dates_q(d["q_path"])
+            dt_deb_q = dt if dt != datetime.min else None
+            chevauche = (
+                not deja_importe
+                and _dates_se_chevauchent(dt_deb_q, dt_fin, plages_existantes)
+            )
+
+            if deja_importe:
+                statut, statut_col = "✓ déjà importé", "#1D6A39"
+            elif chevauche:
+                statut, statut_col = "⚠ chevauchement", "#B7770D"
+            else:
+                statut, statut_col = "", ""
+
+            var = tk.BooleanVar(value=(not deja_importe and not chevauche))
             self._plath_ep_vars[ep_key] = var
             data = {
-                "q_path":    d["q_path"],
-                "grd_dir":   d["grd_dir"],
-                "hu_path":   d["hu_path"],
-                "nom_evt":   nom_evt,
-                "ep_key":    ep_key,
-                "vig_lbl":   vig_lbl,
-                "dispo":     dispo,
-                "statut":    statut,
-                "statut_col": statut_col,
-                "dt":        dt,
+                "q_path":      d["q_path"],
+                "grd_dir":     d["grd_dir"],
+                "hu_path":     d["hu_path"],
+                "nom_evt":     nom_evt,
+                "ep_key":      ep_key,
+                "vig_lbl":     vig_lbl,
+                "dispo":       dispo,
+                "statut":      statut,
+                "statut_col":  statut_col,
+                "dt":          dt,
+                "deja_importe": deja_importe,
+                "chevauche":   chevauche,
             }
             self._plath_ep_data[ep_key] = data
             self._plath_ep_rows.append((ep_key, var, data))
@@ -2218,22 +2240,38 @@ class App(tk.Tk):
             dt = data["dt"]
             date_str = dt.strftime("%d/%m/%Y") if dt != datetime.min else ep_key[:10]
 
-            row_frm = tk.Frame(self._plath_list_inner, bg=bg2)
+            deja = data.get("deja_importe", False)
+            chev = data.get("chevauche", False)
+            estompe = deja or chev
+
+            if estompe:
+                row_bg = "#EBEBEB"
+                _font_std  = ("TkDefaultFont", 9, "overstrike")
+                _fg_std    = "#AAAAAA" if deja else "#B7770D"
+            else:
+                row_bg = bg2
+                _font_std  = ("TkDefaultFont", 9)
+                _fg_std    = None
+
+            row_frm = tk.Frame(self._plath_list_inner, bg=row_bg)
             row_frm.pack(fill=tk.X, pady=1, padx=2)
 
-            tk.Checkbutton(row_frm, variable=var, bg=bg2,
-                           activebackground=bg2).pack(side=tk.LEFT)
-            tk.Label(row_frm, text=date_str, bg=bg2, width=20, anchor="w",
-                     font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
-            _vc = _VC.get(vig_lbl, bg2)
+            tk.Checkbutton(row_frm, variable=var, bg=row_bg,
+                           activebackground=row_bg,
+                           state="disabled" if deja else "normal").pack(side=tk.LEFT)
+            _lkw = {"fg": _fg_std} if _fg_std else {}
+            tk.Label(row_frm, text=date_str, bg=row_bg, width=20, anchor="w",
+                     font=_font_std, **_lkw).pack(side=tk.LEFT)
+            _vc = "#DDDDDD" if estompe else _VC.get(vig_lbl, bg2)
             tk.Label(row_frm, text=vig_lbl, bg=_vc, width=11, anchor="w",
-                     font=("TkDefaultFont", 9), relief="flat").pack(side=tk.LEFT)
-            tk.Label(row_frm, text=data["nom_evt"], bg=bg2, width=22, anchor="w",
-                     font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
-            tk.Label(row_frm, text="+".join(data["dispo"]), bg=bg2, width=10, anchor="w",
-                     font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
+                     font=_font_std, relief="flat",
+                     **_lkw).pack(side=tk.LEFT)
+            tk.Label(row_frm, text=data["nom_evt"], bg=row_bg, width=22, anchor="w",
+                     font=_font_std, **_lkw).pack(side=tk.LEFT)
+            tk.Label(row_frm, text="+".join(data["dispo"]), bg=row_bg, width=10, anchor="w",
+                     font=_font_std, **_lkw).pack(side=tk.LEFT)
             _lbl_kw = {"fg": data["statut_col"]} if data["statut_col"] else {}
-            tk.Label(row_frm, text=data["statut"], bg=bg2, anchor="w",
+            tk.Label(row_frm, text=data["statut"], bg=row_bg, anchor="w",
                      font=("TkDefaultFont", 9), **_lbl_kw).pack(side=tk.LEFT, fill=tk.X, expand=True)
             rows_shown += 1
 

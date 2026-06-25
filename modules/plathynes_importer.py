@@ -65,6 +65,54 @@ def lire_info_projet(prj_path):
     return info
 
 
+def lire_plages_evenements(prj_path, prj_info):
+    """Retourne la liste des plages (date_deb, date_fin) des évènements existants.
+
+    Lit les fichiers .evt dans <projet_root>/<bassin>/Ev_<NOM>/
+    et parse 'Date de debut' / 'Date de fin'.
+    """
+    plages = []
+    projet_root = os.path.dirname(prj_path)
+    bassin = prj_info.get("bassin", "")
+    if not bassin:
+        return plages
+    sals_dir = os.path.join(projet_root, bassin)
+    for nom_evt in prj_info.get("evenements", []):
+        evt_path = os.path.join(sals_dir, f"Ev_{nom_evt}", f"{nom_evt}.evt")
+        deb = fin = None
+        try:
+            with open(evt_path, encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if line.startswith("Date de debut:"):
+                        try:
+                            deb = datetime.strptime(line.split(":", 1)[1].strip(),
+                                                    "%Y-%m-%d %H:%M:%S")
+                        except ValueError:
+                            pass
+                    elif line.startswith("Date de fin:"):
+                        try:
+                            fin = datetime.strptime(line.split(":", 1)[1].strip(),
+                                                    "%Y-%m-%d %H:%M:%S")
+                        except ValueError:
+                            pass
+        except OSError:
+            continue
+        if deb and fin:
+            plages.append((deb, fin))
+    return plages
+
+
+def _dates_se_chevauchent(deb1, fin1, plages):
+    """Retourne True si [deb1, fin1] chevauche au moins une plage de la liste."""
+    if deb1 is None or fin1 is None:
+        return False
+    for deb2, fin2 in plages:
+        if deb1 <= fin2 and fin1 >= deb2:
+            return True
+    return False
+
+
 def _detecter_pdt(grd_dir):
     """Détecte le pas de temps à partir des noms de fichiers GRD.
 
