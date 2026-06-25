@@ -131,13 +131,32 @@ class App(tk.Tk):
         self.tab_plathynes   = ttk.Frame(self._notebook)
         self.tab_parametrage = tk.Frame(self._notebook, bg="#1B2631")
 
+        # Icône logo Plathynes pour l'onglet Import
+        self._plath_tab_img = None
+        _logo_plath = os.path.join(os.path.dirname(__file__), "Doc BDImage", "logo_Plathynes.png")
+        if os.path.isfile(_logo_plath):
+            try:
+                from PIL import Image, ImageTk as _ITk
+                _img = Image.open(_logo_plath).resize((18, 18), Image.LANCZOS)
+                self._plath_tab_img = _ITk.PhotoImage(_img)
+            except Exception:
+                try:
+                    _raw = tk.PhotoImage(file=_logo_plath)
+                    _sub = max(1, _raw.width() // 18)
+                    self._plath_tab_img = _raw.subsample(_sub, _sub)
+                except Exception:
+                    pass
+
+        _plath_tab_kw = ({"image": self._plath_tab_img, "compound": tk.LEFT}
+                         if self._plath_tab_img else {})
+
         self._notebook.add(self.tab_config,      text="  Configuration  ")
         self._notebook.add(self.tab_episodes,    text="  Episodes  ")
         self._notebook.add(self.tab_extraction,  text="  Extraction  ")
         self._notebook.add(self.tab_visu,        text="  Visualisation  ")
         self._notebook.add(self.tab_pluies,      text="  Analyse pluies  ")
         self._notebook.add(self.tab_analyse,     text="  Caractérisation crues  ")
-        self._notebook.add(self.tab_plathynes,   text="  ⚙  Import Plathynes  ")
+        self._notebook.add(self.tab_plathynes,   text="  Import Plathynes  ", **_plath_tab_kw)
         self._notebook.add(self.tab_parametrage, text="  ⚙  Paramétrage  ")
 
         self._build_tab_config()
@@ -1934,6 +1953,36 @@ class App(tk.Tk):
         self._plath_ep_vars   = {}   # ep_key → BooleanVar (checkbox)
         self._plath_ep_data   = {}   # ep_key → dict infos
 
+        # ── Bandeau bas ──────────────────────────────────────────────────────
+        bottom_row = tk.Frame(frm)
+        bottom_row.pack(fill=tk.X, pady=(6, 8), padx=4)
+
+        btn_row = tk.Frame(bottom_row)
+        btn_row.pack(side=tk.LEFT)
+        tk.Button(btn_row, text="  ✓   Enregistrer la configuration  ",
+                  bg="#2E86C1", fg="white", activebackground="#1A5276", activeforeground="white",
+                  relief="flat", bd=0, padx=16, pady=8,
+                  font=("TkDefaultFont", 9, "bold"), cursor="hand2",
+                  command=self._save_config).pack(side=tk.LEFT, padx=(0, 12))
+        tk.Button(btn_row, text="  ℹ  Aide",
+                  bg="#F0F3F4", fg="#1A5276", activebackground="#D6EAF8",
+                  relief="groove", bd=1, padx=12, pady=7,
+                  font=("TkDefaultFont", 9), cursor="hand2",
+                  command=self._ouvrir_aide).pack(side=tk.LEFT)
+
+        lbl_contact_plath = tk.Label(
+            bottom_row,
+            text="PIOT Charles-Eddy — SPCMO",
+            fg="#1A5276", bg=bottom_row.cget("bg"),
+            font=("TkDefaultFont", 8, "underline"),
+            cursor="hand2",
+        )
+        lbl_contact_plath.pack(side=tk.RIGHT, padx=(0, 4))
+        lbl_contact_plath.bind("<Button-1>", lambda e: webbrowser.open(
+            "mailto:charles-eddy.piot@developpement-durable.gouv.fr"
+            "?subject=Info%20%2F%20bugg%20outil%20pr%C3%A9pa%20crues%20Plathynes"
+        ))
+
     # ── Plathynes — logique ──────────────────────────────────────────────────
 
     def _plath_log_msg(self, msg, tag=None):
@@ -2923,6 +2972,7 @@ class App(tk.Tk):
         self._refresh_parametrage_ui()
         self._refresh_config_ui()
         self._refresh_extraction_ui()
+        self._refresh_plathynes_ui()
 
     def _refresh_config_ui(self):
         phyc = self.config_data.get("phyc", {})
@@ -2966,6 +3016,14 @@ class App(tk.Tk):
         for key in ("zt_jaune", "jaune", "zt_orange", "orange", "zt_rouge", "rouge"):
             val = seuils.get(key, "")
             self._var_seuils[key].set(str(val) if val != "" else "")
+
+    def _refresh_plathynes_ui(self):
+        """Restaure le chemin .prj Plathynes depuis config_data."""
+        plath = self.config_data.get("plathynes", {})
+        prj = plath.get("prj_path", "")
+        if prj:
+            self.var_prj_path.set(prj)
+            self._plath_refresh()
 
     def _refresh_extraction_ui(self):
         """Restaure les préférences d'extraction depuis config_data."""
@@ -3018,6 +3076,9 @@ class App(tk.Tk):
                     pass
         seuils_key = "seuils_h" if self.var_seuils_grandeur.get() == "H (m)" else "seuils_q"
         self.config_data[seuils_key] = seuils
+        self.config_data["plathynes"] = {
+            "prj_path": self.var_prj_path.get().strip(),
+        }
         try:
             save_config(self.config_data)
             messagebox.showinfo("Configuration", "Configuration enregistrée avec succès.")
