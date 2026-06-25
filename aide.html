@@ -53,6 +53,7 @@
   .badge-episode { background: #1D6A39; color: #fff; }
   .badge-extract { background: #784212; color: #fff; }
   .badge-visu    { background: #2874A6; color: #fff; }
+  .badge-pluies  { background: #117A65; color: #fff; }
   .badge-analyse { background: #6C3483; color: #fff; }
 
   /* ── ARCHITECTURE ── */
@@ -286,9 +287,18 @@
         <li><em>3h consécutives max</em> — fenêtre de 3 heures où Antilope est maximale, écart Pan.−Ant. sur cette fenêtre.</li>
         <li><em>Forte int. (&gt;X mm)</em> — écart moyen de Pan. vs Ant. sur les seuls pas de temps où Antilope dépasse le seuil hyétogramme (recalculé si le seuil est modifié).</li>
       </ul>
-      <p>Les barres sont colorées en <span style="color:#1F618D;font-weight:600">bleu</span> si Antilope &gt; Panthère, en <span style="color:#CC5500;font-weight:600">orange</span> si Panthère &gt; Antilope. Leur longueur est proportionnelle au maximum observé sur l'ensemble des épisodes (référence globale propre à chaque indicateur). En pied d'encart : <em>"Pan. sous/sur-estime X % des pas de temps (nb : N) soit Y % du cumul global"</em>.</p>
-      <p>En haut à droite de l'encart : le bouton <strong>"Synthèse BV ▶"</strong> ouvre la <strong>fenêtre de synthèse tous épisodes</strong>.</p>
-      <p><strong>Fenêtre "Synthèse BV"</strong> — tableau récapitulatif de tous les épisodes détectés dans le dossier de sorties :</p>
+      <p>Les barres sont colorées en <span style="color:#1F618D;font-weight:600">bleu</span> si Antilope &gt; Panthère, en <span style="color:#CC5500;font-weight:600">orange</span> si Panthère &gt; Antilope. Leur longueur est proportionnelle au maximum observé sur l'ensemble des épisodes (référence globale propre à chaque indicateur). En pied d'encart : <em>"Panthère sous/sur-estime X % des pas de temps (nb : N) soit Y % du cumul global"</em>.</p>
+      <p><strong>Note sur l'astérisque (*) :</strong> ces hyétogrammes sont une <em>reconstitution</em> de la pluie moyenne de bassin versant calculée à partir des pluies spatialisées téléchargées (fichiers <code>.grd</code>). La moyenne est effectuée sur l'ensemble des pixels de la grille (y compris la marge de 5 km de la bounding box). Il ne s'agit pas d'une mesure directe mais d'une estimation spatiale — valable pour Antilope comme pour Panthère.</p>
+      <p>Les deux graphiques partagent la même échelle temporelle (x identique).</p>
+    </div>
+  </div>
+
+  <h2>Étape 5 — Analyser les pluies sur tous les épisodes</h2>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <h3>Onglet <span class="badge badge-pluies">Analyse pluies</span></h3>
+      <p>Cet onglet se remplit automatiquement dès que des épisodes sont disponibles dans le dossier de sorties. Il présente un <strong>tableau récapitulatif de tous les épisodes</strong> détectés :</p>
       <table>
         <tr><th>Colonne</th><th>Description</th><th>Couleur</th></tr>
         <tr><td>Date épisode</td><td>Label de l'épisode</td><td>Fond coloré par niveau de vigilance max (même palette que la listbox)</td></tr>
@@ -297,25 +307,22 @@
         <tr><td>Cumul Panthère (mm)</td><td>Somme des valeurs du CSV <code>Pant_BV-Ep_*.csv</code></td><td>Texte toujours <span style="color:#CC5500;font-weight:600">orange</span></td></tr>
         <tr><td>Écart (%)</td><td>(∑Pan − ∑Ant) / ∑Ant × 100, signe + si Panthère &gt; Antilope</td><td>Bleu si Ant &gt; Pan, orange si Pan &gt; Ant</td></tr>
       </table>
-      <p>Les colonnes <strong>Cumul Antilope</strong> et <strong>Cumul Panthère</strong> affichent <code>—</code> si le fichier correspondant est absent pour cet épisode. En-têtes figés (restent visibles lors du défilement). Scrollbar verticale + molette souris.</p>
-      <p><strong>Frise chronologique</strong> (sous le tableau) — diagramme à barres divergentes :</p>
+      <p>Les colonnes Cumul Antilope et Cumul Panthère affichent <code>—</code> si le fichier correspondant est absent. En-têtes figés, scrollbar verticale + molette souris. Le tableau est rechargé automatiquement à chaque actualisation de la liste des épisodes.</p>
+      <p><strong>Frise chronologique</strong> (sous le tableau) — diagramme à barres divergentes sur l'ensemble de l'historique :</p>
       <ul>
-        <li>Axe X = temps réel (espacements proportionnels entre les dates d'épisodes)</li>
+        <li>Axe X = chronologie des épisodes (barres à espacement uniforme, étiquettes de dates)</li>
         <li>Barres <span style="color:#1F618D;font-weight:600">bleues vers le haut</span> — Antilope &gt; Panthère, hauteur = |écart %|</li>
         <li>Barres <span style="color:#CC5500;font-weight:600">oranges vers le bas</span> — Panthère &gt; Antilope, hauteur = |écart %|</li>
         <li>Petite marque grise verticale sur l'axe — épisode sans les deux produits disponibles</li>
-        <li>Largeur des barres calculée automatiquement (40 % de l'intervalle médian entre épisodes)</li>
       </ul>
-      <p><strong>Note sur l'astérisque (*) :</strong> ces hyétogrammes sont une <em>reconstitution</em> de la pluie moyenne de bassin versant calculée à partir des pluies spatialisées téléchargées (fichiers <code>.grd</code>). La moyenne est effectuée sur l'ensemble des pixels de la grille (y compris la marge de 5 km de la bounding box). Il ne s'agit pas d'une mesure directe mais d'une estimation spatiale — valable pour Antilope comme pour Panthère.</p>
-      <p>Les deux graphiques partagent la même échelle temporelle (x identique).</p>
     </div>
   </div>
 
-  <h2>Étape 5 — Analyser les épisodes comparativement</h2>
+  <h2>Étape 6 — Caractériser les crues comparativement</h2>
   <div class="step">
-    <div class="step-num">5</div>
+    <div class="step-num">6</div>
     <div class="step-content">
-      <h3>Onglet <span class="badge badge-analyse">Analyse</span></h3>
+      <h3>Onglet <span class="badge badge-analyse">Caractérisation crues</span></h3>
       <p>Cliquez <em>"Calculer / Rafraîchir"</em>. Le graphique à bulles affiche tous les épisodes disponibles :</p>
       <ul>
         <li><strong>Axe X</strong> — HU de début (humidité du sol avant la crue)</li>
@@ -328,9 +335,9 @@
     </div>
   </div>
 
-  <h2>Étape 6 — Adapter les préfixes (optionnel)</h2>
+  <h2>Étape 7 — Adapter les préfixes (optionnel)</h2>
   <div class="step">
-    <div class="step-num">6</div>
+    <div class="step-num">7</div>
     <div class="step-content">
       <h3>Onglet <span class="badge" style="background:#154360;color:#fff">⚙ Paramétrage</span></h3>
       <p>Cet onglet (fond sombre, visuellement séparé) permet d'adapter l'outil à un autre territoire sans modifier le code source :</p>
@@ -425,7 +432,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <div class="arch-grid">
     <div class="arch-box main-">
       <strong>📄 main.py</strong><br>
-      Interface graphique tkinter. 6 onglets : Configuration, Épisodes, Extraction, Visualisation, Analyse, Paramétrage. Gère les threads pour les appels réseau.
+      Interface graphique tkinter. 7 onglets : Configuration, Épisodes, Extraction, Visualisation, Analyse pluies, Caractérisation crues, Paramétrage. Gère les threads pour les appels réseau.
     </div>
     <div class="arch-box module">
       <strong>📁 modules/</strong><br>
@@ -571,7 +578,8 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <tr><td><code>_calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals, seuil)</code></td><td>Calcule les 4 indicateurs Antilope vs Panthère pour un épisode</td><td>Aligne sur les timestamps communs. Retourne : écart max 1h, écart au pic Ant., écart sur 3h consécutives max, écart sur fortes intensités (Ant &gt; seuil). Chaque écart accompagné de son % relatif par rapport à la valeur Antilope. Méthode statique.</td></tr>
     <tr><td><code>_get_global_antpan_max(seuil)</code></td><td>Calcule les maxima globaux des 4 indicateurs sur tous les épisodes</td><td>Résultat mis en cache dans <code>self._antpan_global_max</code>. Cache invalidé si le seuil change (clé <code>_seuil_key</code>) ou si la liste d'épisodes est rechargée. Chaque indicateur possède sa propre référence de normalisation (pas une référence commune).</td></tr>
     <tr><td><code>_draw_antpan_stats_panel(ax, …, seuil)</code></td><td>Dessine l'encart comparatif Ant./Pan. en bas-droite du graphique haut</td><td>4 lignes de données (label | barre proportionnelle | valeur mm + % | horodatage). Couleur : bleu si Ant &gt; Pan, orange si Pan &gt; Ant. Bouton "Synthèse BV ▶" en haut à droite de l'en-tête (Text matplotlib, détection clic via <code>button_press_event</code> + <code>get_window_extent</code>). Pied d'encart : tendance sur une ligne (% des pas de temps, nb, % cumul global). Coordonnées <code>transAxes</code>, <code>matplotlib.patches</code>.</td></tr>
-    <tr><td><code>_on_synthese_pick(event)</code></td><td>Handler <code>button_press_event</code> matplotlib — ouvre la fenêtre Synthèse BV si le clic tombe dans la bbox du texte "Synthèse BV ▶"</td><td>Détection via <code>get_window_extent(renderer)</code> qui donne la bbox en coordonnées display (pixels). <code>event.x/y</code> sont aussi en pixels. Connecté une seule fois à la création du canvas via <code>mpl_connect</code>.</td></tr>
+    <tr><td><code>_build_tab_pluies()</code></td><td>Initialise l'onglet Analyse pluies et déclenche un premier remplissage</td><td>Appelle immédiatement <code>_refresh_pluies_tab()</code>. Onglet permanent dans le notebook, pas de fenêtre popup.</td></tr>
+    <tr><td><code>_refresh_pluies_tab()</code></td><td>Reconstruit le contenu de l'onglet Analyse pluies (tableau + frise)</td><td>Détruit les widgets existants, relit <code>_visu_episodes</code> et reconstruite le tableau et la frise. Appelé automatiquement à la fin de chaque <code>_refresh_visu_list()</code>.</td></tr>
     <tr><td><code>_open_synthese_bv_window()</code></td><td>Ouvre la fenêtre modale Toplevel avec tableau + frise chronologique</td><td>Collecte les données en une seule passe (q_max, cumul Ant., cumul Pan.) pour alimenter à la fois le tableau et la frise. En-tête figé dans un Frame séparé hors canvas. Canvas scrollable pour les données. Frise : barres divergentes matplotlib, bleu↑ (Ant&gt;Pan) ou orange↓ (Pan&gt;Ant), largeur proportionnelle à l'intervalle médian entre épisodes.</td></tr>
     <tr><td><code>_refresh_extraction_ui()</code></td><td>Restaure les préférences d'extraction depuis <code>config.json</code></td><td>Relit les clés <code>config_data["extraction"]</code> pour remettre les cases à cocher et pas de temps à leur dernière valeur sauvegardée.</td></tr>
     <tr><td><code>_vig_from_file(q_path)</code></td><td>Lit le Q max d'un fichier extrait et retourne le label de vigilance</td><td>Utilisé par <code>_refresh_visu_list()</code> pour colorier chaque item de la listbox.</td></tr>
@@ -752,9 +760,9 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <div class="syn-cell sc-disp">Encart stats<br>Ant vs Pan</div>
   </div>
   <div class="syn-row" style="margin-top:6px">
-    <div class="syn-cell sc-user">Clic "Synthèse BV"</div>
+    <div class="syn-cell sc-user">Onglet<br>"Analyse pluies"</div>
     <div class="syn-arrow">→</div>
-    <div class="syn-cell sc-ui">_open_synthese_bv_window()</div>
+    <div class="syn-cell sc-ui">_refresh_pluies_tab()<br><small>auto au chargement</small></div>
     <div class="syn-arrow">→</div>
     <div class="syn-cell sc-file">Tous les épisodes<br>du dossier sorties/</div>
     <div class="syn-arrow">→</div>
@@ -806,8 +814,9 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
       <div><strong>Configuration :</strong> _save_config, _load_config, _refresh_config_ui, _recup_seuils_phyc</div>
       <div><strong>Épisodes :</strong> _build_tab_episodes, _episodes_view, _sort_by, _vig_max_episode, _refresh_episodes_table</div>
       <div><strong>Extraction :</strong> _lancer_extraction, _arreter_extraction, _refresh_extraction_ui</div>
-      <div><strong>Visualisation :</strong> _refresh_visu_list, _plot_episode, _draw_antpan_stats_panel, _calc_ep_antpan_stats, _get_global_antpan_max, _on_synthese_pick, _open_synthese_bv_window</div>
-      <div><strong>Analyse :</strong> _collect_analyse_data, _plot_analyse</div>
+      <div><strong>Visualisation :</strong> _refresh_visu_list, _plot_episode, _draw_antpan_stats_panel, _calc_ep_antpan_stats, _get_global_antpan_max</div>
+      <div><strong>Analyse pluies :</strong> _build_tab_pluies, _refresh_pluies_tab</div>
+      <div><strong>Caractérisation crues :</strong> _collect_analyse_data, _plot_analyse</div>
       <div><strong>Paramétrage :</strong> _build_tab_parametrage, _save_parametrage, _refresh_parametrage_ui</div>
     </div>
     <div class="dep-out">↓ appelle : extractor.py, phyc_client.py, bdimage_client.py, config_manager.py, csv_loader.py, phyc_diag.py</div>
@@ -897,14 +906,16 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <th>📋 Épisodes</th>
     <th>⬇ Extraction</th>
     <th>📊 Visualisation</th>
-    <th>🔍 Analyse</th>
+    <th>🌧 Analyse pluies</th>
+    <th>🔍 Caractérisation crues</th>
   </tr>
   <tr>
     <td class="sw-row-lbl">Action utilisateur</td>
     <td class="sw-user">Saisie codes station/BNBV, seuils PHyC, identifiants</td>
     <td class="sw-user">Chargement CSV OCTAVE, ajout manuel, sélection multiple, filtres, tri</td>
     <td class="sw-user">Cocher types de données, pas de temps, lancer / arrêter</td>
-    <td class="sw-user">Sélectionner un épisode, modifier seuil hyétogramme, cliquer "Synthèse BV"</td>
+    <td class="sw-user">Sélectionner un épisode, modifier seuil hyétogramme</td>
+    <td class="sw-user">Consultation tableau + frise (auto-rafraîchi)</td>
     <td class="sw-user">Cliquer "Calculer", filtrer par Vig. max.</td>
   </tr>
   <tr>
@@ -912,7 +923,8 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <td class="sw-code">_save_config()<br>_recup_seuils_phyc()<br>_recup_info_phyc()</td>
     <td class="sw-code">_refresh_episodes_table()<br>_sort_by()<br>_vig_max_episode()</td>
     <td class="sw-code">_lancer_extraction()<br>→ thread worker<br>_build_synthese_text()</td>
-    <td class="sw-code">_plot_episode()<br>_draw_antpan_stats_panel()<br>_open_synthese_bv_window()</td>
+    <td class="sw-code">_plot_episode()<br>_draw_antpan_stats_panel()</td>
+    <td class="sw-code">_refresh_pluies_tab()<br><small>(auto via _refresh_visu_list)</small></td>
     <td class="sw-code">_collect_analyse_data()<br>_plot_analyse()</td>
   </tr>
   <tr>
@@ -920,6 +932,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <td class="sw-code">config_manager<br>phyc_client<br>phyc_diag</td>
     <td class="sw-code">csv_loader</td>
     <td class="sw-code">extractor<br>→ bdimage_client<br>→ phyc_client</td>
+    <td style="color:#555">— lecture directe fichiers —</td>
     <td style="color:#555">— lecture directe fichiers —</td>
     <td style="color:#555">— lecture directe fichiers —</td>
   </tr>
@@ -930,6 +943,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <td class="sw-net">BDImage (pluies, HU)<br>PHyC (débits / hauteurs)</td>
     <td style="color:#aaa">—</td>
     <td style="color:#aaa">—</td>
+    <td style="color:#aaa">—</td>
   </tr>
   <tr>
     <td class="sw-row-lbl">Fichiers lus / écrits</td>
@@ -937,6 +951,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <td class="sw-file">CSV épisodes (R)<br>Q-Ep_*.txt (R — Vig.)</td>
     <td class="sw-file">*.grd, AntJ1_BV_*.csv<br>Pant_BV_*.csv, HU-Ep_*.csv<br>Q-Ep_*.txt (W)</td>
     <td class="sw-file">Q-Ep_*.txt, HU-Ep_*.csv<br>AntJ1_BV_*.csv<br>Pant_BV_*.csv (R)</td>
+    <td class="sw-file">Q-Ep_*.txt<br>AntJ1_BV_*.csv<br>Pant_BV_*.csv (R)</td>
     <td class="sw-file">Q-Ep_*.txt, HU-Ep_*.csv<br>AntJ1_BV_*.csv (R)</td>
   </tr>
   <tr>
@@ -944,7 +959,8 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <td>Champs pré-remplis, labels préfixe mis à jour</td>
     <td>Treeview coloré par Vig. max., tri ▲/▼</td>
     <td>Journal temps réel, popup synthèse + durée</td>
-    <td>Hyétogramme + HU + Q + encart stats + Synthèse BV (tableau + frise)</td>
+    <td>Hyétogramme + HU + Q + encart stats Antilope vs Panthère</td>
+    <td>Tableau cumulés par épisode + frise chronologique divergente</td>
     <td>Bubble chart avec colorbar, légende bulles, étiquettes épisodes</td>
   </tr>
 </table>
