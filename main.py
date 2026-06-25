@@ -48,8 +48,8 @@ _C = {
 # App — Classe principale tkinter
 #
 # Architecture générale :
-#   • 6 onglets : Configuration, Épisodes, Extraction, Visualisation, Analyse,
-#     Paramétrage
+#   • 7 onglets : Configuration, Épisodes, Extraction, Visualisation,
+#     Analyse pluies, Caractérisation crues, Paramétrage
 #   • Extraction dans un thread séparé (self._extraction_thread) pour ne pas
 #     bloquer l'UI ; les callbacks UI passent par self.after()
 #   • Visualisation matplotlib via FigureCanvasTkAgg (HAS_MPL requis)
@@ -64,7 +64,7 @@ _C = {
 #   self._visu_episodes     liste des épisodes détectés dans les sorties
 #   self._antpan_global_max cache des maxima inter-épisodes Ant./Pan.
 #                           (invalidé si le seuil hyétogramme change)
-#   self._synthese_btn_artist   Text matplotlib "Synthèse BV ▶"
+#   self._pluies_container      référence vers tab_pluies (pour _refresh_pluies_tab)
 # ══════════════════════════════════════════════════════════════════════════════
 class App(tk.Tk):
     def __init__(self):
@@ -123,6 +123,7 @@ class App(tk.Tk):
         self.tab_episodes    = ttk.Frame(self._notebook)
         self.tab_extraction  = ttk.Frame(self._notebook)
         self.tab_visu        = ttk.Frame(self._notebook)
+        self.tab_pluies      = ttk.Frame(self._notebook)
         self.tab_analyse     = ttk.Frame(self._notebook)
         self.tab_parametrage = tk.Frame(self._notebook, bg="#1B2631")
 
@@ -130,13 +131,15 @@ class App(tk.Tk):
         self._notebook.add(self.tab_episodes,    text="  Episodes  ")
         self._notebook.add(self.tab_extraction,  text="  Extraction  ")
         self._notebook.add(self.tab_visu,        text="  Visualisation  ")
-        self._notebook.add(self.tab_analyse,     text="  Analyse  ")
+        self._notebook.add(self.tab_pluies,      text="  Analyse pluies  ")
+        self._notebook.add(self.tab_analyse,     text="  Caractérisation crues  ")
         self._notebook.add(self.tab_parametrage, text="  ⚙  Paramétrage  ")
 
         self._build_tab_config()
         self._build_tab_episodes()
         self._build_tab_extraction()
         self._build_tab_visu()
+        self._build_tab_pluies()
         self._build_tab_analyse()
         self._build_tab_parametrage()
         self._place_logo()
@@ -690,8 +693,6 @@ class App(tk.Tk):
             self._visu_canvas = FigureCanvasTkAgg(self._visu_fig, master=right)
             self._visu_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
             self._visu_canvas.draw()
-            self._synthese_btn_artist = None
-            self._visu_canvas.mpl_connect('button_press_event', self._on_synthese_pick)
         else:
             tk.Label(right,
                      text="matplotlib n'est pas installé.\n\npip install matplotlib",
@@ -998,6 +999,7 @@ class App(tk.Tk):
             self.visu_listbox.itemconfig(idx, bg=bg, fg=fg,
                                          selectbackground="#1A5276",
                                          selectforeground="white")
+        self._refresh_pluies_tab()
 
     def _on_visu_select(self, _event=None):
         sel = self.visu_listbox.curselection()
@@ -1403,7 +1405,7 @@ class App(tk.Tk):
             return min(abs(val) / ref, 1.0) if ref > 0 else 0.0
 
         # ── Dimensions de l'encart — collé en bas-droite
-        w, h = 0.30, 0.32
+        w, h = 0.30, 0.36
         x0   = 1.0 - w - 0.005
         y0   = 0.01
 
@@ -1421,13 +1423,6 @@ class App(tk.Tk):
                 "Antilope vs Panthère",
                 transform=ax.transAxes, fontsize=6.5, fontweight="bold",
                 color="#444444", va="center", ha="center", zorder=12)
-        synthese_btn = ax.text(x0 + w - 0.005, y0 + h - hdr_h / 2,
-                "Synthèse BV ▶",
-                transform=ax.transAxes, fontsize=5.5, fontweight="bold",
-                color="#1A5276", va="center", ha="right", zorder=13,
-                bbox=dict(boxstyle="round,pad=0.15", facecolor="#D6EAF8",
-                          edgecolor="#1A5276", linewidth=0.5, alpha=0.85))
-        self._synthese_btn_artist = synthese_btn
         ax.plot([x0 + 0.005, x0 + w - 0.005],
                 [y0 + h - hdr_h, y0 + h - hdr_h],
                 color="#CCCCCC", linewidth=0.5,
@@ -1440,16 +1435,16 @@ class App(tk.Tk):
         pct_cum = s["pct_ecart_cumul"]   # (∑Pan−∑Ant)/∑Ant × 100
         cum_sgn = "+" if pct_cum >= 0 else ""
         if pct_po >= 50:
-            tend_txt = (f"Pan. sur-estime {pct_po:.0f} % des pas de temps"
+            tend_txt = (f"Panthère sur-estime {pct_po:.0f} % des pas de temps"
                         f" (nb : {n_pts}) soit {cum_sgn}{pct_cum:.0f} % du cumul global")
             tc = C_PAN
         else:
-            tend_txt = (f"Pan. sous-estime {100-pct_po:.0f} % des pas de temps"
+            tend_txt = (f"Panthère sous-estime {100-pct_po:.0f} % des pas de temps"
                         f" (nb : {n_pts}) soit {cum_sgn}{pct_cum:.0f} % du cumul global")
             tc = C_ANT
         ax.text(x0 + w / 2, y0 + ftr_h / 2,
                 tend_txt,
-                transform=ax.transAxes, fontsize=5.5, fontstyle="italic",
+                transform=ax.transAxes, fontsize=6.5, fontstyle="italic",
                 color=tc, va="center", ha="center", zorder=12)
         ax.plot([x0 + 0.005, x0 + w - 0.005],
                 [y0 + ftr_h, y0 + ftr_h],
@@ -1535,34 +1530,18 @@ class App(tk.Tk):
                         transform=ax.transAxes, fontsize=6.2,
                         color="#888888", va="center", zorder=12)
 
-    # ── Synthèse BV (fenêtre tableau tous épisodes) ──────────────────────────
+    # ── Onglet Analyse pluies (tableau + frise) ──────────────────────────────
 
-    def _on_synthese_pick(self, event):
-        """Détecte le clic sur le texte 'Synthèse BV ▶' dans l'encart."""
-        if self._synthese_btn_artist is None:
-            return
-        try:
-            renderer = self._visu_fig.canvas.get_renderer()
-            bbox = self._synthese_btn_artist.get_window_extent(renderer=renderer)
-            if bbox.contains(event.x, event.y):
-                self._open_synthese_bv_window()
-        except Exception as _e:
-            print(f"[WARN] _on_synthese_pick : détection clic échouée "
-                  f"— {type(_e).__name__}: {_e}")
+    def _build_tab_pluies(self):
+        """Crée la structure de l'onglet Analyse pluies (rempli par _refresh_pluies_tab)."""
+        self._pluies_container = self.tab_pluies   # référence pour refresh
+        self._refresh_pluies_tab()
 
-    def _open_synthese_bv_window(self):
-        """Ouvre la fenêtre tableau synthèse BV + frise chronologique."""
-        win = tk.Toplevel(self)
-        win.title("Synthèse BV — Antilope vs Panthère")
-        win.geometry("860x740")
-        _ico = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                            "logo_lancer_outil.ico")
-        if os.path.isfile(_ico):
-            try:
-                win.iconbitmap(_ico)
-            except Exception:
-                pass
-        win.resizable(True, True)
+    def _refresh_pluies_tab(self):
+        """Reconstruit le contenu de l'onglet Analyse pluies à partir de _visu_episodes."""
+        frm = self.tab_pluies
+        for child in frm.winfo_children():
+            child.destroy()
 
         C_ANT = "#1F618D"
         C_PAN = "#CC5500"
@@ -1634,7 +1613,7 @@ class App(tk.Tk):
 
         # ── En-tête figé ─────────────────────────────────────────────────────
         HDR_BG = "#E4E8ED"
-        hdr_frame = tk.Frame(win, bg=HDR_BG)
+        hdr_frame = tk.Frame(frm, bg=HDR_BG)
         hdr_frame.pack(fill=tk.X, side=tk.TOP)
         col_defs = [
             ("Date épisode",        "#333333"),
@@ -1652,7 +1631,7 @@ class App(tk.Tk):
             hdr_frame.columnconfigure(j, weight=1, minsize=COL_W[j])
 
         # ── Canvas scrollable (tableau) ──────────────────────────────────────
-        container = tk.Frame(win)
+        container = tk.Frame(frm)
         container.pack(fill=tk.BOTH, expand=True)
 
         canv = tk.Canvas(container, bg="white", highlightthickness=0)
@@ -1673,7 +1652,6 @@ class App(tk.Tk):
         def _scroll(e):
             canv.yview_scroll(int(-1 * (e.delta / 120)), "units")
         canv.bind_all("<MouseWheel>", _scroll)
-        win.bind("<Destroy>", lambda e: canv.unbind_all("<MouseWheel>"))
 
         for i, (date_lbl, vig_bg, vig_fg,
                 q_txt, ant_txt, pan_txt, pct_txt, c_p) in enumerate(rows_data):
@@ -1693,7 +1671,7 @@ class App(tk.Tk):
         # ── Frise chronologique ──────────────────────────────────────────────
         if not HAS_MPL:
             return
-        chart_frame = tk.Frame(win, bg="white", height=220)
+        chart_frame = tk.Frame(frm, bg="white", height=220)
         chart_frame.pack(fill=tk.X, side=tk.BOTTOM, padx=4, pady=(2, 4))
         chart_frame.pack_propagate(False)
 
