@@ -17,6 +17,9 @@ from modules.csv_loader import load_episodes
 from modules.extractor import run_extraction, ExtractionError
 from modules.phyc_client import PhycClient, PhycAuthError
 from modules.phyc_diag import run_diagnostics
+from modules.plathynes_importer import (
+    lire_info_projet, importer_evenement, nom_evt_from_date_vig,
+)
 
 try:
     from matplotlib.figure import Figure
@@ -125,6 +128,7 @@ class App(tk.Tk):
         self.tab_visu        = ttk.Frame(self._notebook)
         self.tab_pluies      = ttk.Frame(self._notebook)
         self.tab_analyse     = ttk.Frame(self._notebook)
+        self.tab_plathynes   = ttk.Frame(self._notebook)
         self.tab_parametrage = tk.Frame(self._notebook, bg="#1B2631")
 
         self._notebook.add(self.tab_config,      text="  Configuration  ")
@@ -133,6 +137,7 @@ class App(tk.Tk):
         self._notebook.add(self.tab_visu,        text="  Visualisation  ")
         self._notebook.add(self.tab_pluies,      text="  Analyse pluies  ")
         self._notebook.add(self.tab_analyse,     text="  Caractérisation crues  ")
+        self._notebook.add(self.tab_plathynes,   text="  ⚙  Import Plathynes  ")
         self._notebook.add(self.tab_parametrage, text="  ⚙  Paramétrage  ")
 
         self._build_tab_config()
@@ -141,6 +146,7 @@ class App(tk.Tk):
         self._build_tab_visu()
         self._build_tab_pluies()
         self._build_tab_analyse()
+        self._build_tab_plathynes()
         self._build_tab_parametrage()
         self._place_logo()
 
@@ -1810,6 +1816,343 @@ class App(tk.Tk):
         frise_canv = FigureCanvasTkAgg(fig, master=chart_frame)
         frise_canv.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         frise_canv.draw()
+
+    # ── Onglet Import Plathynes ──────────────────────────────────────────────
+
+    def _build_tab_plathynes(self):
+        frm = self.tab_plathynes
+
+        # ── Section projet Plathynes ─────────────────────────────────────────
+        inn, bg = self._make_section(frm, "Projet Plathynes cible (.prj)", "bleu")
+
+        r = self._row(inn, bg)
+        self.var_prj_path = tk.StringVar()
+        ttk.Entry(r, textvariable=self.var_prj_path, width=56).pack(
+            side=tk.LEFT, fill=tk.X, expand=True)
+        tk.Button(r, text="  Parcourir...",
+                  bg="#1A5276", fg="white", activebackground="#154360", activeforeground="white",
+                  relief="flat", bd=0, padx=8, pady=3, cursor="hand2",
+                  command=self._plath_browse_prj).pack(side=tk.LEFT, padx=(8, 0))
+        tk.Button(r, text="  ↺  Actualiser",
+                  bg="#D6EAF8", fg="#1A5276", relief="groove", bd=1, padx=8, pady=3,
+                  cursor="hand2",
+                  command=self._plath_refresh).pack(side=tk.LEFT, padx=(6, 0))
+
+        self._var_prj_info = tk.StringVar(value="")
+        tk.Label(inn, textvariable=self._var_prj_info, bg=bg, anchor="w",
+                 font=("TkDefaultFont", 8, "italic"), fg="#555555").pack(
+                     anchor=tk.W, padx=2, pady=(2, 0))
+
+        # ── Section sélection des crues ──────────────────────────────────────
+        inn2, bg2 = self._make_section(frm, "Crues extraites disponibles", "vert",
+                                       fill=tk.BOTH, expand=True)
+
+        # En-tête colonnes
+        hdr = tk.Frame(inn2, bg=bg2)
+        hdr.pack(fill=tk.X, pady=(0, 2))
+        tk.Label(hdr, text="✔", bg=bg2, width=3, font=("TkDefaultFont", 9, "bold")).pack(side=tk.LEFT)
+        tk.Label(hdr, text="Date début épisode", bg=bg2, width=22,
+                 font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT)
+        tk.Label(hdr, text="Vig. max.", bg=bg2, width=12,
+                 font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT)
+        tk.Label(hdr, text="NOM_EVT proposé", bg=bg2, width=22,
+                 font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT)
+        tk.Label(hdr, text="Données", bg=bg2, width=14,
+                 font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT)
+        tk.Label(hdr, text="Statut", bg=bg2,
+                 font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        # Scrollable frame pour la liste des crues
+        list_outer = tk.Frame(inn2, bg=bg2, highlightbackground="#A9DFBF",
+                              highlightthickness=1)
+        list_outer.pack(fill=tk.BOTH, expand=True)
+        canvas_list = tk.Canvas(list_outer, bg=bg2, highlightthickness=0)
+        vsb_list = ttk.Scrollbar(list_outer, orient=tk.VERTICAL,
+                                  command=canvas_list.yview)
+        canvas_list.configure(yscrollcommand=vsb_list.set)
+        vsb_list.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self._plath_list_inner = tk.Frame(canvas_list, bg=bg2)
+        self._plath_list_win = canvas_list.create_window(
+            (0, 0), window=self._plath_list_inner, anchor="nw")
+        self._plath_list_inner.bind("<Configure>", lambda e: (
+            canvas_list.configure(scrollregion=canvas_list.bbox("all")),
+            canvas_list.itemconfig(self._plath_list_win, width=canvas_list.winfo_width()),
+        ))
+        canvas_list.bind("<Configure>", lambda e: canvas_list.itemconfig(
+            self._plath_list_win, width=e.width))
+        self._plath_canvas = canvas_list
+        self._plath_bg2 = bg2
+
+        # Boutons tout sélectionner
+        btn_sel_frm = tk.Frame(inn2, bg=bg2)
+        btn_sel_frm.pack(fill=tk.X, pady=(4, 0))
+        tk.Button(btn_sel_frm, text="Tout sélectionner", bg=bg2, relief="groove",
+                  cursor="hand2",
+                  command=lambda: [v.set(True)
+                                   for v in self._plath_ep_vars.values()]).pack(side=tk.LEFT)
+        tk.Button(btn_sel_frm, text="Tout désélectionner", bg=bg2, relief="groove",
+                  cursor="hand2",
+                  command=lambda: [v.set(False)
+                                   for v in self._plath_ep_vars.values()]).pack(side=tk.LEFT, padx=6)
+
+        # ── Section options et lancement ────────────────────────────────────
+        inn3, bg3 = self._make_section(frm, "Lancer l'import", "violet")
+
+        r = self._row(inn3, bg3)
+        self._var_plath_ouvrir = tk.BooleanVar(value=False)
+        tk.Checkbutton(r, text="Ouvrir Plathynes automatiquement après l'import",
+                       variable=self._var_plath_ouvrir, bg=bg3,
+                       activebackground=bg3,
+                       font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
+
+        r = self._row(inn3, bg3)
+        tk.Button(r, text="  ▶   Importer les crues sélectionnées dans Plathynes  ",
+                  bg="#4A235A", fg="white", activebackground="#3B1A47", activeforeground="white",
+                  relief="flat", bd=0, padx=14, pady=8,
+                  font=("TkDefaultFont", 10, "bold"), cursor="hand2",
+                  command=self._plath_run_import).pack(side=tk.LEFT)
+
+        # Journal
+        inn4, bg4 = self._make_section(frm, "Journal d'import", "gris")
+        self._plath_log = scrolledtext.ScrolledText(
+            inn4, height=7, state=tk.DISABLED,
+            wrap=tk.WORD, font=("Consolas", 9), bg="#FDFEFE")
+        self._plath_log.pack(fill=tk.BOTH, expand=True)
+        self._plath_log.tag_config("erreur", foreground="#C0392B",
+                                    font=("Consolas", 9, "bold"))
+        self._plath_log.tag_config("ok", foreground="#1D6A39",
+                                   font=("Consolas", 9, "bold"))
+        tk.Button(inn4, text="Effacer le journal", bg=bg4, relief="groove",
+                  cursor="hand2",
+                  command=lambda: (self._plath_log.config(state=tk.NORMAL),
+                                   self._plath_log.delete("1.0", tk.END),
+                                   self._plath_log.config(state=tk.DISABLED))
+                  ).pack(anchor=tk.E, pady=(4, 0))
+
+        # Stockage interne
+        self._plath_ep_vars   = {}   # ep_key → BooleanVar (checkbox)
+        self._plath_ep_data   = {}   # ep_key → dict infos
+
+    # ── Plathynes — logique ──────────────────────────────────────────────────
+
+    def _plath_log_msg(self, msg, tag=None):
+        self._plath_log.config(state=tk.NORMAL)
+        self._plath_log.insert(tk.END, msg + "\n", tag or "")
+        self._plath_log.see(tk.END)
+        self._plath_log.config(state=tk.DISABLED)
+
+    def _plath_browse_prj(self):
+        path = filedialog.askopenfilename(
+            title="Sélectionner le fichier projet Plathynes (.prj)",
+            filetypes=[("Fichier projet Plathynes", "*.prj"), ("Tous les fichiers", "*.*")],
+        )
+        if path:
+            self.var_prj_path.set(path)
+            self._plath_refresh()
+
+    def _plath_refresh(self):
+        """Actualise la liste des crues disponibles et les infos du projet."""
+        prj_path = self.var_prj_path.get().strip()
+        if prj_path and os.path.isfile(prj_path):
+            info = lire_info_projet(prj_path)
+            self._var_prj_info.set(
+                f"Projet : {info['nom']}  |  Bassin : {info['bassin']}"
+                f"  |  Station : {info['station']}"
+                f"  ({info['station_x']:.0f} / {info['station_y']:.0f})"
+                f"  |  {len(info['evenements'])} évènement(s) existant(s)"
+            )
+        else:
+            self._var_prj_info.set("")
+
+        # Supprimer les anciennes lignes
+        for w in self._plath_list_inner.winfo_children():
+            w.destroy()
+        self._plath_ep_vars.clear()
+        self._plath_ep_data.clear()
+
+        debits_dir, hu_dir, pluies_dir, _ = self._get_out_dirs()
+        grandeur = self.config_data.get("extraction", {}).get("grandeur", "Q")
+        nom_station = (self.config_data.get("station", {}).get("nom_station", "")
+                       or self.config_data.get("station", {}).get("code_site", "")
+                       or "station")
+
+        prj_info = lire_info_projet(prj_path) if prj_path and os.path.isfile(prj_path) else {}
+        evts_existants = set(prj_info.get("evenements", []))
+
+        bg2 = self._plath_bg2
+        rows_found = 0
+
+        if os.path.isdir(debits_dir):
+            for fname in sorted(os.listdir(debits_dir), reverse=True):
+                if not (fname.startswith(f"{grandeur}-Ep_") and fname.endswith(".txt")):
+                    continue
+                ep_key = fname[len(f"{grandeur}-Ep_"):-4]   # DD_MM_YYYY_Station
+                q_path = os.path.join(debits_dir, fname)
+
+                # Vig. max. depuis le fichier Q
+                vig_lbl, _ = self._vig_max_episode({
+                    "date_debut": self._parse_ep_key_date(ep_key),
+                    "date_fin": self._parse_ep_key_date(ep_key),
+                    "index": 0,
+                })
+
+                # NOM_EVT proposé
+                dt = self._parse_ep_key_date(ep_key)
+                nom_evt = nom_evt_from_date_vig(dt, vig_lbl) if dt else ep_key
+
+                # Données disponibles
+                grd_dir = os.path.join(pluies_dir, f"AntJ1-Ep_{ep_key}")
+                hu_path = os.path.join(hu_dir, f"HU-Ep_{ep_key}.csv")
+                dispo = []
+                if os.path.isdir(grd_dir):   dispo.append("P")
+                if os.path.isfile(q_path):   dispo.append("Q")
+                if os.path.isfile(hu_path):  dispo.append("HU")
+
+                # Statut (déjà importé ?)
+                statut, statut_col = ("✓ déjà importé", "#1D6A39") \
+                    if nom_evt in evts_existants else ("", "")
+
+                var = tk.BooleanVar(value=(nom_evt not in evts_existants))
+                self._plath_ep_vars[ep_key] = var
+                self._plath_ep_data[ep_key] = {
+                    "q_path":   q_path,
+                    "grd_dir":  grd_dir if os.path.isdir(grd_dir) else None,
+                    "hu_path":  hu_path if os.path.isfile(hu_path) else None,
+                    "nom_evt":  nom_evt,
+                    "ep_key":   ep_key,
+                    "vig_lbl":  vig_lbl,
+                }
+
+                row_frm = tk.Frame(self._plath_list_inner, bg=bg2)
+                row_frm.pack(fill=tk.X, pady=1, padx=2)
+
+                tk.Checkbutton(row_frm, variable=var, bg=bg2,
+                               activebackground=bg2).pack(side=tk.LEFT)
+                tk.Label(row_frm, text=ep_key[:10].replace("_", "/"),
+                         bg=bg2, width=22, anchor="w",
+                         font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
+                _vc = {"Rouge": "#FAC8C3", "ZT Rouge": "#FDE3DF",
+                       "Orange": "#FCE0B5", "ZT Orange": "#FEF0D9",
+                       "Jaune": "#FEFBC8", "ZT Jaune": "#FFFDE7",
+                       "Vert": "#D5F5E3"}.get(vig_lbl, bg2)
+                tk.Label(row_frm, text=vig_lbl, bg=_vc, width=12, anchor="w",
+                         font=("TkDefaultFont", 9), relief="flat").pack(side=tk.LEFT)
+                tk.Label(row_frm, text=nom_evt, bg=bg2, width=22, anchor="w",
+                         font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
+                tk.Label(row_frm, text="+".join(dispo), bg=bg2, width=14, anchor="w",
+                         font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
+                tk.Label(row_frm, text=statut, bg=bg2, fg=statut_col, anchor="w",
+                         font=("TkDefaultFont", 9)).pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+                rows_found += 1
+
+        if rows_found == 0:
+            tk.Label(self._plath_list_inner,
+                     text="Aucune crue extraite trouvée dans le dossier de sortie configuré.",
+                     bg=bg2, fg="#888888",
+                     font=("TkDefaultFont", 9, "italic")).pack(padx=8, pady=8)
+
+    def _parse_ep_key_date(self, ep_key):
+        """Extrait la date début depuis une clé 'DD_MM_YYYY_...'."""
+        parts = ep_key.split("_")
+        try:
+            return datetime(int(parts[2]), int(parts[1]), int(parts[0]))
+        except (ValueError, IndexError):
+            return None
+
+    def _plath_run_import(self):
+        """Importe les crues sélectionnées dans le projet Plathynes."""
+        prj_path = self.var_prj_path.get().strip()
+        if not prj_path or not os.path.isfile(prj_path):
+            messagebox.showerror("Projet manquant",
+                                 "Sélectionnez d'abord un fichier projet Plathynes (.prj).")
+            return
+
+        selectionnees = [ep_key for ep_key, var in self._plath_ep_vars.items()
+                         if var.get()]
+        if not selectionnees:
+            messagebox.showwarning("Aucune sélection",
+                                   "Cochez au moins une crue à importer.")
+            return
+
+        projet_root = os.path.dirname(prj_path)
+        info = lire_info_projet(prj_path)
+        nom_station = info.get("station", "") or \
+                      self.config_data.get("station", {}).get("nom_station", "station")
+        x = info.get("station_x", 0.0)
+        y = info.get("station_y", 0.0)
+
+        # Confirmation
+        msg = (f"{len(selectionnees)} crue(s) à importer dans :\n"
+               f"{os.path.basename(prj_path)}\n\n"
+               "Cette opération va créer des dossiers et modifier le fichier .prj.\n"
+               "Confirmez-vous ?")
+        if not messagebox.askyesno("Confirmer l'import", msg):
+            return
+
+        self._plath_log_msg("=" * 60)
+        self._plath_log_msg(f"Import Plathynes — {len(selectionnees)} crue(s)")
+        self._plath_log_msg(f"Projet : {prj_path}")
+        self._plath_log_msg("=" * 60)
+
+        nb_ok = 0
+        nb_err = 0
+        for ep_key in selectionnees:
+            data = self._plath_ep_data[ep_key]
+            nom_evt = data["nom_evt"]
+            self._plath_log_msg(f"\n→ {nom_evt}")
+            try:
+                importer_evenement(
+                    nom_evt=nom_evt,
+                    ep_key=data["ep_key"],
+                    grd_src_dir=data["grd_dir"],
+                    q_src=data["q_path"],
+                    hu_src=data["hu_path"],
+                    projet_root=projet_root,
+                    prj_path=prj_path,
+                    nom_station=nom_station,
+                    x=x, y=y,
+                    log_fn=self._plath_log_msg,
+                )
+                self._plath_log_msg(f"  [OK] {nom_evt} importé avec succès.", "ok")
+                nb_ok += 1
+            except Exception as e:
+                self._plath_log_msg(f"  [ERREUR] {nom_evt} : {e}", "erreur")
+                nb_err += 1
+
+        self._plath_log_msg(
+            f"\nTerminé : {nb_ok} importé(s), {nb_err} erreur(s).", "ok" if nb_err == 0 else None)
+
+        # Actualiser la liste (statuts mis à jour)
+        self._plath_refresh()
+
+        # Ouvrir Plathynes si demandé
+        if self._var_plath_ouvrir.get() and nb_ok > 0:
+            bat_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "Plathynes_diff", "plathynes_3evnmts", "plathynes.bat")
+            # Chercher plathynes.bat dans le dossier parent du projet
+            plath_root = os.path.dirname(projet_root)
+            bat_candidates = [
+                os.path.join(plath_root, "plathynes.bat"),
+                os.path.join(os.path.dirname(plath_root), "plathynes.bat"),
+            ]
+            bat_found = next((p for p in bat_candidates if os.path.isfile(p)), None)
+            if bat_found:
+                import subprocess
+                try:
+                    subprocess.Popen(["cmd", "/c", bat_found],
+                                     cwd=os.path.dirname(bat_found))
+                    self._plath_log_msg(f"  → Plathynes lancé : {bat_found}")
+                except Exception as e:
+                    self._plath_log_msg(f"  [AVERT] Impossible de lancer Plathynes : {e}",
+                                        "erreur")
+            else:
+                messagebox.showinfo(
+                    "Plathynes introuvable",
+                    "Plathynes.bat introuvable automatiquement.\n"
+                    "Ouvrez manuellement Plathynes depuis son dossier d'installation.",
+                )
 
     # ── Onglet Paramétrage ───────────────────────────────────────────────────
 
