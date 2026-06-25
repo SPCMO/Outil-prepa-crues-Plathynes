@@ -1972,6 +1972,19 @@ class App(tk.Tk):
         canvas_list.bind("<Configure>", lambda e: canvas_list.itemconfig(
             self._plath_list_win, width=e.width))
         self._plath_canvas = canvas_list
+
+        def _plath_scroll(e):
+            canvas_list.yview_scroll(int(-1 * (e.delta / 120)), "units")
+
+        def _bind_scroll(widget):
+            widget.bind("<MouseWheel>", _plath_scroll)
+            for child in widget.winfo_children():
+                _bind_scroll(child)
+
+        canvas_list.bind("<Enter>", lambda e: canvas_list.bind_all(
+            "<MouseWheel>", _plath_scroll))
+        canvas_list.bind("<Leave>", lambda e: canvas_list.unbind_all(
+            "<MouseWheel>"))
         self._plath_bg2 = bg2
 
         # Boutons tout sélectionner
@@ -2218,7 +2231,7 @@ class App(tk.Tk):
             else:
                 statut, statut_col = "", ""
 
-            var = tk.BooleanVar(value=(not deja_importe and not chevauche))
+            var = tk.BooleanVar(value=False)
             self._plath_ep_vars[ep_key] = var
             data = {
                 "q_path":      d["q_path"],
@@ -2240,7 +2253,10 @@ class App(tk.Tk):
         self._plath_apply_filter()
 
     def _plath_apply_filter(self):
-        """Redessine la liste des crues selon le filtre Vig. max. actif."""
+        """Redessine la liste des crues selon le filtre Vig. max. actif.
+
+        Les épisodes filtrés (masqués) sont automatiquement décochés.
+        """
         for w in self._plath_list_inner.winfo_children():
             w.destroy()
 
@@ -2250,6 +2266,13 @@ class App(tk.Tk):
                "Jaune": "#FEFBC8", "ZT Jaune": "#FFFDE7",
                "Vert": "#D5F5E3"}
         vig_on = {v for v, var in self._plath_vig_chk.items() if var.get()}
+
+        # Décocher les épisodes qui vont être masqués
+        for ep_key, var, data in self._plath_ep_rows:
+            vig_lbl = data["vig_lbl"]
+            visible = (vig_lbl == "—" or vig_lbl in vig_on)
+            if not visible:
+                var.set(False)
 
         rows_shown = 0
         for ep_key, var, data in self._plath_ep_rows:
