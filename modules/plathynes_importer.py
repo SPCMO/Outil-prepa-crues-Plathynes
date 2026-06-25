@@ -278,8 +278,13 @@ def _generer_evt(nom_evt, q_src, hu_src, evt_path, log_fn,
     )
     with open(evt_path, "w", encoding="utf-8", newline="\r\n") as fh:
         fh.write(content)
-    hu_msg = f", HU début = {hu_debut}" if hu_debut is not None else " (HU non disponible)"
-    log_fn(f"  → EVT généré : {deb_str} → {fin_str}{hu_msg}")
+    if hu_debut is not None:
+        log_fn(f"  → EVT généré : {deb_str} → {fin_str}, HU début = {hu_debut}")
+    else:
+        log_fn(f"  → EVT généré : {deb_str} → {fin_str}")
+        log_fn(f"  [AVERT] HU initial absent pour l'évènement {nom_evt} — "
+               f"section # Parameters non écrite dans le .evt. "
+               f"Renseignez manuellement la valeur d'humidité initiale dans Plathynes.", "avert")
 
 
 def _generer_mqo(nom_evt, q_src, mqo_path, nom_station, x, y, log_fn):
@@ -380,7 +385,7 @@ def importer_evenement(nom_evt, ep_key, grd_src_dir, q_src, hu_src,
     x, y         : coordonnées Lambert-93 de la station
     log_fn       : callable(str) pour le journal
     """
-    log = log_fn or (lambda s: None)
+    log = log_fn or (lambda s, tag=None: None)
 
     # ── 1. Copie GRD → DATA/P/Pluie-Ep_<key>/ ──────────────────────────────
     grd_dest_dir = os.path.join(projet_root, "DATA", "P", f"Pluie-Ep_{ep_key}")

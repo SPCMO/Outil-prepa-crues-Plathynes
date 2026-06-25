@@ -2010,11 +2010,11 @@ class App(tk.Tk):
         inn3, bg3 = self._make_section(frm, "Lancer l'import", "violet")
 
         r = self._row(inn3, bg3)
-        tk.Button(r, text="  ▶   Importer les crues sélectionnées dans Plathynes  ",
+        tk.Button(r, text="▶  Importer dans Plathynes",
                   bg="#4A235A", fg="white", activebackground="#3B1A47", activeforeground="white",
-                  relief="flat", bd=0, padx=14, pady=6,
-                  font=("TkDefaultFont", 10, "bold"), cursor="hand2",
-                  command=self._plath_run_import).pack(side=tk.LEFT, padx=(0, 16))
+                  relief="flat", bd=0, padx=10, pady=4,
+                  font=("TkDefaultFont", 9, "bold"), cursor="hand2",
+                  command=self._plath_run_import).pack(side=tk.LEFT, padx=(0, 12))
         self._var_plath_ouvrir = tk.BooleanVar(value=False)
         tk.Checkbutton(r, text="Ouvrir Plathynes avec le projet après l'import",
                        variable=self._var_plath_ouvrir, bg=bg3,
