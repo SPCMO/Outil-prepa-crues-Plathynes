@@ -1845,59 +1845,54 @@ class App(tk.Tk):
         # ── Section projet Plathynes ─────────────────────────────────────────
         inn, bg = self._make_section(frm, "Projet Plathynes cible (.prj)", "bleu")
 
+        # Ligne unique : Entry + boutons + résumé projet sur la même ligne
         r = self._row(inn, bg)
         self.var_prj_path = tk.StringVar()
-        ttk.Entry(r, textvariable=self.var_prj_path, width=56).pack(
+        ttk.Entry(r, textvariable=self.var_prj_path, width=44).pack(
             side=tk.LEFT, fill=tk.X, expand=True)
-        tk.Button(r, text="  Parcourir...",
+        tk.Button(r, text="Parcourir…",
                   bg="#1A5276", fg="white", activebackground="#154360", activeforeground="white",
-                  relief="flat", bd=0, padx=8, pady=3, cursor="hand2",
-                  command=self._plath_browse_prj).pack(side=tk.LEFT, padx=(8, 0))
-        tk.Button(r, text="  ↺  Actualiser",
-                  bg="#D6EAF8", fg="#1A5276", relief="groove", bd=1, padx=8, pady=3,
+                  relief="flat", bd=0, padx=6, pady=2, cursor="hand2",
+                  command=self._plath_browse_prj).pack(side=tk.LEFT, padx=(6, 0))
+        tk.Button(r, text="↺",
+                  bg="#D6EAF8", fg="#1A5276", relief="groove", bd=1, padx=6, pady=2,
                   cursor="hand2",
-                  command=self._plath_refresh).pack(side=tk.LEFT, padx=(6, 0))
-
+                  command=self._plath_refresh).pack(side=tk.LEFT, padx=(4, 0))
         self._var_prj_info = tk.StringVar(value="")
-        tk.Label(inn, textvariable=self._var_prj_info, bg=bg, anchor="w",
+        tk.Label(r, textvariable=self._var_prj_info, bg=bg, anchor="w",
                  font=("TkDefaultFont", 8, "italic"), fg="#555555").pack(
-                     anchor=tk.W, padx=2, pady=(2, 0))
+                     side=tk.LEFT, padx=(10, 2))
+
+        # 2e ligne : liste des évènements existants (peut être longue)
+        r2 = self._row(inn, bg)
         self._var_prj_evts = tk.StringVar(value="")
-        tk.Label(inn, textvariable=self._var_prj_evts, bg=bg, anchor="w",
+        tk.Label(r2, textvariable=self._var_prj_evts, bg=bg, anchor="w",
                  wraplength=900, justify=tk.LEFT,
                  font=("TkDefaultFont", 8), fg="#1A5276").pack(
-                     anchor=tk.W, padx=2, pady=(0, 2))
+                     anchor=tk.W, padx=2, pady=(0, 1))
 
-        # ── Section dossiers de données ──────────────────────────────────────
+        # ── Section dossiers de données (2 pickers sur 1 ligne) ─────────────
         inn_d, bg_d = self._make_section(frm, "Dossiers de données à importer", "teal")
 
         r = self._row(inn_d, bg_d)
-        self._lbl(r, "Pluies spatialisées (GRD) :", bg_d, w=26)
+        self._lbl(r, "Pluies (GRD) :", bg_d, w=14)
         self.var_plath_pluies_dir = tk.StringVar()
-        ttk.Entry(r, textvariable=self.var_plath_pluies_dir, width=46).pack(
+        ttk.Entry(r, textvariable=self.var_plath_pluies_dir, width=30).pack(
             side=tk.LEFT, fill=tk.X, expand=True)
-        tk.Button(r, text="  Parcourir...",
+        tk.Button(r, text="Parcourir…",
                   bg="#0E6655", fg="white", activebackground="#0A5244", activeforeground="white",
-                  relief="flat", bd=0, padx=7, pady=3, cursor="hand2",
+                  relief="flat", bd=0, padx=6, pady=2, cursor="hand2",
                   command=lambda: self._plath_browse_dir(self.var_plath_pluies_dir)
-                  ).pack(side=tk.LEFT, padx=(6, 0))
-
-        r = self._row(inn_d, bg_d)
-        self._lbl(r, "Débits (Q-Ep_*.txt) :", bg_d, w=26)
+                  ).pack(side=tk.LEFT, padx=(5, 16))
+        self._lbl(r, "Débits (Q-Ep_*.txt) :", bg_d, w=20)
         self.var_plath_debits_dir = tk.StringVar()
-        ttk.Entry(r, textvariable=self.var_plath_debits_dir, width=46).pack(
+        ttk.Entry(r, textvariable=self.var_plath_debits_dir, width=30).pack(
             side=tk.LEFT, fill=tk.X, expand=True)
-        tk.Button(r, text="  Parcourir...",
+        tk.Button(r, text="Parcourir…",
                   bg="#0E6655", fg="white", activebackground="#0A5244", activeforeground="white",
-                  relief="flat", bd=0, padx=7, pady=3, cursor="hand2",
+                  relief="flat", bd=0, padx=6, pady=2, cursor="hand2",
                   command=lambda: self._plath_browse_dir(self.var_plath_debits_dir)
-                  ).pack(side=tk.LEFT, padx=(6, 0))
-
-        tk.Label(inn_d, bg=bg_d, anchor="w", fg="#555555",
-                 font=("TkDefaultFont", 8, "italic"),
-                 text="Dossier pluies : contient les sous-dossiers Pluie-Ep_* ou AntJ1-Ep_*   "
-                      "|   Dossier débits : contient les fichiers Q-Ep_*.txt"
-                 ).pack(anchor=tk.W, padx=2)
+                  ).pack(side=tk.LEFT, padx=(5, 0))
 
         # ── Section sélection des crues ──────────────────────────────────────
         inn2, bg2 = self._make_section(frm, "Crues extraites disponibles", "vert",
