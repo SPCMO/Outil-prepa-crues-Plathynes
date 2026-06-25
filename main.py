@@ -2073,6 +2073,7 @@ class App(tk.Tk):
         d = filedialog.askdirectory(title="Sélectionner un dossier")
         if d:
             var.set(d)
+            self._plath_refresh()
 
     def _plath_refresh(self):
         """Actualise les infos projet et scanne les dossiers pour lister les crues."""
