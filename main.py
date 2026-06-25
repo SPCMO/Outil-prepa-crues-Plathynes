@@ -693,6 +693,9 @@ class App(tk.Tk):
             self._visu_canvas = FigureCanvasTkAgg(self._visu_fig, master=right)
             self._visu_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
             self._visu_canvas.draw()
+            self._visu_bar_info       = []   # [(rect, val_mm, label_produit), ...]
+            self._visu_tooltip_artist = None
+            self._visu_canvas.mpl_connect('motion_notify_event', self._on_hyet_hover)
         else:
             tk.Label(right,
                      text="matplotlib n'est pas installé.\n\npip install matplotlib",
@@ -1037,6 +1040,9 @@ class App(tk.Tk):
         self._visu_ax_p.cla()
         self._visu_ax_hu.cla()
         self._visu_ax_q.cla()
+        # Réinitialiser la liste des barres pour les tooltips de survol
+        self._visu_bar_info       = []
+        self._visu_tooltip_artist = None
 
         C_Q  = "#1A5276"
         C_HU = "#C0392B"
@@ -1100,6 +1106,9 @@ class App(tk.Tk):
                 patch.set_linestyle("--")
             pant_handles.append(bp)
             pant_labels.append("Panthère BV (mm)")
+            # Enregistrer les patches Panthère pour le tooltip (vérifiés en dernier)
+            for rect, val in zip(bp.patches, pant_vals):
+                self._visu_bar_info.append((rect, val, "Panthère"))
 
         # ── Antilope par-dessus (zorder élevé, alpha légèrement augmenté)
         ant_handles, ant_labels = [], []
@@ -1111,6 +1120,9 @@ class App(tk.Tk):
                                       zorder=3, label=f"Antilope BV ≤ {seuil:.0f} mm")
             ant_handles.append(b1)
             ant_labels.append(f"Antilope BV ≤ {seuil:.0f} mm")
+            # Enregistrer patches b1 avec valeur totale (Antilope en priorité sur Panthère)
+            for rect, total in zip(b1.patches, p_vals):
+                self._visu_bar_info.insert(0, (rect, total, "Antilope"))
             excess_vals = [max(v - seuil, 0) for v in p_vals]
             if any(v > 0 for v in excess_vals):
                 b2 = self._visu_ax_p.bar(p_dates, excess_vals, width=bar_w,
@@ -1119,6 +1131,10 @@ class App(tk.Tk):
                                           zorder=3, label=f"Antilope BV > {seuil:.0f} mm")
                 ant_handles.append(b2)
                 ant_labels.append(f"Antilope BV > {seuil:.0f} mm")
+                # Patches b2 : même valeur totale, portion excédentaire visible
+                for rect, excess_v, total in zip(b2.patches, excess_vals, p_vals):
+                    if excess_v > 0:
+                        self._visu_bar_info.insert(0, (rect, total, "Antilope"))
             self._visu_ax_p.axhline(seuil, color=C_P_EXCESS, linewidth=0.9,
                                      linestyle="--", alpha=0.6, zorder=4)
 
@@ -1372,6 +1388,57 @@ class App(tk.Tk):
                 ax.tick_params(axis="x", labelsize=7)
 
         self._visu_canvas.draw()
+
+    # ── Tooltip survol barres hyétogramme ────────────────────────────────────
+
+    def _on_hyet_hover(self, event):
+        """Affiche la valeur (mm) de la barre survolée dans le graphique Pluies."""
+        if not HAS_MPL:
+            return
+        # Vérifier que la souris est dans le graphique pluies et qu'on a des barres
+        if event.inaxes is not self._visu_ax_p or not self._visu_bar_info:
+            if self._visu_tooltip_artist and self._visu_tooltip_artist.get_visible():
+                self._visu_tooltip_artist.set_visible(False)
+                self._visu_canvas.draw_idle()
+            return
+
+        # Chercher la première barre touchée (Antilope en tête de liste → priorité)
+        hit = None
+        for rect, val, label in self._visu_bar_info:
+            try:
+                contained, _ = rect.contains(event)
+            except Exception:
+                continue
+            if contained:
+                hit = (val, label)
+                break
+
+        if hit is None:
+            if self._visu_tooltip_artist and self._visu_tooltip_artist.get_visible():
+                self._visu_tooltip_artist.set_visible(False)
+                self._visu_canvas.draw_idle()
+            return
+
+        val, label = hit
+        txt = f"{label} : {val:.1f} mm"
+
+        if self._visu_tooltip_artist is None:
+            # Créer l'annotation une seule fois par épisode
+            self._visu_tooltip_artist = self._visu_ax_p.annotate(
+                txt,
+                xy=(event.xdata, event.ydata),
+                xytext=(10, 10), textcoords="offset points",
+                fontsize=7.5,
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="#FFFDE7",
+                          edgecolor="#AAAAAA", linewidth=0.7, alpha=0.93),
+                zorder=20
+            )
+        else:
+            self._visu_tooltip_artist.set_text(txt)
+            self._visu_tooltip_artist.xy = (event.xdata, event.ydata)
+            self._visu_tooltip_artist.set_visible(True)
+
+        self._visu_canvas.draw_idle()
 
     # ── Encart stats Antilope vs Panthère ───────────────────────────────────
 
