@@ -55,6 +55,7 @@
   .badge-visu    { background: #2874A6; color: #fff; }
   .badge-pluies  { background: #117A65; color: #fff; }
   .badge-analyse { background: #6C3483; color: #fff; }
+  .badge-plath   { background: #4A235A; color: #fff; }
 
   /* ── ARCHITECTURE ── */
   .arch-box {
@@ -335,9 +336,69 @@
     </div>
   </div>
 
-  <h2>Étape 7 — Adapter les préfixes (optionnel)</h2>
+  <h2>Étape 7 — Importer des crues dans Plathynes</h2>
   <div class="step">
     <div class="step-num">7</div>
+    <div class="step-content">
+      <h3>Onglet <span class="badge badge-plath">Import Plathynes</span></h3>
+      <p>Cet onglet permet de générer automatiquement les fichiers nécessaires à Plathynes (`.evt`, `.mrr`, `.mqo`) à partir des données extraites, et de les importer directement dans un projet Plathynes existant.</p>
+
+      <h3>Section "Projet Plathynes cible"</h3>
+      <p>Sélectionnez le fichier <code>.prj</code> du projet Plathynes dans lequel importer les épisodes. Une fois sélectionné, l'outil affiche automatiquement :</p>
+      <ul>
+        <li>Le nom du bassin (<code>Bassin:</code> lu dans le .prj)</li>
+        <li>Le nombre et les noms des épisodes déjà présents dans le projet</li>
+      </ul>
+      <p>Le bouton <strong>↺</strong> rafraîchit la liste des épisodes disponibles après modification du projet.</p>
+
+      <h3>Section "Dossiers"</h3>
+      <p>Deux sous-sections dans un même bandeau :</p>
+      <ul>
+        <li><strong>Sources :</strong> dossier contenant les fichiers <strong>Pluies</strong> extraits (ex. <code>sorties/Sals/Pluies/</code>) et dossier contenant les fichiers <strong>Débits</strong> extraits (ex. <code>sorties/Sals/Debits/</code> et <code>sorties/Sals/HU/</code>). Ces champs sont pré-remplis depuis le dossier de sortie local si la configuration est renseignée.</li>
+        <li><strong>Plathynes :</strong> répertoire d'installation de Plathynes (ex. <code>C:\plathynes_v1.10.2</code>). Utilisé pour trouver <code>plathynes.bat</code> et pour accéder à l'aide en ligne.</li>
+      </ul>
+
+      <h3>Section "Pas de temps de l'évènement (.evt)"</h3>
+      <p>Quatre comboboxes pour configurer les pas de temps (valeurs possibles : 00:15, 00:30, 01:00) :</p>
+      <ul>
+        <li><strong>Forçage</strong> — pas de temps des données de pluie</li>
+        <li><strong>Calcul</strong> — pas de temps interne du modèle</li>
+        <li><strong>Sorties</strong> — pas de temps des résultats exportés</li>
+        <li><strong>Bilans</strong> — pas de temps des bilans hydrologiques</li>
+      </ul>
+      <p>Le bouton <strong>ℹ Aide Plathynes</strong> ouvre <code>TOC_PLATHYNES_new.html</code> dans le navigateur par défaut (si le répertoire Plathynes est renseigné). Ces valeurs sont mémorisées dans <code>config.json</code>.</p>
+
+      <h3>Section "Crues extraites disponibles"</h3>
+      <p>Liste des épisodes détectés dans les dossiers sources. Pour chaque épisode :</p>
+      <ul>
+        <li><strong>Case à cocher</strong> (décochée par défaut) — sélectionner les épisodes à importer</li>
+        <li><strong>Couleur de fond</strong> — même palette que l'onglet Épisodes (vert / jaune / orange / rouge)</li>
+        <li><strong>Grisé et barré</strong> — épisode dont la plage de dates chevauche un épisode déjà présent dans le .prj (non importable sans conflit)</li>
+        <li><strong>Label "déjà importé"</strong> — épisode déjà présent dans le projet (également grisé/barré)</li>
+      </ul>
+      <p>La <strong>molette souris</strong> fonctionne sur la liste lorsque le curseur est dessus. Un <strong>bandeau de filtres</strong> (Vert / ZT Jaune / Jaune / ZT Orange / Orange / ZT Rouge / Rouge + bouton ✕ Reset) permet de filtrer les épisodes ; les épisodes masqués par le filtre sont automatiquement décochés.</p>
+
+      <h3>Import et ouverture</h3>
+      <p>Cliquez <strong>"▶ Importer dans Plathynes"</strong> pour générer les fichiers de chaque épisode coché :</p>
+      <ol>
+        <li><strong>.evt</strong> — fichier de définition de l'évènement avec les dates, les 4 pas de temps configurés, et la valeur d'humidité initiale <strong>HU</strong> (lue depuis la première ligne du fichier <code>HU-Ep_*.csv</code>). Si le fichier HU est absent pour un épisode, ce paramètre est omis mais un <strong>avertissement</strong> est affiché dans le journal en nommant l'épisode concerné.</li>
+        <li><strong>.mrr</strong> — liste des fichiers GRD de pluies observées</li>
+        <li><strong>.mqo</strong> — fichier de débits observés (format Plathynes)</li>
+      </ol>
+      <p>Le projet <code>.prj</code> est mis à jour (nombre d'événements + ligne <code>Evenement:</code>), puis Plathynes est lancé automatiquement avec le projet via <code>plathynes.bat</code> et le chemin absolu du <code>.prj</code>.</p>
+
+      <div class="note note-info">
+        <strong>Nommage des épisodes :</strong> le nom de l'évènement intègre la date et le niveau de vigilance maximal. Ex. : <code>10_04_2009_ZT_Jn</code> (ZT Jaune), <code>29_11_2014_ZT_Or</code> (ZT Orange), <code>15_10_2018_ZT_R</code> (ZT Rouge).
+      </div>
+      <div class="note note-warn">
+        <strong>Chevauchements :</strong> les épisodes dont les dates chevauchent des évènements déjà présents dans le .prj sont affichés en grisé/barré. Il est déconseillé de les importer, car Plathynes ne peut pas gérer deux évènements qui se superposent temporellement.
+      </div>
+    </div>
+  </div>
+
+  <h2>Étape 8 — Adapter les préfixes (optionnel)</h2>
+  <div class="step">
+    <div class="step-num">8</div>
     <div class="step-content">
       <h3>Onglet <span class="badge" style="background:#154360;color:#fff">⚙ Paramétrage</span></h3>
       <p>Cet onglet (fond sombre, visuellement séparé) permet d'adapter l'outil à un autre territoire sans modifier le code source :</p>
@@ -432,7 +493,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <div class="arch-grid">
     <div class="arch-box main-">
       <strong>📄 main.py</strong><br>
-      Interface graphique tkinter. 7 onglets : Configuration, Épisodes, Extraction, Visualisation, Analyse pluies, Caractérisation crues, Paramétrage. Gère les threads pour les appels réseau.
+      Interface graphique tkinter. 8 onglets : Configuration, Épisodes, Extraction, Visualisation, Analyse pluies, Caractérisation crues, Import Plathynes, Paramétrage. Gère les threads pour les appels réseau.
     </div>
     <div class="arch-box module">
       <strong>📁 modules/</strong><br>
@@ -441,7 +502,8 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
       <code>extractor.py</code> — orchestration extraction + synthèse<br>
       <code>config_manager.py</code> — lecture/écriture JSON<br>
       <code>csv_loader.py</code> — import catalogue épisodes<br>
-      <code>phyc_diag.py</code> — diagnostic connexion PHyC
+      <code>phyc_diag.py</code> — diagnostic connexion PHyC<br>
+      <code>plathynes_importer.py</code> — génération .evt/.mrr/.mqo + mise à jour .prj
     </div>
     <div class="arch-box tool">
       <strong>📁 config/</strong><br>
@@ -590,6 +652,19 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <tr><td><code>_build_tab_parametrage()</code></td><td>Construction de l'onglet Paramétrage (fond sombre <code>#1B2631</code>)</td><td>3 champs : préfixe station, nb chiffres, préfixe BNBV. Note d'information. Bouton "Enregistrer".</td></tr>
     <tr><td><code>_refresh_parametrage_ui()</code></td><td>Repopule les champs depuis <code>config_data["parametrage"]</code></td><td>Appelée au chargement de la config.</td></tr>
     <tr><td><code>_save_parametrage()</code></td><td>Valide et persiste le paramétrage, met à jour les labels dynamiques de l'onglet Configuration</td><td>Écrit dans <code>config_data["parametrage"]</code>, appelle <code>save_config()</code>, rafraîchit <code>_var_pfx_station_lbl</code>, <code>_var_pfx_bnbv_lbl</code> et le texte d'aide.</td></tr>
+  </table>
+
+  <h2>modules/plathynes_importer.py</h2>
+  <table>
+    <tr><th>Fonction</th><th>Rôle</th><th>Notes</th></tr>
+    <tr><td><code>lire_info_projet(prj_path)</code></td><td>Lit le fichier <code>.prj</code> : bassin, nombre d'évènements, liste des noms</td><td>Retourne un dict <code>{"bassin", "evenements": [...]}</code>. Utilisé pour détecter les épisodes déjà importés et construire les chemins cibles.</td></tr>
+    <tr><td><code>lire_plages_evenements(prj_path, prj_info)</code></td><td>Lit les dates début/fin de tous les <code>.evt</code> du projet</td><td>Retourne une liste de tuples <code>(datetime, datetime)</code>. Parse les lignes <code>Date de debut:</code> et <code>Date de fin:</code> dans chaque <code>.evt</code>.</td></tr>
+    <tr><td><code>_dates_se_chevauchent(deb1, fin1, plages)</code></td><td>Détecte si l'intervalle [deb1, fin1] chevauche l'une des plages existantes</td><td>Condition : <code>deb1 ≤ fin2 AND fin1 ≥ deb2</code>.</td></tr>
+    <tr><td><code>_lire_dates_q(q_src)</code></td><td>Retourne (date_debut, date_fin) depuis un fichier <code>Q-Ep_*.txt</code></td><td>Format attendu : <code>DD/MM/YYYY HH:MM;val</code>. Première et dernière ligne de données.</td></tr>
+    <tr><td><code>_lire_hu_debut(hu_src)</code></td><td>Retourne la première valeur <code>HU_moy</code> du fichier <code>HU-Ep_*.csv</code></td><td>Retourne <code>None</code> si le fichier est absent ou vide. Cette valeur alimente le paramètre évènementiel HU dans le <code>.evt</code>.</td></tr>
+    <tr><td><code>_generer_evt(...)</code></td><td>Génère le fichier <code>.evt</code> complet pour un évènement</td><td>Paramètres : nom, dates, chemins <code>.mrr</code>/<code>.mqo</code>, 4 pas de temps, valeur HU. Si HU disponible : ajoute la section <code># Parameters</code> avec <code>Parametre evenementiel: U &lt;val&gt; HU</code>. Sinon : avertissement via <code>log_fn(..., "avert")</code>. Chemins en slashes Unix.</td></tr>
+    <tr><td><code>importer_evenement(...)</code></td><td>Orchestre l'import complet d'un épisode dans le projet Plathynes</td><td>Étapes : (1) créer le dossier <code>Ev_NOM/</code>, (2) copier les <code>.grd</code>, (3) générer le <code>.mqo</code>, (4) générer le <code>.mrr</code>, (5) générer le <code>.evt</code>, (6) mettre à jour le <code>.prj</code>. Reçoit les 4 pas de temps comme paramètres.</td></tr>
+    <tr><td><code>nom_evt_from_date_vig(date_str, vig)</code></td><td>Construit le nom normalisé de l'évènement</td><td>Format : <code>DD_MM_YYYY_&lt;suffixe_vig&gt;</code>. Mapping vigilance : Rouge→R, ZT Rouge→ZT_R, Orange→Or, ZT Orange→ZT_Or, Jaune→Jn, ZT Jaune→ZT_Jn, Vert→Vt.</td></tr>
   </table>
 
   <h2>modules/phyc_client.py</h2>
@@ -817,9 +892,10 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
       <div><strong>Visualisation :</strong> _refresh_visu_list, _plot_episode, _draw_antpan_stats_panel, _calc_ep_antpan_stats, _get_global_antpan_max</div>
       <div><strong>Analyse pluies :</strong> _build_tab_pluies, _refresh_pluies_tab</div>
       <div><strong>Caractérisation crues :</strong> _collect_analyse_data, _plot_analyse</div>
+      <div><strong>Import Plathynes :</strong> _build_tab_plathynes, _plath_refresh, _plath_apply_filter, _plath_run_import, _plath_ouvrir_avec_projet, _plath_aide_pdt</div>
       <div><strong>Paramétrage :</strong> _build_tab_parametrage, _save_parametrage, _refresh_parametrage_ui</div>
     </div>
-    <div class="dep-out">↓ appelle : extractor.py, phyc_client.py, bdimage_client.py, config_manager.py, csv_loader.py, phyc_diag.py</div>
+    <div class="dep-out">↓ appelle : extractor.py, phyc_client.py, bdimage_client.py, config_manager.py, csv_loader.py, phyc_diag.py, plathynes_importer.py</div>
   </div>
 
   <div class="mod-card mc-mod">
@@ -881,6 +957,26 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <div class="dep-in">← appelé par : main.py (bouton Diagnostic)</div>
     <div class="dep-ext">⟶ réseau : PHyC WSDL</div>
   </div>
+
+  <div class="mod-card mc-mod" style="grid-column:1/4">
+    <h4>📦 plathynes_importer.py</h4>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11px">
+      <div>
+        <strong>Lecture projet :</strong>
+        <ul><li>lire_info_projet(prj_path)</li><li>lire_plages_evenements(prj_path, prj_info)</li></ul>
+      </div>
+      <div>
+        <strong>Lecture données :</strong>
+        <ul><li>_lire_dates_q(q_src)</li><li>_lire_hu_debut(hu_src)</li><li>_dates_se_chevauchent(deb, fin, plages)</li></ul>
+      </div>
+      <div>
+        <strong>Génération fichiers :</strong>
+        <ul><li>_generer_evt(...) → .evt</li><li>importer_evenement(...) → .mrr + .mqo + .evt + mise à jour .prj</li><li>nom_evt_from_date_vig(date, vig)</li></ul>
+      </div>
+    </div>
+    <div class="dep-in">← appelé par : main.py (_plath_run_import, _plath_refresh)</div>
+    <div class="dep-ext">⟶ fichiers : sorties/{station}/Pluies/, Debits/, HU/ (R) · projet Plathynes/{bassin}/Ev_*/ (W)</div>
+  </div>
 </div>
 
 <hr>
@@ -908,6 +1004,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <th>📊 Visualisation</th>
     <th>🌧 Analyse pluies</th>
     <th>🔍 Caractérisation crues</th>
+    <th>🟣 Import Plathynes</th>
   </tr>
   <tr>
     <td class="sw-row-lbl">Action utilisateur</td>
@@ -917,6 +1014,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <td class="sw-user">Sélectionner un épisode, modifier seuil hyétogramme</td>
     <td class="sw-user">Consultation tableau + frise (auto-rafraîchi)</td>
     <td class="sw-user">Cliquer "Calculer", filtrer par Vig. max.</td>
+    <td class="sw-user">Sélectionner .prj, dossiers, pas de temps ; cocher épisodes ; lancer import</td>
   </tr>
   <tr>
     <td class="sw-row-lbl">Méthode UI déclenchée</td>
@@ -926,6 +1024,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <td class="sw-code">_plot_episode()<br>_draw_antpan_stats_panel()</td>
     <td class="sw-code">_refresh_pluies_tab()<br><small>(auto via _refresh_visu_list)</small></td>
     <td class="sw-code">_collect_analyse_data()<br>_plot_analyse()</td>
+    <td class="sw-code">_plath_refresh()<br>_plath_apply_filter()<br>_plath_run_import()<br>_plath_ouvrir_avec_projet()</td>
   </tr>
   <tr>
     <td class="sw-row-lbl">Module appelé</td>
@@ -935,12 +1034,14 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <td style="color:#555">— lecture directe fichiers —</td>
     <td style="color:#555">— lecture directe fichiers —</td>
     <td style="color:#555">— lecture directe fichiers —</td>
+    <td class="sw-code">plathynes_importer<br>(lire_info_projet,<br>importer_evenement…)</td>
   </tr>
   <tr>
     <td class="sw-row-lbl">Réseau</td>
     <td class="sw-net">PHyC (seuils, info station)</td>
     <td style="color:#aaa">—</td>
     <td class="sw-net">BDImage (pluies, HU)<br>PHyC (débits / hauteurs)</td>
+    <td style="color:#aaa">—</td>
     <td style="color:#aaa">—</td>
     <td style="color:#aaa">—</td>
     <td style="color:#aaa">—</td>
@@ -953,6 +1054,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <td class="sw-file">Q-Ep_*.txt, HU-Ep_*.csv<br>AntJ1_BV_*.csv<br>Pant_BV_*.csv (R)</td>
     <td class="sw-file">Q-Ep_*.txt<br>AntJ1_BV_*.csv<br>Pant_BV_*.csv (R)</td>
     <td class="sw-file">Q-Ep_*.txt, HU-Ep_*.csv<br>AntJ1_BV_*.csv (R)</td>
+    <td class="sw-file">Q-Ep_*.txt, HU-Ep_*.csv, *.grd (R)<br>→ .evt, .mrr, .mqo, .prj (W)</td>
   </tr>
   <tr>
     <td class="sw-row-lbl">Sortie affichée</td>
@@ -962,6 +1064,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <td>Hyétogramme + HU + Q + encart stats Antilope vs Panthère</td>
     <td>Tableau cumulés par épisode + frise chronologique divergente</td>
     <td>Bubble chart avec colorbar, légende bulles, étiquettes épisodes</td>
+    <td>Liste épisodes colorés/grisés/barrés, journal import, lancement Plathynes</td>
   </tr>
 </table>
 
@@ -1206,6 +1309,50 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <span class="change-tag ct-feat">Fonctionnalité</span>
     <strong>Onglet Paramétrage territorial (fond sombre, visuellement distinct)</strong>
     <p>Nouvel onglet en dernière position permettant de configurer sans modifier le code source : le préfixe du code station hydrométrie (ex. <code>Y</code>), le nombre de chiffres du suffixe numérique (9 par défaut, le code site = préfixe + n-2 premiers chiffres), et le préfixe du code BNBV (ex. <code>MO</code>). Les valeurs sont persistées dans <code>config.json</code> sous la clé <code>"parametrage"</code> et lues via les propriétés <code>_pfx_station</code>, <code>_nb_digits</code>, <code>_pfx_bnbv</code>. À la sauvegarde, les labels de l'onglet Configuration se mettent à jour immédiatement.</p>
+  </div>
+
+  <h2>Onglet Import Plathynes</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Nouvel onglet Import Plathynes — génération automatique des fichiers évènement</strong>
+    <p>Ajout du module <code>modules/plathynes_importer.py</code> et de l'onglet dédié dans l'interface. À partir des données extraites (pluies <code>.grd</code>, débits <code>Q-Ep_*.txt</code>, humidité <code>HU-Ep_*.csv</code>), l'outil génère automatiquement pour chaque épisode : le fichier <code>.evt</code> (définition de l'évènement), le fichier <code>.mrr</code> (liste des .grd de pluie) et le fichier <code>.mqo</code> (débits observés au format Plathynes). Le projet <code>.prj</code> est mis à jour puis Plathynes est lancé avec le chemin absolu du projet.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Génération du fichier .evt avec HU initial</strong>
+    <p>Le fichier <code>.evt</code> contient les dates de début/fin (lues depuis le fichier Q), les 4 pas de temps configurables (forçage, calcul, sorties, bilans), et si disponible une section <code># Parameters</code> avec la valeur d'humidité initiale <strong>HU</strong> : <code>Parametre evenementiel: U &lt;val&gt; HU</code>. La valeur est lue depuis la première ligne de données du fichier <code>HU-Ep_*.csv</code>. Si le fichier HU est absent, le paramètre est omis et un avertissement est affiché dans le journal en nommant l'épisode concerné.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Pas de temps configurables via comboboxes</strong>
+    <p>Les quatre pas de temps (forçage, calcul, sorties, bilans) sont configurables indépendamment via des comboboxes (valeurs : 00:15, 00:30, 01:00). Les valeurs sont mémorisées dans <code>config.json</code> sous <code>plathynes.pdt_forcage</code>, <code>pdt_calcul</code>, <code>pdt_sorties</code>, <code>pdt_bilans</code>. Le bouton <strong>ℹ Aide Plathynes</strong> ouvre <code>TOC_PLATHYNES_new.html</code> dans le navigateur système (si le répertoire Plathynes est renseigné).</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Détection des chevauchements de dates avec épisodes existants</strong>
+    <p>Avant l'affichage de la liste, l'outil lit les dates de début/fin de tous les évènements déjà présents dans le projet <code>.prj</code> (via <code>lire_plages_evenements()</code>). Les épisodes dont la plage de dates chevauche un évènement existant sont affichés en <strong>grisé et barré</strong> (police <code>overstrike</code> tkinter) et décochés d'office. Les épisodes déjà importés (nom présent dans le .prj) sont également grisés/barrés.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Comportement de la liste des épisodes</strong>
+    <p>Toutes les épisodes sont décochés par défaut. La molette souris fonctionne sur la liste lorsque le curseur la survole (<code>bind_all</code>/<code>unbind_all</code> sur <code>&lt;Enter&gt;</code>/<code>&lt;Leave&gt;</code> du canvas). L'application d'un filtre décoche automatiquement les épisodes masqués. La liste se rafraîchit automatiquement après chaque sélection de dossier via le bouton "Parcourir".</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Dossier d'installation Plathynes et ouverture avec chemin absolu</strong>
+    <p>Un champ "Plathynes :" dans la section Dossiers permet de renseigner le répertoire d'installation de Plathynes (pré-rempli à <code>C:\plathynes_v1.10.2</code>). L'outil y cherche <code>plathynes.bat</code> directement, avec un fallback sur les dossiers parent/grand-parent. Le projet est ouvert avec son chemin <strong>absolu</strong> (<code>os.path.abspath()</code>) car <code>plathynes.bat</code> fait un <code>cd bin</code> avant de lancer l'exécutable, rendant les chemins relatifs invalides.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Renommage "Dossier de sortie" → "Dossier de sortie local" dans l'onglet Configuration</strong>
+    <p>Le champ était ambigu (l'utilisateur pouvait croire que c'est le dossier cible Plathynes). Renommé en "Dossier de sortie local" avec un bouton ℹ expliquant son rôle : espace de travail local pour les fichiers extraits (pluies, débits, HU), distinct des dossiers d'import Plathynes.</p>
   </div>
 
   <h2>Graphique débit — seuils et mise en page</h2>

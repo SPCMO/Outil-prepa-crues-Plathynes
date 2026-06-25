@@ -15,8 +15,8 @@ sys.path.insert(0, r"D:\charles-eddy.piot\Documents\Perso CEP\Git-Claude IA\Outi
 from modules.bdimage_client import BdimageClient
 
 # ── Paramètres à adapter ──────────────────────────────────────────────────────
-DATE_DEBUT = datetime(2022, 11, 5, 0, 0)
-DATE_FIN   = datetime(2022, 11, 5, 6, 0)
+DATE_DEBUT = datetime(2018, 10, 14, 0, 0)
+DATE_FIN   = datetime(2018, 10, 16, 6, 0)
 
 # Bounding box Cassaignes Lambert 93
 UL = "594815,6236216"

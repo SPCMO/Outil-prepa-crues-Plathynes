@@ -216,10 +216,62 @@ class BdimageClient:
     # Requête BDImage async
     # ------------------------------------------------------------------
 
+    def _extraire_prevision_bbox(self, type_img, sous_type, date_network,
+                                date_debut, date_fin, ul, lr, pdt, duree, bandes,
+                                facteur=1.0, force_integer=True,
+                                output_dir=".", log_fn=None):
+        """Extrait un produit de prévision via getPrevByNetworkValuesByBBoxAsync.
+
+        date_network : datetime du réseau/run (ex : 00H du jour J)
+        date_debut   : début de la fenêtre de prévision souhaitée (valide time)
+        date_fin     : fin   de la fenêtre de prévision souhaitée (valide time)
+        """
+        os.makedirs(output_dir, exist_ok=True)
+        log = log_fn or (lambda s: None)
+
+        data = {
+            "request":       "getPrevByNetworkValuesByBBoxAsync",
+            "typeImage":     type_img,
+            "sousTypeImage": sous_type,
+            "dateNetwork":   _fmt_bdimage(date_network),
+            "dateDeb":       _fmt_bdimage(date_debut),
+            "dateFin":       _fmt_bdimage(date_fin),
+            "duree":         _fmt_duree(duree),
+            "pdt":           _fmt_duree(pdt),
+            "ul":            ul,
+            "lr":            lr,
+            "resol":         str(self.resol),
+            "epsg":          str(self.epsg),
+            "bandes":        bandes,
+        }
+
+        log(f"  → Requête BDImage prévision : {type_img}/{sous_type} "
+            f"réseau={_fmt_bdimage(date_network)} "
+            f"{_fmt_bdimage(date_debut)}→{_fmt_bdimage(date_fin)} "
+            f"pdt={pdt}mn duree={duree}mn")
+
+        resp = self._session.post(self.url, data=data, timeout=60)
+        resp.raise_for_status()
+        xml_bytes = _decompress(resp.content)
+        uri = _parse_report_uri(xml_bytes)
+        log(f"  → Requête lancée, polling URI...")
+
+        xml_result = self._poll_async(uri, log)
+
+        fichiers = _xml_to_grds(
+            xml_bytes=xml_result,
+            ul=ul, lr=lr,
+            resol=self.resol, nodata=self.nodata,
+            facteur=facteur, force_integer=force_integer,
+            output_dir=output_dir, log_fn=log,
+        )
+        log(f"  → {len(fichiers)} fichier(s) .grd écrits dans {output_dir}")
+        return fichiers
+
     def _extraire_bbox(self, type_img, sous_type, date_debut, date_fin,
                        ul, lr, pdt, duree, bandes,
                        facteur=1.0, force_integer=True,
-                       output_dir=".", log_fn=None):
+                       output_dir=".", log_fn=None, skip_existing=False):
         os.makedirs(output_dir, exist_ok=True)
         log = log_fn or (lambda s: None)
 
@@ -265,6 +317,7 @@ class BdimageClient:
             resol=self.resol, nodata=self.nodata,
             facteur=facteur, force_integer=force_integer,
             output_dir=output_dir, log_fn=log,
+            skip_existing=skip_existing,
         )
         log(f"  → {len(fichiers)} fichier(s) .grd écrits dans {output_dir}")
         return fichiers
@@ -307,7 +360,7 @@ class BdimageClient:
 # ------------------------------------------------------------------
 
 def _xml_to_grds(xml_bytes, ul, lr, resol, nodata, facteur, force_integer,
-                 output_dir, log_fn):
+                 output_dir, log_fn, skip_existing=False):
     """Parse la réponse XML BDImage et écrit les fichiers .grd.
 
     Format XML attendu (simplifié) :
@@ -330,6 +383,14 @@ def _xml_to_grds(xml_bytes, ul, lr, resol, nodata, facteur, force_integer,
     root = ET.fromstring(xml_bytes)
     observations = root.find("observations")
     if observations is None:
+        # Format prévision : <previsions><network><image>...</image></network></previsions>
+        previsions = root.find("previsions")
+        if previsions is not None:
+            observations = ET.Element("observations")
+            for network in previsions.findall("network"):
+                for img in network.findall("image"):
+                    observations.append(img)
+    if observations is None or len(list(observations)) == 0:
         raise BdimageError("Aucune donnée dans la réponse BDImage.")
 
     # récupérer ul/lr depuis le rapport si disponible
@@ -347,6 +408,9 @@ def _xml_to_grds(xml_bytes, ul, lr, resol, nodata, facteur, force_integer,
     for image in observations.findall("image"):
         date_str = image.attrib.get("date", "")
         filename = os.path.join(output_dir, f"{date_str}.grd")
+        if skip_existing and os.path.isfile(filename):
+            log_fn(f"  → {date_str}.grd déjà présent, ignoré.")
+            continue
 
         # première bande disponible
         bandes_el = image.find("bandes")
