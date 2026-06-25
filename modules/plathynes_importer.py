@@ -134,15 +134,16 @@ def _lire_dates_q(q_src):
     return None, None
 
 
-def _generer_evt(nom_evt, q_src, evt_path, log_fn):
+def _generer_evt(nom_evt, q_src, evt_path, log_fn,
+                 pdt_forcage="00:15", pdt_calcul="00:15",
+                 pdt_sorties="00:15", pdt_bilans="00:15"):
     """Génère le fichier .evt (descripteur principal de l'évènement Plathynes).
 
     Les dates sont lues depuis le fichier Q pour être exactes.
-    Les pas de temps sont fixés à 00:15 (convention Plathynes).
+    Les pas de temps sont paramétrables (en HH:MM).
     """
     date_deb, date_fin = _lire_dates_q(q_src) if (q_src and os.path.isfile(q_src)) else (None, None)
     if date_deb is None:
-        # Fallback : pas de Q disponible, dates vides (Plathynes les demandera)
         deb_str = "0001-01-01 00:00:00"
         fin_str = "0001-01-01 00:00:00"
     else:
@@ -164,10 +165,10 @@ def _generer_evt(nom_evt, q_src, evt_path, log_fn):
         "#===============================================================================\n"
         f"Date de debut: {deb_str}\n"
         f"Date de fin: {fin_str}\n"
-        "Pas de temps de forcage: 00:15\n"
-        "Pas de temps de calcul: 00:15\n"
-        "Pas de temps des sorties: 00:15\n"
-        "Pas de temps des bilans: 00:15\n"
+        f"Pas de temps de forcage: {pdt_forcage}\n"
+        f"Pas de temps de calcul: {pdt_calcul}\n"
+        f"Pas de temps des sorties: {pdt_sorties}\n"
+        f"Pas de temps des bilans: {pdt_bilans}\n"
         "\n"
         "#===============================================================================\n"
         "# Forcing settings\n"
@@ -267,7 +268,9 @@ def _maj_prj(prj_path, nom_evt, log_fn):
 
 
 def importer_evenement(nom_evt, ep_key, grd_src_dir, q_src, hu_src,
-                       projet_root, prj_path, nom_station, x, y, log_fn=None):
+                       projet_root, prj_path, nom_station, x, y, log_fn=None,
+                       pdt_forcage="00:15", pdt_calcul="00:15",
+                       pdt_sorties="00:15", pdt_bilans="00:15"):
     """Importe un épisode comme évènement de calage Plathynes.
 
     Paramètres
@@ -324,7 +327,9 @@ def importer_evenement(nom_evt, ep_key, grd_src_dir, q_src, hu_src,
 
     # ── 5. Générer .evt (fichier principal lu par Plathynes au chargement) ──
     evt_path = os.path.join(sals_dir, f"{nom_evt}.evt")
-    _generer_evt(nom_evt, q_src, evt_path, log)
+    _generer_evt(nom_evt, q_src, evt_path, log,
+                 pdt_forcage=pdt_forcage, pdt_calcul=pdt_calcul,
+                 pdt_sorties=pdt_sorties, pdt_bilans=pdt_bilans)
 
     # ── 7. Générer .mrr ─────────────────────────────────────────────────────
     mrr_path = os.path.join(sals_dir, f"{nom_evt}_RRobs.mrr")

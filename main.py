@@ -1970,6 +1970,25 @@ class App(tk.Tk):
                   command=lambda: [v.set(False) for _, v, _ in self._plath_ep_rows]
                   ).pack(side=tk.LEFT, padx=6)
 
+        # ── Section pas de temps événement ──────────────────────────────────
+        inn_pdt, bg_pdt = self._make_section(frm, "Pas de temps de l'évènement (.evt)", "ocre")
+
+        _PDT_VALS = ["00:01", "00:05", "00:10", "00:15", "00:30", "01:00"]
+        _PDT_LABELS = [
+            ("Forçage :",  "var_plath_pdt_forcage"),
+            ("Calcul :",   "var_plath_pdt_calcul"),
+            ("Sorties :",  "var_plath_pdt_sorties"),
+            ("Bilans :",   "var_plath_pdt_bilans"),
+        ]
+        r_pdt = self._row(inn_pdt, bg_pdt)
+        for lbl_txt, attr in _PDT_LABELS:
+            var = tk.StringVar(value="00:15")
+            setattr(self, attr, var)
+            tk.Label(r_pdt, text=lbl_txt, bg=bg_pdt,
+                     font=("TkDefaultFont", 9)).pack(side=tk.LEFT, padx=(10, 2))
+            ttk.Combobox(r_pdt, textvariable=var, values=_PDT_VALS,
+                         state="readonly", width=7).pack(side=tk.LEFT)
+
         # ── Section options et lancement (une seule ligne compacte) ─────────
         inn3, bg3 = self._make_section(frm, "Lancer l'import", "violet")
 
@@ -2287,6 +2306,10 @@ class App(tk.Tk):
                     nom_station=nom_station,
                     x=x, y=y,
                     log_fn=self._plath_log_msg,
+                    pdt_forcage=self.var_plath_pdt_forcage.get(),
+                    pdt_calcul=self.var_plath_pdt_calcul.get(),
+                    pdt_sorties=self.var_plath_pdt_sorties.get(),
+                    pdt_bilans=self.var_plath_pdt_bilans.get(),
                 )
                 self._plath_log_msg(f"  [OK] {nom_evt} importé avec succès.", "ok")
                 nb_ok += 1
@@ -3170,6 +3193,16 @@ class App(tk.Tk):
                 debits_dir = _d
         self.var_plath_pluies_dir.set(pluies_dir)
         self.var_plath_debits_dir.set(debits_dir)
+        # Pas de temps (.evt) — restauration depuis config
+        for attr, key in (
+            ("var_plath_pdt_forcage", "pdt_forcage"),
+            ("var_plath_pdt_calcul",  "pdt_calcul"),
+            ("var_plath_pdt_sorties", "pdt_sorties"),
+            ("var_plath_pdt_bilans",  "pdt_bilans"),
+        ):
+            val = plath.get(key, "")
+            if val:
+                getattr(self, attr).set(val)
         if prj:
             self._plath_refresh()
 
@@ -3225,9 +3258,13 @@ class App(tk.Tk):
         seuils_key = "seuils_h" if self.var_seuils_grandeur.get() == "H (m)" else "seuils_q"
         self.config_data[seuils_key] = seuils
         self.config_data["plathynes"] = {
-            "prj_path":   self.var_prj_path.get().strip(),
-            "pluies_dir": self.var_plath_pluies_dir.get().strip(),
-            "debits_dir": self.var_plath_debits_dir.get().strip(),
+            "prj_path":    self.var_prj_path.get().strip(),
+            "pluies_dir":  self.var_plath_pluies_dir.get().strip(),
+            "debits_dir":  self.var_plath_debits_dir.get().strip(),
+            "pdt_forcage": self.var_plath_pdt_forcage.get(),
+            "pdt_calcul":  self.var_plath_pdt_calcul.get(),
+            "pdt_sorties": self.var_plath_pdt_sorties.get(),
+            "pdt_bilans":  self.var_plath_pdt_bilans.get(),
         }
         try:
             save_config(self.config_data)
