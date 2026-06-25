@@ -1861,22 +1861,76 @@ class App(tk.Tk):
         tk.Label(inn, textvariable=self._var_prj_info, bg=bg, anchor="w",
                  font=("TkDefaultFont", 8, "italic"), fg="#555555").pack(
                      anchor=tk.W, padx=2, pady=(2, 0))
+        self._var_prj_evts = tk.StringVar(value="")
+        tk.Label(inn, textvariable=self._var_prj_evts, bg=bg, anchor="w",
+                 wraplength=900, justify=tk.LEFT,
+                 font=("TkDefaultFont", 8), fg="#1A5276").pack(
+                     anchor=tk.W, padx=2, pady=(0, 2))
+
+        # ── Section dossiers de données ──────────────────────────────────────
+        inn_d, bg_d = self._make_section(frm, "Dossiers de données à importer", "teal")
+
+        r = self._row(inn_d, bg_d)
+        self._lbl(r, "Pluies spatialisées (GRD) :", bg_d, w=26)
+        self.var_plath_pluies_dir = tk.StringVar()
+        ttk.Entry(r, textvariable=self.var_plath_pluies_dir, width=46).pack(
+            side=tk.LEFT, fill=tk.X, expand=True)
+        tk.Button(r, text="  Parcourir...",
+                  bg="#0E6655", fg="white", activebackground="#0A5244", activeforeground="white",
+                  relief="flat", bd=0, padx=7, pady=3, cursor="hand2",
+                  command=lambda: self._plath_browse_dir(self.var_plath_pluies_dir)
+                  ).pack(side=tk.LEFT, padx=(6, 0))
+
+        r = self._row(inn_d, bg_d)
+        self._lbl(r, "Débits (Q-Ep_*.txt) :", bg_d, w=26)
+        self.var_plath_debits_dir = tk.StringVar()
+        ttk.Entry(r, textvariable=self.var_plath_debits_dir, width=46).pack(
+            side=tk.LEFT, fill=tk.X, expand=True)
+        tk.Button(r, text="  Parcourir...",
+                  bg="#0E6655", fg="white", activebackground="#0A5244", activeforeground="white",
+                  relief="flat", bd=0, padx=7, pady=3, cursor="hand2",
+                  command=lambda: self._plath_browse_dir(self.var_plath_debits_dir)
+                  ).pack(side=tk.LEFT, padx=(6, 0))
+
+        tk.Label(inn_d, bg=bg_d, anchor="w", fg="#555555",
+                 font=("TkDefaultFont", 8, "italic"),
+                 text="Dossier pluies : contient les sous-dossiers Pluie-Ep_* ou AntJ1-Ep_*   "
+                      "|   Dossier débits : contient les fichiers Q-Ep_*.txt"
+                 ).pack(anchor=tk.W, padx=2)
 
         # ── Section sélection des crues ──────────────────────────────────────
         inn2, bg2 = self._make_section(frm, "Crues extraites disponibles", "vert",
                                        fill=tk.BOTH, expand=True)
 
+        # ── Bande de filtres Vig. max. ───────────────────────────────────────
+        _VIG_LABELS = ["Vert", "ZT Jaune", "Jaune", "ZT Orange", "Orange", "ZT Rouge", "Rouge"]
+        self._plath_vig_chk = {v: tk.BooleanVar(value=True) for v in _VIG_LABELS}
+        fb = tk.Frame(inn2, bg="#C8E6C9", pady=3,
+                      highlightbackground="#81C784", highlightthickness=1)
+        fb.pack(fill=tk.X, pady=(0, 4))
+        tk.Label(fb, text="Vig. max. :", bg="#C8E6C9",
+                 font=("TkDefaultFont", 8, "bold")).pack(side=tk.LEFT, padx=(8, 4))
+        for v in _VIG_LABELS:
+            tk.Checkbutton(fb, text=v, variable=self._plath_vig_chk[v],
+                           bg="#C8E6C9", activebackground="#C8E6C9",
+                           font=("TkDefaultFont", 8),
+                           command=self._plath_apply_filter).pack(side=tk.LEFT, padx=3)
+        tk.Button(fb, text="✕  Réinitialiser", bg="#C8E6C9", relief="groove",
+                  cursor="hand2", font=("TkDefaultFont", 8),
+                  command=lambda: [v.set(True) for v in self._plath_vig_chk.values()]
+                  or self._plath_apply_filter()).pack(side=tk.RIGHT, padx=8)
+
         # En-tête colonnes
         hdr = tk.Frame(inn2, bg=bg2)
         hdr.pack(fill=tk.X, pady=(0, 2))
         tk.Label(hdr, text="✔", bg=bg2, width=3, font=("TkDefaultFont", 9, "bold")).pack(side=tk.LEFT)
-        tk.Label(hdr, text="Date début épisode", bg=bg2, width=22,
+        tk.Label(hdr, text="Date début épisode", bg=bg2, width=20,
                  font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT)
-        tk.Label(hdr, text="Vig. max.", bg=bg2, width=12,
+        tk.Label(hdr, text="Vig. max.", bg=bg2, width=11,
                  font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT)
         tk.Label(hdr, text="NOM_EVT proposé", bg=bg2, width=22,
                  font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT)
-        tk.Label(hdr, text="Données", bg=bg2, width=14,
+        tk.Label(hdr, text="Données", bg=bg2, width=10,
                  font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT)
         tk.Label(hdr, text="Statut", bg=bg2,
                  font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT, fill=tk.X, expand=True)
@@ -1908,12 +1962,13 @@ class App(tk.Tk):
         btn_sel_frm.pack(fill=tk.X, pady=(4, 0))
         tk.Button(btn_sel_frm, text="Tout sélectionner", bg=bg2, relief="groove",
                   cursor="hand2",
-                  command=lambda: [v.set(True)
-                                   for v in self._plath_ep_vars.values()]).pack(side=tk.LEFT)
+                  command=lambda: [v.set(True) for _, v, _ in self._plath_ep_rows
+                                   if self._plath_vig_chk.get(_.get("vig_lbl"), tk.BooleanVar(value=True)).get()]
+                  ).pack(side=tk.LEFT)
         tk.Button(btn_sel_frm, text="Tout désélectionner", bg=bg2, relief="groove",
                   cursor="hand2",
-                  command=lambda: [v.set(False)
-                                   for v in self._plath_ep_vars.values()]).pack(side=tk.LEFT, padx=6)
+                  command=lambda: [v.set(False) for _, v, _ in self._plath_ep_rows]
+                  ).pack(side=tk.LEFT, padx=6)
 
         # ── Section options et lancement ────────────────────────────────────
         inn3, bg3 = self._make_section(frm, "Lancer l'import", "violet")
@@ -1935,7 +1990,7 @@ class App(tk.Tk):
         # Journal
         inn4, bg4 = self._make_section(frm, "Journal d'import", "gris")
         self._plath_log = scrolledtext.ScrolledText(
-            inn4, height=7, state=tk.DISABLED,
+            inn4, height=6, state=tk.DISABLED,
             wrap=tk.WORD, font=("Consolas", 9), bg="#FDFEFE")
         self._plath_log.pack(fill=tk.BOTH, expand=True)
         self._plath_log.tag_config("erreur", foreground="#C0392B",
@@ -1950,8 +2005,9 @@ class App(tk.Tk):
                   ).pack(anchor=tk.E, pady=(4, 0))
 
         # Stockage interne
-        self._plath_ep_vars   = {}   # ep_key → BooleanVar (checkbox)
+        self._plath_ep_vars   = {}   # ep_key → BooleanVar  (pour _plath_run_import)
         self._plath_ep_data   = {}   # ep_key → dict infos
+        self._plath_ep_rows   = []   # [(ep_key, BoolVar, data_dict), ...] complet (avant filtre)
 
         # ── Bandeau bas ──────────────────────────────────────────────────────
         bottom_row = tk.Frame(frm)
@@ -2000,105 +2056,174 @@ class App(tk.Tk):
             self.var_prj_path.set(path)
             self._plath_refresh()
 
+    def _plath_browse_dir(self, var):
+        d = filedialog.askdirectory(title="Sélectionner un dossier")
+        if d:
+            var.set(d)
+
     def _plath_refresh(self):
-        """Actualise la liste des crues disponibles et les infos du projet."""
+        """Actualise les infos projet et scanne les dossiers pour lister les crues."""
         prj_path = self.var_prj_path.get().strip()
+        prj_info = {}
         if prj_path and os.path.isfile(prj_path):
-            info = lire_info_projet(prj_path)
+            prj_info = lire_info_projet(prj_path)
+            nb_evts = len(prj_info["evenements"])
             self._var_prj_info.set(
-                f"Projet : {info['nom']}  |  Bassin : {info['bassin']}"
-                f"  |  Station : {info['station']}"
-                f"  ({info['station_x']:.0f} / {info['station_y']:.0f})"
-                f"  |  {len(info['evenements'])} évènement(s) existant(s)"
+                f"Projet : {prj_info['nom']}  |  Bassin : {prj_info['bassin']}"
+                f"  |  Station : {prj_info['station']}"
+                f"  ({prj_info['station_x']:.0f} / {prj_info['station_y']:.0f})"
+                f"  |  {nb_evts} évènement(s) existant(s)"
             )
+            if prj_info["evenements"]:
+                self._var_prj_evts.set(
+                    "Existants : " + ",   ".join(prj_info["evenements"]))
+            else:
+                self._var_prj_evts.set("")
         else:
             self._var_prj_info.set("")
+            self._var_prj_evts.set("")
 
-        # Supprimer les anciennes lignes
-        for w in self._plath_list_inner.winfo_children():
-            w.destroy()
-        self._plath_ep_vars.clear()
-        self._plath_ep_data.clear()
-
-        debits_dir, hu_dir, pluies_dir, _ = self._get_out_dirs()
-        grandeur = self.config_data.get("extraction", {}).get("grandeur", "Q")
-        nom_station = (self.config_data.get("station", {}).get("nom_station", "")
-                       or self.config_data.get("station", {}).get("code_site", "")
-                       or "station")
-
-        prj_info = lire_info_projet(prj_path) if prj_path and os.path.isfile(prj_path) else {}
         evts_existants = set(prj_info.get("evenements", []))
 
-        bg2 = self._plath_bg2
-        rows_found = 0
+        # ── Scan des dossiers source ─────────────────────────────────────────
+        pluies_dir = self.var_plath_pluies_dir.get().strip()
+        debits_dir = self.var_plath_debits_dir.get().strip()
+        grandeur = self.config_data.get("extraction", {}).get("grandeur", "Q")
+        _, hu_dir, _, _ = self._get_out_dirs()
 
-        if os.path.isdir(debits_dir):
-            for fname in sorted(os.listdir(debits_dir), reverse=True):
-                if not (fname.startswith(f"{grandeur}-Ep_") and fname.endswith(".txt")):
+        # Préfixes GRD reconnus
+        _GRD_PREFIXES = ("Pluie-Ep_", "AntJ1-Ep_", "Pant-Ep_")
+
+        eps = {}   # ep_key → {"q_path", "grd_dir", "hu_path", "dt"}
+
+        # Scan dossier pluies
+        if pluies_dir and os.path.isdir(pluies_dir):
+            for name in os.listdir(pluies_dir):
+                full = os.path.join(pluies_dir, name)
+                if not os.path.isdir(full):
                     continue
-                ep_key = fname[len(f"{grandeur}-Ep_"):-4]   # DD_MM_YYYY_Station
-                q_path = os.path.join(debits_dir, fname)
+                for pfx in _GRD_PREFIXES:
+                    if name.startswith(pfx):
+                        key = name[len(pfx):]
+                        d = eps.setdefault(key, {"q_path": None, "grd_dir": None,
+                                                  "hu_path": None, "dt": None})
+                        if d["grd_dir"] is None:
+                            d["grd_dir"] = full
+                        break
 
-                # Vig. max. depuis le fichier Q
+        # Scan dossier débits
+        if debits_dir and os.path.isdir(debits_dir):
+            for fname in os.listdir(debits_dir):
+                if fname.startswith(f"{grandeur}-Ep_") and fname.endswith(".txt"):
+                    key = fname[len(f"{grandeur}-Ep_"):-4]
+                    d = eps.setdefault(key, {"q_path": None, "grd_dir": None,
+                                              "hu_path": None, "dt": None})
+                    d["q_path"] = os.path.join(debits_dir, fname)
+
+        # Compléter HU depuis le dossier HU outil (si disponible)
+        for key in eps:
+            hu_path = os.path.join(hu_dir, f"HU-Ep_{key}.csv")
+            if os.path.isfile(hu_path):
+                eps[key]["hu_path"] = hu_path
+
+        # Dates pour tri
+        for key, d in eps.items():
+            d["dt"] = self._parse_ep_key_date(key) or datetime.min
+
+        # Tri par date croissante
+        sorted_keys = sorted(eps.keys(), key=lambda k: eps[k]["dt"])
+
+        # ── Construire la liste complète (_plath_ep_rows) ────────────────────
+        self._plath_ep_vars.clear()
+        self._plath_ep_data.clear()
+        self._plath_ep_rows = []
+
+        for ep_key in sorted_keys:
+            d = eps[ep_key]
+            dt = d["dt"]
+
+            # Vig. max. depuis le fichier Q (si dispo)
+            if d["q_path"] and os.path.isfile(d["q_path"]):
                 vig_lbl, _ = self._vig_max_episode({
-                    "date_debut": self._parse_ep_key_date(ep_key),
-                    "date_fin": self._parse_ep_key_date(ep_key),
-                    "index": 0,
+                    "date_debut": dt, "date_fin": dt, "index": 0,
                 })
+            else:
+                vig_lbl = "—"
 
-                # NOM_EVT proposé
-                dt = self._parse_ep_key_date(ep_key)
-                nom_evt = nom_evt_from_date_vig(dt, vig_lbl) if dt else ep_key
+            nom_evt = nom_evt_from_date_vig(dt, vig_lbl) if dt != datetime.min else ep_key
 
-                # Données disponibles
-                grd_dir = os.path.join(pluies_dir, f"AntJ1-Ep_{ep_key}")
-                hu_path = os.path.join(hu_dir, f"HU-Ep_{ep_key}.csv")
-                dispo = []
-                if os.path.isdir(grd_dir):   dispo.append("P")
-                if os.path.isfile(q_path):   dispo.append("Q")
-                if os.path.isfile(hu_path):  dispo.append("HU")
+            dispo = []
+            if d["grd_dir"] and os.path.isdir(d["grd_dir"]):  dispo.append("P")
+            if d["q_path"]  and os.path.isfile(d["q_path"]):  dispo.append("Q")
+            if d["hu_path"] and os.path.isfile(d["hu_path"]): dispo.append("HU")
 
-                # Statut (déjà importé ?)
-                statut, statut_col = ("✓ déjà importé", "#1D6A39") \
-                    if nom_evt in evts_existants else ("", "")
+            statut, statut_col = ("✓ déjà importé", "#1D6A39") \
+                if nom_evt in evts_existants else ("", "")
 
-                var = tk.BooleanVar(value=(nom_evt not in evts_existants))
-                self._plath_ep_vars[ep_key] = var
-                self._plath_ep_data[ep_key] = {
-                    "q_path":   q_path,
-                    "grd_dir":  grd_dir if os.path.isdir(grd_dir) else None,
-                    "hu_path":  hu_path if os.path.isfile(hu_path) else None,
-                    "nom_evt":  nom_evt,
-                    "ep_key":   ep_key,
-                    "vig_lbl":  vig_lbl,
-                }
+            var = tk.BooleanVar(value=(nom_evt not in evts_existants))
+            self._plath_ep_vars[ep_key] = var
+            data = {
+                "q_path":    d["q_path"],
+                "grd_dir":   d["grd_dir"],
+                "hu_path":   d["hu_path"],
+                "nom_evt":   nom_evt,
+                "ep_key":    ep_key,
+                "vig_lbl":   vig_lbl,
+                "dispo":     dispo,
+                "statut":    statut,
+                "statut_col": statut_col,
+                "dt":        dt,
+            }
+            self._plath_ep_data[ep_key] = data
+            self._plath_ep_rows.append((ep_key, var, data))
 
-                row_frm = tk.Frame(self._plath_list_inner, bg=bg2)
-                row_frm.pack(fill=tk.X, pady=1, padx=2)
+        self._plath_apply_filter()
 
-                tk.Checkbutton(row_frm, variable=var, bg=bg2,
-                               activebackground=bg2).pack(side=tk.LEFT)
-                tk.Label(row_frm, text=ep_key[:10].replace("_", "/"),
-                         bg=bg2, width=22, anchor="w",
-                         font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
-                _vc = {"Rouge": "#FAC8C3", "ZT Rouge": "#FDE3DF",
-                       "Orange": "#FCE0B5", "ZT Orange": "#FEF0D9",
-                       "Jaune": "#FEFBC8", "ZT Jaune": "#FFFDE7",
-                       "Vert": "#D5F5E3"}.get(vig_lbl, bg2)
-                tk.Label(row_frm, text=vig_lbl, bg=_vc, width=12, anchor="w",
-                         font=("TkDefaultFont", 9), relief="flat").pack(side=tk.LEFT)
-                tk.Label(row_frm, text=nom_evt, bg=bg2, width=22, anchor="w",
-                         font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
-                tk.Label(row_frm, text="+".join(dispo), bg=bg2, width=14, anchor="w",
-                         font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
-                tk.Label(row_frm, text=statut, bg=bg2, fg=statut_col, anchor="w",
-                         font=("TkDefaultFont", 9)).pack(side=tk.LEFT, fill=tk.X, expand=True)
+    def _plath_apply_filter(self):
+        """Redessine la liste des crues selon le filtre Vig. max. actif."""
+        for w in self._plath_list_inner.winfo_children():
+            w.destroy()
 
-                rows_found += 1
+        bg2 = self._plath_bg2
+        _VC = {"Rouge": "#FAC8C3", "ZT Rouge": "#FDE3DF",
+               "Orange": "#FCE0B5", "ZT Orange": "#FEF0D9",
+               "Jaune": "#FEFBC8", "ZT Jaune": "#FFFDE7",
+               "Vert": "#D5F5E3"}
+        vig_on = {v for v, var in self._plath_vig_chk.items() if var.get()}
 
-        if rows_found == 0:
-            tk.Label(self._plath_list_inner,
-                     text="Aucune crue extraite trouvée dans le dossier de sortie configuré.",
+        rows_shown = 0
+        for ep_key, var, data in self._plath_ep_rows:
+            vig_lbl = data["vig_lbl"]
+            # "—" (pas de Q) : toujours affiché
+            if vig_lbl != "—" and vig_lbl not in vig_on:
+                continue
+
+            dt = data["dt"]
+            date_str = dt.strftime("%d/%m/%Y") if dt != datetime.min else ep_key[:10]
+
+            row_frm = tk.Frame(self._plath_list_inner, bg=bg2)
+            row_frm.pack(fill=tk.X, pady=1, padx=2)
+
+            tk.Checkbutton(row_frm, variable=var, bg=bg2,
+                           activebackground=bg2).pack(side=tk.LEFT)
+            tk.Label(row_frm, text=date_str, bg=bg2, width=20, anchor="w",
+                     font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
+            _vc = _VC.get(vig_lbl, bg2)
+            tk.Label(row_frm, text=vig_lbl, bg=_vc, width=11, anchor="w",
+                     font=("TkDefaultFont", 9), relief="flat").pack(side=tk.LEFT)
+            tk.Label(row_frm, text=data["nom_evt"], bg=bg2, width=22, anchor="w",
+                     font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
+            tk.Label(row_frm, text="+".join(data["dispo"]), bg=bg2, width=10, anchor="w",
+                     font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
+            tk.Label(row_frm, text=data["statut"], bg=bg2, fg=data["statut_col"], anchor="w",
+                     font=("TkDefaultFont", 9)).pack(side=tk.LEFT, fill=tk.X, expand=True)
+            rows_shown += 1
+
+        if rows_shown == 0:
+            msg = ("Aucun épisode trouvé — vérifiez les dossiers Pluies et Débits."
+                   if not self._plath_ep_rows
+                   else "Aucune crue ne correspond au filtre Vig. max. actif.")
+            tk.Label(self._plath_list_inner, text=msg,
                      bg=bg2, fg="#888888",
                      font=("TkDefaultFont", 9, "italic")).pack(padx=8, pady=8)
 
@@ -3018,11 +3143,24 @@ class App(tk.Tk):
             self._var_seuils[key].set(str(val) if val != "" else "")
 
     def _refresh_plathynes_ui(self):
-        """Restaure le chemin .prj Plathynes depuis config_data."""
+        """Restaure les paramètres Plathynes depuis config_data."""
         plath = self.config_data.get("plathynes", {})
         prj = plath.get("prj_path", "")
         if prj:
             self.var_prj_path.set(prj)
+        # Dossiers pluies/débits — défaut = dossiers outil si non configurés
+        pluies_dir = plath.get("pluies_dir", "")
+        debits_dir = plath.get("debits_dir", "")
+        if not pluies_dir or not debits_dir:
+            _, _hu, _p, _ = self._get_out_dirs()
+            _d, _, _, _ = self._get_out_dirs()
+            if not pluies_dir:
+                pluies_dir = _p
+            if not debits_dir:
+                debits_dir = _d
+        self.var_plath_pluies_dir.set(pluies_dir)
+        self.var_plath_debits_dir.set(debits_dir)
+        if prj:
             self._plath_refresh()
 
     def _refresh_extraction_ui(self):
@@ -3077,7 +3215,9 @@ class App(tk.Tk):
         seuils_key = "seuils_h" if self.var_seuils_grandeur.get() == "H (m)" else "seuils_q"
         self.config_data[seuils_key] = seuils
         self.config_data["plathynes"] = {
-            "prj_path": self.var_prj_path.get().strip(),
+            "prj_path":   self.var_prj_path.get().strip(),
+            "pluies_dir": self.var_plath_pluies_dir.get().strip(),
+            "debits_dir": self.var_plath_debits_dir.get().strip(),
         }
         try:
             save_config(self.config_data)
