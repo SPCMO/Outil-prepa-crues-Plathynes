@@ -2011,6 +2011,11 @@ class App(tk.Tk):
             ("Bilans :",   "var_plath_pdt_bilans"),
         ]
         r_pdt = self._row(inn_pdt, bg_pdt)
+        # ℹ à droite en premier (pack RIGHT avant LEFT pour rester visible)
+        tk.Button(r_pdt, text="ℹ  Aide Plathynes",
+                  bg="#E8D5A3", fg="#7D6608", relief="groove", bd=1,
+                  font=("TkDefaultFont", 8), cursor="hand2",
+                  command=self._plath_aide_pdt).pack(side=tk.RIGHT, padx=(0, 6))
         for lbl_txt, attr in _PDT_LABELS:
             var = tk.StringVar(value="00:15")
             setattr(self, attr, var)
@@ -2018,10 +2023,6 @@ class App(tk.Tk):
                      font=("TkDefaultFont", 9)).pack(side=tk.LEFT, padx=(10, 2))
             ttk.Combobox(r_pdt, textvariable=var, values=_PDT_VALS,
                          state="readonly", width=7).pack(side=tk.LEFT)
-        tk.Button(r_pdt, text="ℹ",
-                  bg=bg_pdt, fg="#7D6608", relief="flat", bd=0,
-                  font=("TkDefaultFont", 11, "bold"), cursor="hand2",
-                  command=self._plath_aide_pdt).pack(side=tk.LEFT, padx=(10, 0))
 
         # ── Section options et lancement (une seule ligne compacte) ─────────
         inn3, bg3 = self._make_section(frm, "Lancer l'import", "violet")
