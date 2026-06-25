@@ -2215,8 +2215,9 @@ class App(tk.Tk):
                      font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
             tk.Label(row_frm, text="+".join(data["dispo"]), bg=bg2, width=10, anchor="w",
                      font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
-            tk.Label(row_frm, text=data["statut"], bg=bg2, fg=data["statut_col"], anchor="w",
-                     font=("TkDefaultFont", 9)).pack(side=tk.LEFT, fill=tk.X, expand=True)
+            _lbl_kw = {"fg": data["statut_col"]} if data["statut_col"] else {}
+            tk.Label(row_frm, text=data["statut"], bg=bg2, anchor="w",
+                     font=("TkDefaultFont", 9), **_lbl_kw).pack(side=tk.LEFT, fill=tk.X, expand=True)
             rows_shown += 1
 
         if rows_shown == 0:
