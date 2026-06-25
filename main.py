@@ -1922,35 +1922,35 @@ class App(tk.Tk):
         # ── Bande de filtres Vig. max. ───────────────────────────────────────
         _VIG_LABELS = ["Vert", "ZT Jaune", "Jaune", "ZT Orange", "Orange", "ZT Rouge", "Rouge"]
         self._plath_vig_chk = {v: tk.BooleanVar(value=True) for v in _VIG_LABELS}
-        fb = tk.Frame(inn2, bg="#C8E6C9", pady=3,
+        fb = tk.Frame(inn2, bg="#C8E6C9", pady=1,
                       highlightbackground="#81C784", highlightthickness=1)
-        fb.pack(fill=tk.X, pady=(0, 4))
+        fb.pack(fill=tk.X, pady=(0, 2))
         tk.Label(fb, text="Vig. max. :", bg="#C8E6C9",
-                 font=("TkDefaultFont", 8, "bold")).pack(side=tk.LEFT, padx=(8, 4))
+                 font=("TkDefaultFont", 7, "bold")).pack(side=tk.LEFT, padx=(6, 2))
         for v in _VIG_LABELS:
             tk.Checkbutton(fb, text=v, variable=self._plath_vig_chk[v],
                            bg="#C8E6C9", activebackground="#C8E6C9",
-                           font=("TkDefaultFont", 8),
-                           command=self._plath_apply_filter).pack(side=tk.LEFT, padx=3)
-        tk.Button(fb, text="✕  Réinitialiser", bg="#C8E6C9", relief="groove",
-                  cursor="hand2", font=("TkDefaultFont", 8),
+                           font=("TkDefaultFont", 7),
+                           command=self._plath_apply_filter).pack(side=tk.LEFT, padx=1)
+        tk.Button(fb, text="✕ Reset", bg="#C8E6C9", relief="groove",
+                  cursor="hand2", font=("TkDefaultFont", 7),
                   command=lambda: [v.set(True) for v in self._plath_vig_chk.values()]
-                  or self._plath_apply_filter()).pack(side=tk.RIGHT, padx=8)
+                  or self._plath_apply_filter()).pack(side=tk.RIGHT, padx=6)
 
         # En-tête colonnes
         hdr = tk.Frame(inn2, bg=bg2)
-        hdr.pack(fill=tk.X, pady=(0, 2))
-        tk.Label(hdr, text="✔", bg=bg2, width=3, font=("TkDefaultFont", 9, "bold")).pack(side=tk.LEFT)
+        hdr.pack(fill=tk.X, pady=(0, 1))
+        tk.Label(hdr, text="✔", bg=bg2, width=3, font=("TkDefaultFont", 8, "bold")).pack(side=tk.LEFT)
         tk.Label(hdr, text="Date début épisode", bg=bg2, width=20,
-                 font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT)
+                 font=("TkDefaultFont", 8, "bold"), anchor="w").pack(side=tk.LEFT)
         tk.Label(hdr, text="Vig. max.", bg=bg2, width=11,
-                 font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT)
+                 font=("TkDefaultFont", 8, "bold"), anchor="w").pack(side=tk.LEFT)
         tk.Label(hdr, text="NOM_EVT proposé", bg=bg2, width=22,
-                 font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT)
+                 font=("TkDefaultFont", 8, "bold"), anchor="w").pack(side=tk.LEFT)
         tk.Label(hdr, text="Données", bg=bg2, width=10,
-                 font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT)
+                 font=("TkDefaultFont", 8, "bold"), anchor="w").pack(side=tk.LEFT)
         tk.Label(hdr, text="Statut", bg=bg2,
-                 font=("TkDefaultFont", 9, "bold"), anchor="w").pack(side=tk.LEFT, fill=tk.X, expand=True)
+                 font=("TkDefaultFont", 8, "bold"), anchor="w").pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         # Scrollable frame pour la liste des crues
         list_outer = tk.Frame(inn2, bg=bg2, highlightbackground="#A9DFBF",
