@@ -1970,22 +1970,20 @@ class App(tk.Tk):
                   command=lambda: [v.set(False) for _, v, _ in self._plath_ep_rows]
                   ).pack(side=tk.LEFT, padx=6)
 
-        # ── Section options et lancement ────────────────────────────────────
+        # ── Section options et lancement (une seule ligne compacte) ─────────
         inn3, bg3 = self._make_section(frm, "Lancer l'import", "violet")
-
-        r = self._row(inn3, bg3)
-        self._var_plath_ouvrir = tk.BooleanVar(value=False)
-        tk.Checkbutton(r, text="Ouvrir Plathynes automatiquement après l'import",
-                       variable=self._var_plath_ouvrir, bg=bg3,
-                       activebackground=bg3,
-                       font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
 
         r = self._row(inn3, bg3)
         tk.Button(r, text="  ▶   Importer les crues sélectionnées dans Plathynes  ",
                   bg="#4A235A", fg="white", activebackground="#3B1A47", activeforeground="white",
-                  relief="flat", bd=0, padx=14, pady=8,
+                  relief="flat", bd=0, padx=14, pady=6,
                   font=("TkDefaultFont", 10, "bold"), cursor="hand2",
-                  command=self._plath_run_import).pack(side=tk.LEFT)
+                  command=self._plath_run_import).pack(side=tk.LEFT, padx=(0, 16))
+        self._var_plath_ouvrir = tk.BooleanVar(value=False)
+        tk.Checkbutton(r, text="Ouvrir Plathynes avec le projet après l'import",
+                       variable=self._var_plath_ouvrir, bg=bg3,
+                       activebackground=bg3,
+                       font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
 
         # Journal
         inn4, bg4 = self._make_section(frm, "Journal d'import", "gris")
@@ -2303,31 +2301,42 @@ class App(tk.Tk):
         self._plath_refresh()
 
         # Ouvrir Plathynes si demandé
-        if self._var_plath_ouvrir.get() and nb_ok > 0:
-            bat_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    "Plathynes_diff", "plathynes_3evnmts", "plathynes.bat")
-            # Chercher plathynes.bat dans le dossier parent du projet
-            plath_root = os.path.dirname(projet_root)
-            bat_candidates = [
-                os.path.join(plath_root, "plathynes.bat"),
-                os.path.join(os.path.dirname(plath_root), "plathynes.bat"),
-            ]
-            bat_found = next((p for p in bat_candidates if os.path.isfile(p)), None)
-            if bat_found:
-                import subprocess
-                try:
-                    subprocess.Popen(["cmd", "/c", bat_found],
-                                     cwd=os.path.dirname(bat_found))
-                    self._plath_log_msg(f"  → Plathynes lancé : {bat_found}")
-                except Exception as e:
-                    self._plath_log_msg(f"  [AVERT] Impossible de lancer Plathynes : {e}",
-                                        "erreur")
-            else:
-                messagebox.showinfo(
-                    "Plathynes introuvable",
-                    "Plathynes.bat introuvable automatiquement.\n"
-                    "Ouvrez manuellement Plathynes depuis son dossier d'installation.",
-                )
+        if self._var_plath_ouvrir.get():
+            self._plath_ouvrir_avec_projet(prj_path)
+
+    def _plath_ouvrir_avec_projet(self, prj_path):
+        """Lance plathynes.bat en passant le chemin .prj en argument."""
+        import subprocess
+        projet_root = os.path.dirname(prj_path)
+        # Chercher plathynes.bat : dossier parent du projet, puis grand-parent
+        plath_root = os.path.dirname(projet_root)
+        bat_candidates = [
+            os.path.join(plath_root, "plathynes.bat"),
+            os.path.join(os.path.dirname(plath_root), "plathynes.bat"),
+        ]
+        bat_found = next((p for p in bat_candidates if os.path.isfile(p)), None)
+        if not bat_found:
+            messagebox.showinfo(
+                "Plathynes introuvable",
+                "plathynes.bat introuvable dans le dossier parent du projet.\n"
+                f"Chemin cherché : {bat_candidates[0]}\n\n"
+                "Ouvrez manuellement Plathynes depuis son dossier d'installation.",
+            )
+            return
+        # Le .prj doit être passé en chemin relatif depuis le dossier du bat
+        bat_dir = os.path.dirname(bat_found)
+        try:
+            prj_rel = os.path.relpath(prj_path, bat_dir)
+        except ValueError:
+            prj_rel = prj_path  # lecteurs différents → chemin absolu
+        try:
+            subprocess.Popen(
+                ["cmd", "/c", bat_found, prj_rel],
+                cwd=bat_dir,
+            )
+            self._plath_log_msg(f"  → Plathynes lancé avec : {prj_rel}", "ok")
+        except Exception as e:
+            self._plath_log_msg(f"  [AVERT] Impossible de lancer Plathynes : {e}", "erreur")
 
     # ── Onglet Paramétrage ───────────────────────────────────────────────────
 
