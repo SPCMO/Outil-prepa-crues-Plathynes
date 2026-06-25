@@ -109,6 +109,84 @@ def _generer_mrr(nom_evt, ep_key, grd_data_dir, mrr_path, log_fn):
     log_fn(f"  → MRR généré : {len(grds)} fichiers GRD")
 
 
+def _lire_dates_q(q_src):
+    """Retourne (date_debut, date_fin) depuis un fichier Q-Ep_*.txt.
+
+    Format attendu : DD/MM/YYYY HH:MM;valeur
+    Retourne (None, None) si le fichier est illisible.
+    """
+    dates = []
+    try:
+        with open(q_src, encoding="utf-8", errors="replace") as fh:
+            for raw in fh:
+                raw = raw.strip()
+                if not raw:
+                    continue
+                try:
+                    dt = datetime.strptime(raw.split(";")[0].strip(), "%d/%m/%Y %H:%M")
+                    dates.append(dt)
+                except (ValueError, IndexError):
+                    continue
+    except OSError:
+        pass
+    if len(dates) >= 2:
+        return min(dates), max(dates)
+    return None, None
+
+
+def _generer_evt(nom_evt, q_src, evt_path, log_fn):
+    """Génère le fichier .evt (descripteur principal de l'évènement Plathynes).
+
+    Les dates sont lues depuis le fichier Q pour être exactes.
+    Les pas de temps sont fixés à 00:15 (convention Plathynes).
+    """
+    date_deb, date_fin = _lire_dates_q(q_src) if (q_src and os.path.isfile(q_src)) else (None, None)
+    if date_deb is None:
+        # Fallback : pas de Q disponible, dates vides (Plathynes les demandera)
+        deb_str = "0001-01-01 00:00:00"
+        fin_str = "0001-01-01 00:00:00"
+    else:
+        deb_str = date_deb.strftime("%Y-%m-%d %H:%M:%S")
+        fin_str = date_fin.strftime("%Y-%m-%d %H:%M:%S")
+
+    mrr_rel = f"Ev_{nom_evt}\\{nom_evt}_RRobs.mrr"
+    mqo_rel = f"Ev_{nom_evt}\\{nom_evt}_1.mqo"
+
+    content = (
+        "#===============================================================================\n"
+        "# event settings\n"
+        "#===============================================================================\n"
+        f"Nom de l'evenement: {nom_evt}\n"
+        f"Description: {nom_evt}\n"
+        "\n"
+        "#===============================================================================\n"
+        "# Temporal settings\n"
+        "#===============================================================================\n"
+        f"Date de debut: {deb_str}\n"
+        f"Date de fin: {fin_str}\n"
+        "Pas de temps de forcage: 00:15\n"
+        "Pas de temps de calcul: 00:15\n"
+        "Pas de temps des sorties: 00:15\n"
+        "Pas de temps des bilans: 00:15\n"
+        "\n"
+        "#===============================================================================\n"
+        "# Forcing settings\n"
+        "#===============================================================================\n"
+        "Nombre de sources de pluies: 1\n"
+        f"Source de pluie: {mrr_rel}\n"
+        "\n"
+        "#===============================================================================\n"
+        "# Observations\n"
+        "#===============================================================================\n"
+        "Nombre de fichiers d'observations: 1\n"
+        f"Fichier d'observation: {mqo_rel}\n"
+        "\n"
+    )
+    with open(evt_path, "w", encoding="utf-8", newline="\r\n") as fh:
+        fh.write(content)
+    log_fn(f"  → EVT généré : {deb_str} → {fin_str}")
+
+
 def _generer_mqo(nom_evt, q_src, mqo_path, nom_station, x, y, log_fn):
     """Génère le fichier .mqo débit observé à partir du CSV Q de l'outil.
 
@@ -244,22 +322,25 @@ def importer_evenement(nom_evt, ep_key, grd_src_dir, q_src, hu_src,
     os.makedirs(sals_dir, exist_ok=True)
     log(f"  → Dossier créé : Sals/Ev_{nom_evt}/")
 
-    # ── 5. Générer .mrr ─────────────────────────────────────────────────────
+    # ── 5. Générer .evt (fichier principal lu par Plathynes au chargement) ──
+    evt_path = os.path.join(sals_dir, f"{nom_evt}.evt")
+    _generer_evt(nom_evt, q_src, evt_path, log)
+
+    # ── 7. Générer .mrr ─────────────────────────────────────────────────────
     mrr_path = os.path.join(sals_dir, f"{nom_evt}_RRobs.mrr")
     if os.path.isdir(grd_dest_dir) and os.listdir(grd_dest_dir):
         _generer_mrr(nom_evt, ep_key, grd_dest_dir, mrr_path, log)
     else:
-        # Écrire un .mrr vide avec le bon header
         _generer_mrr_vide(nom_evt, ep_key, mrr_path, log)
 
-    # ── 6. Générer .mqo ─────────────────────────────────────────────────────
+    # ── 8. Générer .mqo ─────────────────────────────────────────────────────
     mqo_path = os.path.join(sals_dir, f"{nom_evt}_1.mqo")
     if os.path.isfile(q_src):
         _generer_mqo(nom_evt, q_src, mqo_path, nom_station, x, y, log)
     else:
         log("  [AVERT] .mqo non généré — fichier Q manquant")
 
-    # ── 7. Mettre à jour le .prj ────────────────────────────────────────────
+    # ── 9. Mettre à jour le .prj ────────────────────────────────────────────
     _maj_prj(prj_path, nom_evt, log)
 
 
