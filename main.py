@@ -2381,16 +2381,13 @@ class App(tk.Tk):
             return
         # Le .prj doit être passé en chemin relatif depuis le dossier du bat
         bat_dir = os.path.dirname(bat_found)
-        try:
-            prj_rel = os.path.relpath(prj_path, bat_dir)
-        except ValueError:
-            prj_rel = prj_path  # lecteurs différents → chemin absolu
+        prj_abs = os.path.abspath(prj_path)
         try:
             subprocess.Popen(
-                ["cmd", "/c", bat_found, prj_rel],
+                ["cmd", "/c", bat_found, prj_abs],
                 cwd=bat_dir,
             )
-            self._plath_log_msg(f"  → Plathynes lancé avec : {prj_rel}", "ok")
+            self._plath_log_msg(f"  → Plathynes lancé avec : {prj_abs}", "ok")
         except Exception as e:
             self._plath_log_msg(f"  [AVERT] Impossible de lancer Plathynes : {e}", "erreur")
 
