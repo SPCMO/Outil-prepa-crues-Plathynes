@@ -287,8 +287,8 @@ class App(tk.Tk):
         self.var_bdi_url = tk.StringVar()
         ttk.Entry(r, textvariable=self.var_bdi_url, width=54).pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        # Section 4 — Dossier de sortie
-        inn, bg = self._make_section(frm, "Dossier de sortie", "ocre")
+        # Section 4 — Dossier de sortie local
+        inn, bg = self._make_section(frm, "Dossier de sortie local", "ocre")
 
         r = self._row(inn, bg)
         self.var_outdir = tk.StringVar()
@@ -297,6 +297,10 @@ class App(tk.Tk):
                   bg="#7D6608", fg="white", activebackground="#5D4E08", activeforeground="white",
                   relief="flat", bd=0, padx=8, pady=3, cursor="hand2",
                   command=self._browse_outdir).pack(side=tk.LEFT, padx=(8, 0))
+        tk.Button(r, text="ℹ",
+                  bg=bg, fg="#7D6608", relief="flat", bd=0, padx=6, pady=3,
+                  font=("TkDefaultFont", 11, "bold"), cursor="hand2",
+                  command=self._aide_dossier_sortie_local).pack(side=tk.LEFT, padx=(6, 0))
 
         # Section 5 — Seuils de vigilance
         inn, bg = self._make_section(frm, "Seuils de vigilance", "bleu")
@@ -1872,7 +1876,8 @@ class App(tk.Tk):
                      anchor=tk.W, padx=2, pady=(0, 1))
 
         # ── Section dossiers de données (2 pickers sur 1 ligne) ─────────────
-        inn_d, bg_d = self._make_section(frm, "Dossiers de données à importer", "teal")
+        inn_d, bg_d = self._make_section(
+            frm, "Dossiers de données à importer  —  Données sources extraites par l'outil", "teal")
 
         r = self._row(inn_d, bg_d)
         self._lbl(r, "Pluies (GRD) :", bg_d, w=14)
@@ -1892,6 +1897,20 @@ class App(tk.Tk):
                   bg="#0E6655", fg="white", activebackground="#0A5244", activeforeground="white",
                   relief="flat", bd=0, padx=6, pady=2, cursor="hand2",
                   command=lambda: self._plath_browse_dir(self.var_plath_debits_dir)
+                  ).pack(side=tk.LEFT, padx=(5, 0))
+
+        # ── Section dossier installation Plathynes ───────────────────────────
+        inn_pl, bg_pl = self._make_section(
+            frm, "Dossier d'installation de Plathynes  (plathynes.bat)", "teal")
+
+        r_pl = self._row(inn_pl, bg_pl)
+        self.var_plath_install_dir = tk.StringVar(value=r"C:\plathynes_v1.10.2")
+        ttk.Entry(r_pl, textvariable=self.var_plath_install_dir, width=60).pack(
+            side=tk.LEFT, fill=tk.X, expand=True)
+        tk.Button(r_pl, text="Parcourir…",
+                  bg="#0E6655", fg="white", activebackground="#0A5244", activeforeground="white",
+                  relief="flat", bd=0, padx=6, pady=2, cursor="hand2",
+                  command=lambda: self._plath_browse_dir(self.var_plath_install_dir)
                   ).pack(side=tk.LEFT, padx=(5, 0))
 
         # ── Section sélection des crues ──────────────────────────────────────
@@ -2361,33 +2380,49 @@ class App(tk.Tk):
         if self._var_plath_ouvrir.get():
             self._plath_ouvrir_avec_projet(prj_path)
 
+    def _aide_dossier_sortie_local(self):
+        messagebox.showinfo(
+            "Dossier de sortie local — rôle",
+            "Ce dossier est le répertoire local où l'outil stocke les données extraites "
+            "depuis BDImage (pluies spatialisées, débits, humidité des sols) pour chaque "
+            "épisode de crue.\n\n"
+            "Il sert de zone de travail locale pour :\n"
+            "  • parcourir et visualiser rapidement l'ensemble des épisodes disponibles,\n"
+            "  • comparer les chroniques et identifier les crues les plus représentatives,\n"
+            "  • sélectionner les évènements pertinents pour le calage hydraulique.\n\n"
+            "Une fois les crues sélectionnées, elles sont importées dans le projet "
+            "Plathynes via l'onglet « Import Plathynes », qui copie les données dans "
+            "l'arborescence attendue par Plathynes (DATA/P, DATA/Q, DATA/HU) et met à "
+            "jour le fichier projet (.prj) en conséquence.",
+        )
+
     def _plath_ouvrir_avec_projet(self, prj_path):
-        """Lance plathynes.bat en passant le chemin .prj en argument."""
+        """Lance plathynes.bat depuis le dossier d'installation configuré."""
         import subprocess
-        projet_root = os.path.dirname(prj_path)
-        # Chercher plathynes.bat : dossier parent du projet, puis grand-parent
-        plath_root = os.path.dirname(projet_root)
-        bat_candidates = [
-            os.path.join(plath_root, "plathynes.bat"),
-            os.path.join(os.path.dirname(plath_root), "plathynes.bat"),
-        ]
-        bat_found = next((p for p in bat_candidates if os.path.isfile(p)), None)
+        install_dir = self.var_plath_install_dir.get().strip()
+        bat_found = os.path.join(install_dir, "plathynes.bat") if install_dir else None
+        if not bat_found or not os.path.isfile(bat_found):
+            # Fallback : chercher dans les dossiers parents du .prj
+            projet_root = os.path.dirname(prj_path)
+            plath_root = os.path.dirname(projet_root)
+            candidates = [
+                os.path.join(plath_root, "plathynes.bat"),
+                os.path.join(os.path.dirname(plath_root), "plathynes.bat"),
+            ]
+            bat_found = next((p for p in candidates if os.path.isfile(p)), None)
         if not bat_found:
             messagebox.showinfo(
                 "Plathynes introuvable",
-                "plathynes.bat introuvable dans le dossier parent du projet.\n"
-                f"Chemin cherché : {bat_candidates[0]}\n\n"
-                "Ouvrez manuellement Plathynes depuis son dossier d'installation.",
+                "plathynes.bat introuvable.\n\n"
+                f"Dossier configuré : {install_dir or '(non renseigné)'}\n\n"
+                "Vérifiez le champ « Dossier d'installation de Plathynes » dans l'onglet "
+                "Import Plathynes.",
             )
             return
-        # Le .prj doit être passé en chemin relatif depuis le dossier du bat
         bat_dir = os.path.dirname(bat_found)
         prj_abs = os.path.abspath(prj_path)
         try:
-            subprocess.Popen(
-                ["cmd", "/c", bat_found, prj_abs],
-                cwd=bat_dir,
-            )
+            subprocess.Popen(["cmd", "/c", bat_found, prj_abs], cwd=bat_dir)
             self._plath_log_msg(f"  → Plathynes lancé avec : {prj_abs}", "ok")
         except Exception as e:
             self._plath_log_msg(f"  [AVERT] Impossible de lancer Plathynes : {e}", "erreur")
@@ -3212,12 +3247,15 @@ class App(tk.Tk):
         prj = plath.get("prj_path", "")
         if prj:
             self.var_prj_path.set(prj)
-        # Dossiers pluies/débits — défaut = dossiers outil si non configurés
+        # Dossier installation Plathynes
+        install_dir = plath.get("install_dir", "")
+        if install_dir:
+            self.var_plath_install_dir.set(install_dir)
+        # Dossiers pluies/débits — défaut = dossiers outil (_get_out_dirs) si non configurés
         pluies_dir = plath.get("pluies_dir", "")
         debits_dir = plath.get("debits_dir", "")
         if not pluies_dir or not debits_dir:
-            _, _hu, _p, _ = self._get_out_dirs()
-            _d, _, _, _ = self._get_out_dirs()
+            _d, _, _p, _ = self._get_out_dirs()
             if not pluies_dir:
                 pluies_dir = _p
             if not debits_dir:
@@ -3290,6 +3328,7 @@ class App(tk.Tk):
         self.config_data[seuils_key] = seuils
         self.config_data["plathynes"] = {
             "prj_path":    self.var_prj_path.get().strip(),
+            "install_dir": self.var_plath_install_dir.get().strip(),
             "pluies_dir":  self.var_plath_pluies_dir.get().strip(),
             "debits_dir":  self.var_plath_debits_dir.get().strip(),
             "pdt_forcage": self.var_plath_pdt_forcage.get(),

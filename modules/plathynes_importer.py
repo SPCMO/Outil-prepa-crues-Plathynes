@@ -182,12 +182,41 @@ def _lire_dates_q(q_src):
     return None, None
 
 
-def _generer_evt(nom_evt, q_src, evt_path, log_fn,
+def _lire_hu_debut(hu_src):
+    """Retourne la première valeur HU_moy depuis un fichier HU-Ep_*.csv.
+
+    Format attendu (séparateur ';') :
+        date;HU_moy
+        DD/MM/YYYY HH:MM;valeur
+
+    Retourne None si le fichier est absent ou illisible.
+    """
+    if not hu_src or not os.path.isfile(hu_src):
+        return None
+    try:
+        with open(hu_src, encoding="utf-8", errors="replace") as fh:
+            for raw in fh:
+                raw = raw.strip()
+                if not raw or raw.lower().startswith("date"):
+                    continue
+                parts = raw.split(";")
+                if len(parts) >= 2:
+                    try:
+                        return float(parts[1].strip())
+                    except ValueError:
+                        continue
+    except OSError:
+        pass
+    return None
+
+
+def _generer_evt(nom_evt, q_src, hu_src, evt_path, log_fn,
                  pdt_forcage="00:15", pdt_calcul="00:15",
                  pdt_sorties="00:15", pdt_bilans="00:15"):
     """Génère le fichier .evt (descripteur principal de l'évènement Plathynes).
 
     Les dates sont lues depuis le fichier Q pour être exactes.
+    L'HU initial est lu depuis la première ligne de HU-Ep_*.csv.
     Les pas de temps sont paramétrables (en HH:MM).
     """
     date_deb, date_fin = _lire_dates_q(q_src) if (q_src and os.path.isfile(q_src)) else (None, None)
@@ -198,8 +227,23 @@ def _generer_evt(nom_evt, q_src, evt_path, log_fn,
         deb_str = date_deb.strftime("%Y-%m-%d %H:%M:%S")
         fin_str = date_fin.strftime("%Y-%m-%d %H:%M:%S")
 
-    mrr_rel = f"Ev_{nom_evt}\\{nom_evt}_RRobs.mrr"
-    mqo_rel = f"Ev_{nom_evt}\\{nom_evt}_1.mqo"
+    hu_debut = _lire_hu_debut(hu_src)
+
+    # Chemins relatifs avec slashes (convention Plathynes _HU)
+    mrr_rel = f"Ev_{nom_evt}/{nom_evt}_RRobs.mrr"
+    mqo_rel = f"Ev_{nom_evt}/{nom_evt}_1.mqo"
+
+    # Section Parameters (HU initial) — ajoutée seulement si HU disponible
+    params_block = ""
+    if hu_debut is not None:
+        params_block = (
+            "#===============================================================================\n"
+            "# Parameters\n"
+            "#===============================================================================\n"
+            "Nombre de parametres evenementiels: 1\n"
+            f"Parametre evenementiel: U {hu_debut} HU\n"
+            "\n"
+        )
 
     content = (
         "#===============================================================================\n"
@@ -218,6 +262,7 @@ def _generer_evt(nom_evt, q_src, evt_path, log_fn,
         f"Pas de temps des sorties: {pdt_sorties}\n"
         f"Pas de temps des bilans: {pdt_bilans}\n"
         "\n"
+        + params_block +
         "#===============================================================================\n"
         "# Forcing settings\n"
         "#===============================================================================\n"
@@ -233,7 +278,8 @@ def _generer_evt(nom_evt, q_src, evt_path, log_fn,
     )
     with open(evt_path, "w", encoding="utf-8", newline="\r\n") as fh:
         fh.write(content)
-    log_fn(f"  → EVT généré : {deb_str} → {fin_str}")
+    hu_msg = f", HU début = {hu_debut}" if hu_debut is not None else " (HU non disponible)"
+    log_fn(f"  → EVT généré : {deb_str} → {fin_str}{hu_msg}")
 
 
 def _generer_mqo(nom_evt, q_src, mqo_path, nom_station, x, y, log_fn):
@@ -375,7 +421,7 @@ def importer_evenement(nom_evt, ep_key, grd_src_dir, q_src, hu_src,
 
     # ── 5. Générer .evt (fichier principal lu par Plathynes au chargement) ──
     evt_path = os.path.join(sals_dir, f"{nom_evt}.evt")
-    _generer_evt(nom_evt, q_src, evt_path, log,
+    _generer_evt(nom_evt, q_src, hu_src, evt_path, log,
                  pdt_forcage=pdt_forcage, pdt_calcul=pdt_calcul,
                  pdt_sorties=pdt_sorties, pdt_bilans=pdt_bilans)
 
