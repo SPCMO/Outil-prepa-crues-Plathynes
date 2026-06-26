@@ -13,15 +13,15 @@
   <path d="M0,210 Q40,195 62,205 Q85,218 102,192 Q115,172 124,155 Q132,140 140,146 Q150,156 160,178 Q172,202 192,193 Q210,184 232,197 Q246,206 256,205 L256,256 L0,256 Z"
         fill="#1A6BB5" opacity="0.55" clip-path="url(#c)"/>
 
-  <!-- Hydrogramme -->
-  <path d="M8,222 C20,220 38,216 55,211 C67,207 76,199 85,186 C94,173 101,155 111,144 C120,133 127,129 135,133 C143,138 150,152 159,170 C168,188 177,204 192,210 C207,216 220,213 238,209 C247,207 252,205 256,204"
+  <!-- Hydrogramme : montée rapide, décroissance lente -->
+  <path d="M8,218 C28,217 50,216 65,214 C74,209 80,198 87,181 C93,163 99,141 105,116 C107,107 108,100 110,95 C111,91 112,89 114,91 C118,97 124,114 133,136 C143,158 154,174 169,183 C183,190 200,194 218,197 C232,199 244,200 256,201"
         fill="none" stroke="#5BB8F5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#c)"/>
 
-  <!-- Point peak -->
-  <circle cx="135" cy="133" r="5.5" fill="#F0C040" clip-path="url(#c)"/>
+  <!-- Point peak rouge (cohérent avec seuil rouge) -->
+  <circle cx="110" cy="95" r="6" fill="#E53935" clip-path="url(#c)"/>
 
   <!-- Ligne verticale peak -->
-  <line x1="135" y1="145" x2="135" y2="230" stroke="#F0C040" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.7" clip-path="url(#c)"/>
+  <line x1="110" y1="108" x2="110" y2="230" stroke="#E53935" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.6" clip-path="url(#c)"/>
 
   <!-- Seuils horizontaux -->
   <line x1="4" y1="192" x2="252" y2="192" stroke="#FFDD57" stroke-width="1.2" stroke-dasharray="7,5" opacity="0.6" clip-path="url(#c)"/>
