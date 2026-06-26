@@ -1976,11 +1976,6 @@ class App(tk.Tk):
         def _plath_scroll(e):
             canvas_list.yview_scroll(int(-1 * (e.delta / 120)), "units")
 
-        def _bind_scroll(widget):
-            widget.bind("<MouseWheel>", _plath_scroll)
-            for child in widget.winfo_children():
-                _bind_scroll(child)
-
         canvas_list.bind("<Enter>", lambda e: canvas_list.bind_all(
             "<MouseWheel>", _plath_scroll))
         canvas_list.bind("<Leave>", lambda e: canvas_list.unbind_all(
@@ -2268,18 +2263,12 @@ class App(tk.Tk):
                "Vert": "#D5F5E3"}
         vig_on = {v for v, var in self._plath_vig_chk.items() if var.get()}
 
-        # Décocher les épisodes qui vont être masqués
+        rows_shown = 0
         for ep_key, var, data in self._plath_ep_rows:
             vig_lbl = data["vig_lbl"]
             visible = (vig_lbl == "—" or vig_lbl in vig_on)
             if not visible:
                 var.set(False)
-
-        rows_shown = 0
-        for ep_key, var, data in self._plath_ep_rows:
-            vig_lbl = data["vig_lbl"]
-            # "—" (pas de Q) : toujours affiché
-            if vig_lbl != "—" and vig_lbl not in vig_on:
                 continue
 
             dt = data["dt"]
@@ -2412,7 +2401,6 @@ class App(tk.Tk):
 
     def _plath_aide_pdt(self):
         """Ouvre l'aide Plathynes sur les formats de fichier .evt."""
-        import webbrowser
         install_dir = self.var_plath_install_dir.get().strip()
         if not install_dir:
             messagebox.showinfo(
