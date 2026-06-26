@@ -175,7 +175,7 @@ def bilan(py_ok, manquants_req, manquants_fich):
         print("  Commande de lancement :")
         print("    python main.py")
         print()
-        print("  Ou double-cliquez sur  Lancer_outil.bat")
+        print("  Ou double-cliquez sur  Lancer_OPALE.bat")
     else:
         print("  [!!] Des problemes ont ete detectes :")
         if not py_ok:

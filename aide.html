@@ -161,7 +161,7 @@
       <h3>Bilan affiché en fin de script</h3>
       <p>Le script se conclut par un bilan :</p>
       <ul>
-        <li><strong>[OK] Tout est en ordre</strong> → l'outil peut être lancé via <code>Lancer_outil.bat</code>.</li>
+        <li><strong>[OK] Tout est en ordre</strong> → l'outil peut être lancé via <code>Lancer_OPALE.bat</code>.</li>
         <li><strong>[!!] Des problèmes ont été détectés</strong> → consultez les lignes <code>[ERR]</code> pour identifier ce qui manque.</li>
       </ul>
     </div>
@@ -183,7 +183,7 @@
   <div class="step">
     <div class="step-num">4</div>
     <div class="step-content">
-      <h3>Double-cliquez sur <code>Lancer_outil.bat</code></h3>
+      <h3>Double-cliquez sur <code>Lancer_OPALE.bat</code></h3>
       <p>L'interface graphique s'ouvre. Configurez ensuite votre station dans l'onglet <span class="badge badge-config">Configuration</span> (voir le <strong>Tutoriel utilisateur</strong>).</p>
       <p>En cas d'erreur au démarrage, le bat affiche un message vous invitant à relancer <code>Test_pr_install.bat</code> pour diagnostiquer.</p>
     </div>
@@ -601,7 +601,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     </tr>
     <tr>
       <td><code>Pillow</code> <em>(optionnel)</em></td><td>9.0</td>
-      <td>Chargement et redimensionnement de <code>logo_lancer_outil.ico</code> pour l'affichage dans l'onglet Configuration (<code>Image.open</code> + <code>ImageTk.PhotoImage</code>). Si absent, le logo est simplement omis sans erreur.</td>
+      <td>Chargement et redimensionnement de <code>logo_OPALE.ico</code> pour l'affichage dans l'onglet Configuration (<code>Image.open</code> + <code>ImageTk.PhotoImage</code>). Si absent, le logo est simplement omis sans erreur.</td>
       <td><code>pip install pillow</code></td>
     </tr>
     <tr>
@@ -1321,13 +1321,13 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <div class="change-entry">
     <span class="change-tag ct-feat">Fonctionnalité</span>
     <strong>Logo et icône de l'outil</strong>
-    <p>Création d'un logo vectoriel (<code>logo_lancer_outil.svg</code>) représentant un hydrogramme de crue méditerranéenne : long plateau de débit de base, montée quasi-verticale, décrue exponentielle lente, point rouge au pic, trois seuils de vigilance en pointillés colorés, goutte d'eau et silhouette de montagne sur fond bleu nuit arrondi. Le script <code>creer_icone.py</code> (Pillow requis) génère <code>logo_lancer_outil.ico</code> en 6 tailles (16 à 256 px) pour association au raccourci <code>Lancer_outil.bat</code>.</p>
+    <p>Création d'un logo vectoriel (<code>logo_OPALE.svg</code>) représentant un hydrogramme de crue méditerranéenne : long plateau de débit de base, montée quasi-verticale, décrue exponentielle lente, point rouge au pic, trois seuils de vigilance en pointillés colorés, goutte d'eau et silhouette de montagne sur fond bleu nuit arrondi. Le script <code>creer_icone.py</code> (Pillow requis) génère <code>logo_OPALE.ico</code> en 6 tailles (16 à 256 px) pour association au raccourci <code>Lancer_OPALE.bat</code>.</p>
   </div>
 
   <div class="change-entry">
     <span class="change-tag ct-ux">UX</span>
     <strong>Icône dans la barre de titre et dans l'onglet Configuration</strong>
-    <p>Au démarrage, <code>self.iconbitmap("logo_lancer_outil.ico")</code> remplace l'icône par défaut de la fenêtre tkinter. Dans l'onglet Configuration, le logo (28×28 px, chargé via Pillow/ImageTk) s'affiche dans le bandeau bas à droite du lien contact <em>PIOT Charles-Eddy — SPCMO</em>.</p>
+    <p>Au démarrage, <code>self.iconbitmap("logo_OPALE.ico")</code> remplace l'icône par défaut de la fenêtre tkinter. Dans l'onglet Configuration, le logo (28×28 px, chargé via Pillow/ImageTk) s'affiche dans le bandeau bas à droite du lien contact <em>PIOT Charles-Eddy — SPCMO</em>.</p>
   </div>
 
   <h2>Onglet Visualisation — tri et pastilles</h2>

@@ -31,7 +31,7 @@ except ImportError:
     HAS_MPL = False
 
 
-TITRE = "Outil prépa crues Plathynes"
+TITRE = "OPALE — Outil de Préparation et d'Analyse pour le caLage d'Épisodes sous Plathynes"
 PDT_PLUIES_OPTIONS = {"15 minutes": 15, "30 minutes": 30, "1 heure": 60}
 PDT_DEBITS_OPTIONS = {"15 minutes": 15, "30 minutes": 30, "1 heure": 60}
 # PDT_HU est proposé directement dans _build_tab_extraction sous forme de liste
@@ -77,7 +77,7 @@ class App(tk.Tk):
         self.resizable(True, True)
         self.minsize(900, 700)
         _ico = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                            "logo_lancer_outil.ico")
+                            "logo_OPALE.ico")
         if os.path.isfile(_ico):
             try:
                 self.iconbitmap(_ico)
@@ -389,7 +389,7 @@ class App(tk.Tk):
         ))
 
         _ico_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                 "logo_lancer_outil.ico")
+                                 "logo_OPALE.ico")
         if os.path.isfile(_ico_path):
             try:
                 from PIL import Image, ImageTk
@@ -2559,7 +2559,7 @@ class App(tk.Tk):
                   font=("TkDefaultFont", 9), cursor="hand2",
                   command=self._ouvrir_aide).pack(side=tk.LEFT)
 
-        _ico_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo_lancer_outil.ico")
+        _ico_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo_OPALE.ico")
         if os.path.isfile(_ico_path):
             try:
                 from PIL import Image, ImageTk

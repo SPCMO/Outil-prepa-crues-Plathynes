@@ -33,7 +33,7 @@ copy config\config.exemple.json config\config.json
 # (ou directement via l'interface graphique)
 
 # 4. Lancer l'outil
-Lancer_outil.bat
+Lancer_OPALE.bat
 ```
 
 ## Configuration

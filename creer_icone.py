@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-creer_icone.py — Genere logo_lancer_outil.ico pour associer a Lancer_outil.bat
+creer_icone.py — Genere logo_OPALE.ico pour associer a Lancer_OPALE.bat
 Requiert : Pillow  (pip install pillow)
 """
 
 try:
-    from PIL import Image, ImageDraw
+    from PIL import Image, ImageDraw, ImageFont
 except ImportError:
     print("[ERREUR] Pillow n'est pas installe.")
     print("  Lancez :  pip install pillow")
@@ -38,21 +38,18 @@ def _draw_icon(S):
     d.polygon(mtn, fill=(22, 58, 107, 255))
 
     # ── Hydrogramme — points de la courbe ────────────────────────────────
-    # Debit de base plat (gauche), montee quasi-verticale, decrue exponentielle lente
-    # Ordonnees : 0 = haut, 1 = bas (y = frac * S)
-    # Pic a x~38%, y~18%
     curve = [
-        (int(S*.02), int(S*.91)),   # base gauche
+        (int(S*.02), int(S*.91)),
         (int(S*.10), int(S*.91)),
         (int(S*.20), int(S*.90)),
         (int(S*.28), int(S*.89)),
         (int(S*.33), int(S*.87)),
-        (int(S*.36), int(S*.80)),   # debut montee
+        (int(S*.36), int(S*.80)),
         (int(S*.38), int(S*.67)),
         (int(S*.39), int(S*.50)),
         (int(S*.40), int(S*.35)),
         (int(S*.40), int(S*.18)),   # PIC
-        (int(S*.42), int(S*.30)),   # amorce decrue
+        (int(S*.42), int(S*.30)),
         (int(S*.44), int(S*.44)),
         (int(S*.47), int(S*.55)),
         (int(S*.52), int(S*.64)),
@@ -60,7 +57,7 @@ def _draw_icon(S):
         (int(S*.68), int(S*.76)),
         (int(S*.78), int(S*.80)),
         (int(S*.88), int(S*.83)),
-        (int(S*.97), int(S*.85)),   # fin droite
+        (int(S*.97), int(S*.85)),
     ]
 
     # Remplissage sous la courbe
@@ -118,6 +115,32 @@ def _draw_icon(S):
     ]
     d.polygon(drop, fill=(91, 184, 245, 220))
 
+    # ── "OPALE" en bas de l'icone (tailles >= 48) ────────────────────────
+    if S >= 48:
+        font_size = max(8, S // 9)
+        font = None
+        for candidate in [
+            "C:/Windows/Fonts/arialbd.ttf",
+            "C:/Windows/Fonts/arial.ttf",
+            "C:/Windows/Fonts/calibrib.ttf",
+        ]:
+            try:
+                font = ImageFont.truetype(candidate, font_size)
+                break
+            except OSError:
+                continue
+        if font is None:
+            font = ImageFont.load_default()
+        text = "OPALE"
+        bbox = d.textbbox((0, 0), text, font=font)
+        tw = bbox[2] - bbox[0]
+        th = bbox[3] - bbox[1]
+        tx = (S - tw) // 2
+        ty = S - th - max(3, S // 20)
+        # Ombre legere
+        d.text((tx + 1, ty + 1), text, font=font, fill=(0, 0, 0, 160))
+        d.text((tx, ty), text, font=font, fill=(255, 255, 255, 230))
+
     # Bordure fine
     bw = max(1, S // 90)
     d.rounded_rectangle([0, 0, S-1, S-1], radius=r,
@@ -127,7 +150,7 @@ def _draw_icon(S):
 
 def main():
     base     = os.path.dirname(os.path.abspath(__file__))
-    ico_path = os.path.join(base, "logo_lancer_outil.ico")
+    ico_path = os.path.join(base, "logo_OPALE.ico")
 
     sizes  = [256, 128, 64, 48, 32, 16]
     frames = [_draw_icon(s) for s in sizes]
@@ -137,8 +160,8 @@ def main():
 
     print(f"[OK] Icone generee : {ico_path}")
     print()
-    print("Pour associer l'icone a Lancer_outil.bat :")
-    print("  1. Clic droit sur Lancer_outil.bat > Envoyer vers > Bureau (creer un raccourci)")
+    print("Pour associer l'icone a Lancer_OPALE.bat :")
+    print("  1. Clic droit sur Lancer_OPALE.bat > Envoyer vers > Bureau (creer un raccourci)")
     print("  2. Clic droit sur le raccourci > Proprietes > Changer d'icone...")
     print(f"  3. Parcourir vers : {ico_path}")
     print()
