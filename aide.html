@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aide — Outil préparation crues Plathynes</title>
+<title>Aide — OPALE</title>
 <style>
   :root {
     --blue-dark: #1A5276; --blue-med: #2E86C1; --blue-light: #D6EAF8;
@@ -116,7 +116,7 @@
 
 <!-- ══════════════════════════════════════════════════════ INSTALLATION -->
 <div id="tab-install" class="tab-panel">
-  <h1>Installation de l'outil</h1>
+  <h1>Installation d'OPALE</h1>
   <p>Avant le premier lancement, vérifiez que votre environnement Python est complet en exécutant le script de test fourni.</p>
 
   <h2>Étape 1 — Lancer le vérificateur d'environnement</h2>
@@ -179,7 +179,7 @@
     <p style="margin-top:8px">⚠️ Ne laissez pas votre PC connecté simultanément au RIE et à Internet sans autorisation — respectez la politique de sécurité de votre entité.</p>
   </div>
 
-  <h2>Étape 4 — Lancer l'outil</h2>
+  <h2>Étape 4 — Lancer OPALE</h2>
   <div class="step">
     <div class="step-num">4</div>
     <div class="step-content">
@@ -193,11 +193,11 @@
 
 <!-- ═══════════════════════════════════════════════════════════ TUTORIEL -->
 <div id="tab-tuto" class="tab-panel active">
-  <h1>Guide d'utilisation — Outil préparation crues Plathynes</h1>
-  <p>Ce guide vous accompagne pas à pas dans l'utilisation de l'outil, de la configuration initiale jusqu'à l'analyse comparative des épisodes de crue.</p>
+  <h1>Guide d'utilisation — OPALE</h1>
+  <p>Ce guide vous accompagne pas à pas dans l'utilisation d'OPALE, de la configuration initiale jusqu'à l'import des épisodes de crue dans Plathynes.</p>
 
   <h2>Avant de commencer</h2>
-  <p>L'outil nécessite :</p>
+  <p>OPALE nécessite :</p>
   <ul>
     <li>Un accès au réseau <strong>RIE</strong> (réseau interne SPC / SCV)</li>
     <li>Un compte <strong>PHyC</strong> (identifiant + mot de passe)</li>
@@ -1316,11 +1316,19 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <p>Chaque appel à <code>_refresh_analyse()</code> ajoutait une nouvelle colorbar sans supprimer l'ancienne, réduisant progressivement la zone graphique. Corrigé en remplaçant <code>ax.cla()</code> par <code>fig.clear()</code> + <code>fig.add_subplot(111)</code>, qui efface l'intégralité de la figure (axes et objets figure-level comme les colorbars) avant chaque tracé.</p>
   </div>
 
+  <h2>Nommage — OPALE</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>L'outil s'appelle désormais OPALE</strong>
+    <p><strong>OPALE — Outil de Préparation et d'Analyse pour le caLage d'Épisodes sous Plathynes.</strong> Le titre de la fenêtre principale, le lanceur (<code>Lancer_OPALE.bat</code>), l'icône (<code>logo_OPALE.ico</code>) et le SVG source (<code>logo_OPALE.svg</code>) ont été renommés en conséquence. L'icône intègre désormais le texte "OPALE" en blanc pour les tailles ≥ 48 px (généré par <code>creer_icone.py</code>).</p>
+  </div>
+
   <h2>Icône et logo</h2>
 
   <div class="change-entry">
     <span class="change-tag ct-feat">Fonctionnalité</span>
-    <strong>Logo et icône de l'outil</strong>
+    <strong>Logo et icône OPALE</strong>
     <p>Création d'un logo vectoriel (<code>logo_OPALE.svg</code>) représentant un hydrogramme de crue méditerranéenne : long plateau de débit de base, montée quasi-verticale, décrue exponentielle lente, point rouge au pic, trois seuils de vigilance en pointillés colorés, goutte d'eau et silhouette de montagne sur fond bleu nuit arrondi. Le script <code>creer_icone.py</code> (Pillow requis) génère <code>logo_OPALE.ico</code> en 6 tailles (16 à 256 px) pour association au raccourci <code>Lancer_OPALE.bat</code>.</p>
   </div>
 
