@@ -18,10 +18,10 @@
         fill="none" stroke="#5BB8F5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#c)"/>
 
   <!-- Point peak rouge (cohérent avec seuil rouge) -->
-  <circle cx="110" cy="95" r="6" fill="#E53935" clip-path="url(#c)"/>
+  <circle cx="112" cy="89" r="6" fill="#E53935" clip-path="url(#c)"/>
 
   <!-- Ligne verticale peak -->
-  <line x1="110" y1="108" x2="110" y2="230" stroke="#E53935" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.6" clip-path="url(#c)"/>
+  <line x1="112" y1="102" x2="112" y2="230" stroke="#E53935" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.6" clip-path="url(#c)"/>
 
   <!-- Seuils horizontaux -->
   <line x1="4" y1="192" x2="252" y2="192" stroke="#FFDD57" stroke-width="1.2" stroke-dasharray="7,5" opacity="0.6" clip-path="url(#c)"/>
