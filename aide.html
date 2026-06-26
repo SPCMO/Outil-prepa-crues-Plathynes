@@ -765,6 +765,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
 .sc-ext   { background:#FDEBD0; color:#784212; border:1.5px solid #E59866; }
 .sc-file  { background:#F4F6F6; color:#2C3E50; border:1.5px solid #AAB7B8; }
 .sc-disp  { background:#F4ECF7; color:#6C3483; border:1.5px solid #8E44AD; }
+.sc-plath { background:#F5EEF8; color:#4A235A; border:1.5px solid #7D3C98; }
 .syn-label { font-size:10px; color:#888; min-width:110px; text-align:right; padding-right:10px; flex:0 0 120px; }
 .syn-section { background:#F8F9FA; border-radius:10px; padding:14px 18px; margin-bottom:18px; border:1px solid #E0E0E0; }
 .syn-legend { display:flex; gap:12px; flex-wrap:wrap; margin:10px 0 4px; }
@@ -779,6 +780,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#FDEBD0;border-color:#E59866"></div> Service externe (réseau)</div>
   <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#F4F6F6;border-color:#AAB7B8"></div> Fichier disque</div>
   <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#F4ECF7;border-color:#8E44AD"></div> Affichage matplotlib</div>
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#F5EEF8;border-color:#7D3C98"></div> Application Plathynes</div>
 </div>
 
 <div class="syn-section">
@@ -861,6 +863,45 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <div class="syn-cell sc-ui">_plot_analyse()</div>
     <div class="syn-arrow">→</div>
     <div class="syn-cell sc-disp">Bubble chart<br>Q max / HU début<br>/ cumul pluie</div>
+  </div>
+</div>
+</div>
+
+<div class="syn-section">
+<strong style="font-size:12px;color:#555">④ IMPORT DANS PLATHYNES</strong>
+<div class="syn" style="margin-top:10px">
+  <div class="syn-row">
+    <div class="syn-cell sc-user">Sélection .prj<br><small>+ dossiers sources</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_plath_refresh()<br><small>liste épisodes</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">Q-Ep_*.txt<br>HU-Ep_*.csv<br><small>(dates + HU)</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_plath_apply_filter()<br><small>grisé / barré / coché</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-disp">Liste épisodes<br><small>colorée par Vig.</small></div>
+  </div>
+  <div class="syn-row" style="margin-top:6px">
+    <div class="syn-cell sc-user">Cocher épisodes<br><small>+ clic Importer</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_plath_run_import()</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-mod">plathynes_importer<br><small>importer_evenement()</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">*.grd (R)<br>Q-Ep_*.txt (R)<br>HU-Ep_*.csv (R)</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">.evt + .mrr<br>.mqo + .prj (W)<br><small>projet Plathynes</small></div>
+  </div>
+  <div class="syn-row" style="margin-top:6px">
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+    <div class="syn-arrow"></div>
+    <div class="syn-cell sc-ui">_plath_ouvrir_avec_projet()</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-mod">plathynes.bat<br><small>chemin absolu .prj</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-plath">Plathynes GUI<br><small>projet chargé</small></div>
+    <div class="syn-arrow" style="color:transparent">→</div>
+    <div class="syn-cell" style="background:transparent;border:none"></div>
   </div>
 </div>
 </div>
