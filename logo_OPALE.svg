@@ -36,6 +36,12 @@
   <!-- Goutte d'eau -->
   <path d="M32,22 C32,22 18,41 18,50 C18,59 24,66 32,66 C40,66 46,59 46,50 C46,41 32,22 32,22 Z" fill="#5BB8F5" clip-path="url(#c)"/>
 
+  <!-- Texte OPALE en haut -->
+  <text x="129" y="37" text-anchor="middle" font-family="Arial,sans-serif" font-size="32" font-weight="700"
+        fill="#000000" opacity="0.35" clip-path="url(#c)">OPALE</text>
+  <text x="128" y="36" text-anchor="middle" font-family="Arial,sans-serif" font-size="32" font-weight="700"
+        fill="#FFFFFF" opacity="0.92" clip-path="url(#c)">OPALE</text>
+
   <!-- Bordure -->
   <rect x="0" y="0" width="256" height="256" rx="40" fill="none" stroke="#2A5FA8" stroke-width="2.5"/>
 </svg>
