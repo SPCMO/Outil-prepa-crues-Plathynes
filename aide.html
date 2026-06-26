@@ -226,113 +226,121 @@
 <!-- ══════════════════════════════════════════════════════ WORKFLOW CALAGE -->
 <div id="tab-workflow" class="tab-panel">
   <h1>Workflow — Calage sous Plathynes</h1>
-  <p>Ce synoptique situe OPALE dans l'ensemble du processus de calage hydrologique. OPALE automatise la <strong>phase de préparation des données</strong> (encadré cyan), entre la sélection des crues et le calage effectif dans Plathynes.</p>
+  <p>Vue d'ensemble du processus de calage hydrologique. OPALE intervient dans la <strong>phase de préparation des données</strong> (encadré bleu/cyan). Les étapes en <span style="display:inline-block;width:26px;height:10px;border:2px dashed #C0392B;background:#FFF0F5;border-radius:3px;vertical-align:middle"></span> rose tiretés sont répétées autant de fois qu'il y a de crues de calage.</p>
 
-  <div class="note note-info" style="margin-bottom:20px">
-    <strong>Légende des couleurs :</strong>
-    <span style="background:#FDE8F0;border:2px dashed #C0392B;padding:1px 8px;border-radius:4px;font-size:12px;margin:0 4px">rose/tiretés</span> = étapes auparavant réalisées manuellement avec XISBERT, désormais prises en charge par OPALE.
-  </div>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" style="width:100%;max-width:900px;display:block;margin:0 auto;font-family:'Segoe UI',Arial,sans-serif">
 
-  <div class="wf-wrap">
+    <defs>
+      <marker id="wf-arr" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto">
+        <polygon points="0 0, 9 3.5, 0 7" fill="#777"/>
+      </marker>
+      <marker id="wf-arr-b" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto">
+        <polygon points="0 0, 9 3.5, 0 7" fill="#2E86C1"/>
+      </marker>
+    </defs>
 
-    <!-- ① PLATHYNES — création modèle (une fois) -->
-    <div class="wf-box-ext wf-plath-create">
-      <strong>🔷 PLATHYNES — Création du modèle <em style="font-weight:400;font-size:12px">(une fois)</em></strong>
-      <ul>
-        <li>Création d'un nouveau modèle</li>
-        <li>Ajout MNT</li>
-        <li>Ajout masque</li>
-      </ul>
-    </div>
+    <!-- ══ ENCADRÉ ROSE/TIRETÉS — × nb crues de calage (blocs 2,3,4,5) ══ -->
+    <rect x="200" y="12" width="678" height="330" rx="10"
+          fill="rgba(253,232,240,0.35)" stroke="#C0392B" stroke-width="2" stroke-dasharray="8,4"/>
+    <rect x="596" y="4" width="210" height="17" rx="8" fill="#C0392B"/>
+    <text x="701" y="16.5" text-anchor="middle" fill="white" font-size="10.5" font-weight="700">× nb crues de calage</text>
 
-    <div class="wf-arrow-c">↕</div>
-    <div class="wf-arrow-lbl">initialisation du modèle</div>
+    <!-- ══ ENCADRÉ OPALE/BLEU — blocs 2, 3 et 5 ══ -->
+    <rect x="205" y="18" width="400" height="320" rx="8"
+          fill="rgba(0,180,216,0.05)" stroke="#00B4D8" stroke-width="2.5"/>
+    <rect x="210" y="11" width="60" height="16" rx="8" fill="#00B4D8"/>
+    <text x="240" y="23" text-anchor="middle" fill="white" font-size="10.5" font-weight="700">OPALE</text>
 
-    <!-- ② OPALE (encadré principal) -->
-    <div class="wf-opale-outer">
-      <span class="wf-opale-lbl">OPALE</span>
+    <!-- ══ BLOC 1 — Sélection des crues sur OCTAVE (hors OPALE) ══ -->
+    <rect x="10" y="48" width="178" height="98" rx="6" fill="#FDEBD0" stroke="#E59866" stroke-width="1.5"/>
+    <text x="99" y="70" text-anchor="middle" font-size="11" font-weight="700" fill="#7D4B00">Sélection des crues</text>
+    <text x="99" y="87" text-anchor="middle" font-size="11" fill="#7D4B00">sur OCTAVE</text>
+    <line x1="20" y1="93" x2="178" y2="93" stroke="#E59866" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="99" y="108" text-anchor="middle" font-size="10" fill="#9A5B00">→ Catalogue *.csv</text>
+    <text x="99" y="122" text-anchor="middle" font-size="10" fill="#9A5B00">→ Sélection épisodes calage</text>
 
-      <!-- Entrée : sélection crues -->
-      <div class="wf-input-row">
-        <div class="wf-input-b">
-          <strong>Sélection des crues</strong>
-          OCTAVE → Catalogue *.csv
-        </div>
-        <span style="color:#aaa;font-size:20px">→</span>
-      </div>
+    <!-- Flèche B1 → B2 -->
+    <line x1="188" y1="97" x2="213" y2="97" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
 
-      <!-- Grille interne 3 colonnes -->
-      <div class="wf-inner-grid">
+    <!-- ══ BLOC 2a — OCTAVE (dans OPALE) ══ -->
+    <rect x="220" y="30" width="165" height="93" rx="5" fill="#FEF9E7" stroke="#E59866" stroke-width="1.5"/>
+    <text x="302" y="51" text-anchor="middle" font-size="11" font-weight="700" fill="#7D4B00">OCTAVE</text>
+    <line x1="228" y1="57" x2="377" y2="57" stroke="#E59866" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="302" y="72" text-anchor="middle" font-size="10" fill="#555">Extraction Q + ctrl lacunes</text>
+    <text x="302" y="86" text-anchor="middle" font-size="10" fill="#555">Visualisation HU</text>
+    <text x="302" y="100" text-anchor="middle" font-size="10" fill="#888">(OCTAVE ou SN)</text>
 
-        <!-- Colonne 1 : OCTAVE + QGIS -->
-        <div class="wf-col">
-          <div class="wf-ib wf-octave">
-            <strong>OCTAVE</strong>
-            Extraction Q + ctrl lacunes<br>
-            Visualisation HU<br>
-            <em>(source : OCTAVE ou SN)</em>
-          </div>
-          <div class="wf-ib wf-qgis">
-            <strong>QGIS</strong>
-            Définition Bounding Box BV
-          </div>
-        </div>
+    <!-- Séparateur + -->
+    <text x="302" y="137" text-anchor="middle" font-size="16" font-weight="700" fill="#bbb">+</text>
 
-        <!-- Flèche →  -->
-        <div class="wf-mid-arrow">→</div>
+    <!-- ══ BLOC 2b — QGIS (dans OPALE) ══ -->
+    <rect x="220" y="145" width="165" height="65" rx="5" fill="#EBF5FB" stroke="#2E86C1" stroke-width="1.5"/>
+    <text x="302" y="165" text-anchor="middle" font-size="11" font-weight="700" fill="#1A5276">QGIS</text>
+    <line x1="228" y1="171" x2="377" y2="171" stroke="#2E86C1" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="302" y="186" text-anchor="middle" font-size="10" fill="#555">Définition Bounding Box BV</text>
+    <text x="302" y="200" text-anchor="middle" font-size="10" fill="#888">(emprise bassin versant)</text>
 
-        <!-- Colonne 2 : BDImage / ASPIMAGE -->
-        <div class="wf-col">
-          <div class="wf-ib wf-bdimg">
-            <strong>OPALE — BDImage</strong>
-            Extraction pluies spatialisées<br>
-            + contrôle lacunes
-          </div>
-        </div>
+    <!-- Flèche QGIS → ASPIMAGE -->
+    <line x1="385" y1="177" x2="413" y2="177" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
 
-        <!-- Flèche →  -->
-        <div class="wf-mid-arrow">→</div>
+    <!-- ══ BLOC 3 — ASPIMAGE (dans OPALE) ══ -->
+    <rect x="416" y="30" width="172" height="178" rx="5" fill="#E9F7EF" stroke="#27AE60" stroke-width="1.5"/>
+    <text x="502" y="52" text-anchor="middle" font-size="11" font-weight="700" fill="#1D6A39">ASPIMAGE</text>
+    <line x1="424" y1="58" x2="580" y2="58" stroke="#27AE60" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="502" y="74" text-anchor="middle" font-size="10" fill="#555">Extraction pluies</text>
+    <text x="502" y="88" text-anchor="middle" font-size="10" fill="#555">spatialisées</text>
+    <text x="502" y="102" text-anchor="middle" font-size="10" fill="#555">+ contrôle lacunes</text>
 
-        <!-- Colonne 3 : sélection crues + XISBERT (ancien) + import Plathynes -->
-        <div class="wf-col">
-          <div class="wf-ib wf-xsel">
-            <strong>Sélection X crues pour calage</strong>
-            <em>(filtre dans OPALE)</em>
-          </div>
-          <div class="wf-ib wf-xisb">
-            <strong>XISBERT</strong>
-            <em>Mise en forme des fichiers<br>(étape remplacée par OPALE)</em>
-          </div>
-          <div class="wf-ib wf-plath-import">
-            <strong>🟣 PLATHYNES — Import par évènement</strong>
-            → Pluies + modification pdt<br>
-            → Q + définition format colonnes<br>
-            → HU de départ
-          </div>
-        </div>
+    <!-- Flèche ASPIMAGE → B4 (sort d'OPALE) -->
+    <line x1="588" y1="119" x2="617" y2="119" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
 
-      </div><!-- /inner-grid -->
-    </div><!-- /wf-opale-outer -->
+    <!-- ══ BLOC 4 — PLATHYNES Création modèle (hors OPALE, dans rose) ══ -->
+    <rect x="620" y="18" width="243" height="178" rx="5" fill="#F5EEF8" stroke="#4A235A" stroke-width="1.5"/>
+    <text x="741" y="41" text-anchor="middle" font-size="11" font-weight="700" fill="#4A235A">PLATHYNES</text>
+    <text x="741" y="57" text-anchor="middle" font-size="10.5" fill="#4A235A">Création d'un nouveau modèle</text>
+    <line x1="629" y1="63" x2="854" y2="63" stroke="#C8A9D8" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="741" y="81" text-anchor="middle" font-size="10" fill="#555">• Création du modèle</text>
+    <text x="741" y="97" text-anchor="middle" font-size="10" fill="#555">• Ajout MNT</text>
+    <text x="741" y="113" text-anchor="middle" font-size="10" fill="#555">• Ajout masque</text>
 
-    <!-- Flèche vers calage + boucle -->
-    <div class="wf-loop-note">
-      <span class="wf-loop-arrow">↓</span>
-      <span>itération possible → boucle retour vers OPALE si ajustement nécessaire</span>
-    </div>
+    <!-- Flèche B4 ↓ puis ← vers B5 (retour dans OPALE) -->
+    <path d="M 741,196 L 741,222 L 500,222 L 500,232"
+          stroke="#999" stroke-width="1.5" fill="none" stroke-dasharray="5,3"
+          marker-end="url(#wf-arr)"/>
 
-    <!-- ③ PLATHYNES — Calage -->
-    <div class="wf-box-ext wf-plath-calage">
-      <strong>🔷 PLATHYNES — Calage des paramètres</strong>
-    </div>
+    <!-- ══ BLOC 5 — PLATHYNES Ajout par évènement (dans OPALE, dans rose) ══ -->
+    <rect x="220" y="232" width="383" height="93" rx="5" fill="#F5EEF8" stroke="#4A235A" stroke-width="1.5"/>
+    <text x="411" y="254" text-anchor="middle" font-size="11" font-weight="700" fill="#4A235A">PLATHYNES — Ajout par évènement</text>
+    <line x1="228" y1="260" x2="595" y2="260" stroke="#C8A9D8" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="411" y="276" text-anchor="middle" font-size="10" fill="#555">→ Pluies + modification pas de temps</text>
+    <text x="411" y="291" text-anchor="middle" font-size="10" fill="#555">→ Q + définition format colonnes</text>
+    <text x="411" y="306" text-anchor="middle" font-size="10" fill="#555">→ HU de départ</text>
 
-    <div class="wf-arrow-c">↓</div>
+    <!-- Flèche sortie OPALE/rose → B6 -->
+    <line x1="411" y1="348" x2="411" y2="398" stroke="#2E86C1" stroke-width="1.5" marker-end="url(#wf-arr-b)"/>
 
-    <!-- ④ FORT — mise en port -->
-    <div class="wf-box-ext wf-fort">
-      <strong>✅ FORT — Mise en port du modèle</strong>
-    </div>
+    <!-- ══ BLOC 6 — PLATHYNES Calage des paramètres (hors OPALE) ══ -->
+    <rect x="253" y="401" width="315" height="75" rx="6" fill="#EBF5FB" stroke="#2E86C1" stroke-width="1.5"/>
+    <text x="411" y="424" text-anchor="middle" font-size="11" font-weight="700" fill="#1A5276">PLATHYNES</text>
+    <text x="411" y="440" text-anchor="middle" font-size="10.5" fill="#1A5276">Calage des paramètres</text>
+    <text x="411" y="456" text-anchor="middle" font-size="10" fill="#555">(fonctions de régression…)</text>
 
-  </div><!-- /wf-wrap -->
+    <!-- Flèche B6 → B7 -->
+    <line x1="411" y1="476" x2="411" y2="506" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+
+    <!-- ══ BLOC 7 — POM (hors OPALE) ══ -->
+    <rect x="297" y="508" width="228" height="60" rx="6" fill="#D5F5E3" stroke="#1D6A39" stroke-width="1.5"/>
+    <text x="411" y="532" text-anchor="middle" font-size="11" font-weight="700" fill="#1D6A39">POM</text>
+    <text x="411" y="549" text-anchor="middle" font-size="10.5" fill="#1D6A39">Mise en POM du modèle calé</text>
+
+    <!-- ══ LÉGENDE ══ -->
+    <text x="10" y="588" font-size="10" fill="#888" font-style="italic">Légende :</text>
+    <rect x="68" y="579" width="14" height="10" rx="2" fill="rgba(0,180,216,0.08)" stroke="#00B4D8" stroke-width="1.5"/>
+    <text x="86" y="588" font-size="10" fill="#555">Étapes prises en charge par OPALE</text>
+    <rect x="295" y="579" width="14" height="10" rx="2" fill="rgba(253,232,240,0.5)" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <text x="313" y="588" font-size="10" fill="#555">Répété × nb crues de calage</text>
+
+  </svg>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ TUTORIEL -->
