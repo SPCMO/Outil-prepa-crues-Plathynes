@@ -282,8 +282,9 @@
     <text x="301" y="95" text-anchor="middle" font-size="10" fill="#555">Visualisation HU</text>
     <text x="301" y="109" text-anchor="middle" font-size="10" fill="#888">(OCTAVE ou SN)</text>
 
-    <!-- "+" B2/B3 -->
-    <text x="301" y="148" text-anchor="middle" font-size="16" font-weight="700" fill="#bbb">+</text>
+    <!-- "+" B2/B3 sur fond blanc -->
+    <circle cx="301" cy="143" r="11" fill="white" stroke="#ccc" stroke-width="1"/>
+    <text x="301" y="149" text-anchor="middle" font-size="17" font-weight="700" fill="#777">+</text>
 
     <!-- ══ B3 — QGIS y=156 (pas de pink, une seule fois) ══ -->
     <rect x="220" y="156" width="162" height="68" rx="5" fill="#EBF5FB" stroke="#2E86C1" stroke-width="1.5"/>
@@ -291,8 +292,10 @@
     <line x1="228" y1="182" x2="374" y2="182" stroke="#2E86C1" stroke-width="1" stroke-dasharray="3,2"/>
     <text x="301" y="197" text-anchor="middle" font-size="10" fill="#555">Définition Bounding Box BV</text>
     <text x="301" y="212" text-anchor="middle" font-size="10" fill="#888">(emprise BV + marge)</text>
-    <!-- Flèche B3 → B4 -->
-    <line x1="382" y1="190" x2="413" y2="190" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+    <!-- Flèches B2+B3 → B4 en Y : branche B2 descend jusqu'au niveau B3, puis merge → B4 -->
+    <path d="M 382,87 L 402,87 L 402,190 L 414,190"
+          stroke="#777" stroke-width="1.5" fill="none" marker-end="url(#wf-arr)"/>
+    <line x1="382" y1="190" x2="402" y2="190" stroke="#777" stroke-width="1.5"/>
 
     <!-- ══ B4 — ASPIMAGE y=156 (dans pink y=148) ══ -->
     <rect x="416" y="156" width="172" height="75" rx="5" fill="#E9F7EF" stroke="#27AE60" stroke-width="1.5"/>
