@@ -228,8 +228,7 @@
   <h1>Workflow — Calage sous Plathynes</h1>
   <p>Vue d'ensemble du processus de calage hydrologique. OPALE intervient dans la <strong>phase de préparation des données</strong> (encadré bleu/cyan). Les étapes en <span style="display:inline-block;width:26px;height:10px;border:2px dashed #C0392B;background:#FFF0F5;border-radius:3px;vertical-align:middle"></span> rose tiretés sont répétées autant de fois qu'il y a de crues de calage.</p>
 
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 645" style="width:100%;max-width:900px;display:block;margin:0 auto;font-family:'Segoe UI',Arial,sans-serif">
-
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 675" style="width:100%;max-width:900px;display:block;margin:0 auto;font-family:'Segoe UI',Arial,sans-serif">
     <defs>
       <marker id="wf-arr" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto">
         <polygon points="0 0, 9 3.5, 0 7" fill="#777"/>
@@ -239,116 +238,115 @@
       </marker>
     </defs>
 
-    <!-- ══ ENCADRÉ OPALE/BLEU — B2, B3, B4, B6 ══ -->
-    <rect x="205" y="28" width="400" height="400" rx="8"
+    <!-- ══ ENCADRÉ OPALE — remonté, libellé bien visible ══ -->
+    <rect x="205" y="22" width="406" height="436" rx="8"
           fill="rgba(0,180,216,0.05)" stroke="#00B4D8" stroke-width="2.5"/>
-    <rect x="210" y="18" width="60" height="18" rx="9" fill="#00B4D8"/>
-    <text x="240" y="31" text-anchor="middle" fill="white" font-size="11" font-weight="700">OPALE</text>
+    <rect x="210" y="8" width="64" height="22" rx="11" fill="#00B4D8"/>
+    <text x="242" y="24" text-anchor="middle" fill="white" font-size="12" font-weight="700">OPALE</text>
 
-    <!-- ══ ROSE/TIRETÉS B2 — OCTAVE ══ -->
-    <rect x="216" y="35" width="170" height="103" rx="6"
+    <!-- ══ ROSE/TIRETÉS B2 — OCTAVE : 8 px de marge autour du bloc ══ -->
+    <!-- B2 sera en y=40,h=95 → pink y=32,h=111 -->
+    <rect x="212" y="32" width="178" height="111" rx="7"
           fill="rgba(253,232,240,0.45)" stroke="#C0392B" stroke-width="2" stroke-dasharray="7,4"/>
+    <rect x="278" y="26" width="96" height="13" rx="6" fill="#C0392B"/>
+    <text x="326" y="36.5" text-anchor="middle" fill="white" font-size="9" font-weight="700">× nb crues de calage</text>
 
-    <!-- ══ ROSE/TIRETÉS B4 — ASPIMAGE ══ -->
-    <rect x="412" y="145" width="180" height="82" rx="6"
+    <!-- ══ ROSE/TIRETÉS B4 — ASPIMAGE : 8 px de marge autour du bloc ══ -->
+    <!-- B4 sera en y=156,h=75 → pink y=148,h=91 -->
+    <rect x="408" y="148" width="188" height="91" rx="7"
           fill="rgba(253,232,240,0.45)" stroke="#C0392B" stroke-width="2" stroke-dasharray="7,4"/>
+    <rect x="454" y="142" width="96" height="13" rx="6" fill="#C0392B"/>
+    <text x="502" y="152.5" text-anchor="middle" fill="white" font-size="9" font-weight="700">× nb crues de calage</text>
 
-    <!-- ══ ROSE/TIRETÉS B6 — PLATHYNES Ajout par évènement ══ -->
-    <rect x="216" y="283" width="388" height="126" rx="6"
+    <!-- ══ ROSE/TIRETÉS B6 — PLATHYNES Ajout evt : 8 px de marge autour du bloc ══ -->
+    <!-- B6 sera en y=298,h=120 → pink y=290,h=136 -->
+    <rect x="212" y="290" width="390" height="136" rx="7"
           fill="rgba(253,232,240,0.45)" stroke="#C0392B" stroke-width="2" stroke-dasharray="7,4"/>
+    <rect x="358" y="284" width="96" height="13" rx="6" fill="#C0392B"/>
+    <text x="406" y="294.5" text-anchor="middle" fill="white" font-size="9" font-weight="700">× nb crues de calage</text>
 
-    <!-- Label partagé × nb crues -->
-    <rect x="436" y="20" width="155" height="15" rx="7" fill="#C0392B"/>
-    <text x="513" y="31" text-anchor="middle" fill="white" font-size="10" font-weight="700">× nb crues de calage</text>
-
-    <!-- ══ B1 — Sélection des crues (hors OPALE, haut-gauche) ══ -->
+    <!-- ══ B1 — Sélection des crues (hors OPALE) ══ -->
     <rect x="10" y="42" width="178" height="80" rx="6" fill="#FDEBD0" stroke="#E59866" stroke-width="1.5"/>
-    <text x="99" y="61" text-anchor="middle" font-size="11" font-weight="700" fill="#7D4B00">Sélection des crues</text>
-    <line x1="17" y1="67" x2="181" y2="67" stroke="#E59866" stroke-width="1" stroke-dasharray="3,2"/>
-    <text x="19" y="82" text-anchor="start" font-size="10" fill="#7D4B00">→ Sélection épisodes de crues</text>
-    <text x="19" y="97" text-anchor="start" font-size="10" fill="#9A5B00">→ Catalogue *.csv</text>
-
+    <text x="99" y="62" text-anchor="middle" font-size="11" font-weight="700" fill="#7D4B00">Sélection des crues</text>
+    <line x1="17" y1="68" x2="181" y2="68" stroke="#E59866" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="19" y="83" text-anchor="start" font-size="10" fill="#7D4B00">→ Sélection épisodes de crues</text>
+    <text x="19" y="98" text-anchor="start" font-size="10" fill="#9A5B00">→ Catalogue *.csv</text>
     <!-- Flèche B1 → B2 -->
-    <line x1="188" y1="82" x2="213" y2="82" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+    <line x1="188" y1="83" x2="213" y2="83" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
 
-    <!-- ══ B2 — OCTAVE (dans OPALE, dans rose) ══ -->
-    <rect x="220" y="30" width="162" height="95" rx="5" fill="#FEF9E7" stroke="#E59866" stroke-width="1.5"/>
-    <text x="301" y="50" text-anchor="middle" font-size="11" font-weight="700" fill="#7D4B00">OCTAVE</text>
-    <line x1="228" y1="56" x2="374" y2="56" stroke="#E59866" stroke-width="1" stroke-dasharray="3,2"/>
-    <text x="301" y="71" text-anchor="middle" font-size="10" fill="#555">Extraction Q + ctrl lacunes</text>
-    <text x="301" y="85" text-anchor="middle" font-size="10" fill="#555">Visualisation HU</text>
-    <text x="301" y="99" text-anchor="middle" font-size="10" fill="#888">(OCTAVE ou SN)</text>
+    <!-- ══ B2 — OCTAVE y=40 (dans pink y=32) ══ -->
+    <rect x="220" y="40" width="162" height="95" rx="5" fill="#FEF9E7" stroke="#E59866" stroke-width="1.5"/>
+    <text x="301" y="60" text-anchor="middle" font-size="11" font-weight="700" fill="#7D4B00">OCTAVE</text>
+    <line x1="228" y1="66" x2="374" y2="66" stroke="#E59866" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="301" y="81" text-anchor="middle" font-size="10" fill="#555">Extraction Q + ctrl lacunes</text>
+    <text x="301" y="95" text-anchor="middle" font-size="10" fill="#555">Visualisation HU</text>
+    <text x="301" y="109" text-anchor="middle" font-size="10" fill="#888">(OCTAVE ou SN)</text>
 
-    <!-- "+" séparateur B2/B3 -->
-    <text x="301" y="134" text-anchor="middle" font-size="16" font-weight="700" fill="#bbb">+</text>
+    <!-- "+" B2/B3 -->
+    <text x="301" y="148" text-anchor="middle" font-size="16" font-weight="700" fill="#bbb">+</text>
 
-    <!-- ══ B3 — QGIS (dans OPALE, dans rose) ══ -->
-    <rect x="220" y="141" width="162" height="68" rx="5" fill="#EBF5FB" stroke="#2E86C1" stroke-width="1.5"/>
-    <text x="301" y="161" text-anchor="middle" font-size="11" font-weight="700" fill="#1A5276">QGIS</text>
-    <line x1="228" y1="167" x2="374" y2="167" stroke="#2E86C1" stroke-width="1" stroke-dasharray="3,2"/>
-    <text x="301" y="182" text-anchor="middle" font-size="10" fill="#555">Définition Bounding Box BV</text>
-    <text x="301" y="197" text-anchor="middle" font-size="10" fill="#888">(emprise BV + marge)</text>
-
+    <!-- ══ B3 — QGIS y=156 (pas de pink, une seule fois) ══ -->
+    <rect x="220" y="156" width="162" height="68" rx="5" fill="#EBF5FB" stroke="#2E86C1" stroke-width="1.5"/>
+    <text x="301" y="176" text-anchor="middle" font-size="11" font-weight="700" fill="#1A5276">QGIS</text>
+    <line x1="228" y1="182" x2="374" y2="182" stroke="#2E86C1" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="301" y="197" text-anchor="middle" font-size="10" fill="#555">Définition Bounding Box BV</text>
+    <text x="301" y="212" text-anchor="middle" font-size="10" fill="#888">(emprise BV + marge)</text>
     <!-- Flèche B3 → B4 -->
-    <line x1="382" y1="175" x2="413" y2="175" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+    <line x1="382" y1="190" x2="413" y2="190" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
 
-    <!-- ══ B4 — ASPIMAGE (dans OPALE, dans rose — démarre à la hauteur de B3) ══ -->
-    <rect x="416" y="141" width="172" height="75" rx="5" fill="#E9F7EF" stroke="#27AE60" stroke-width="1.5"/>
-    <text x="502" y="161" text-anchor="middle" font-size="11" font-weight="700" fill="#1D6A39">ASPIMAGE</text>
-    <line x1="424" y1="167" x2="580" y2="167" stroke="#27AE60" stroke-width="1" stroke-dasharray="3,2"/>
-    <text x="502" y="182" text-anchor="middle" font-size="10" fill="#555">Extraction pluies spatialisées</text>
-    <text x="502" y="197" text-anchor="middle" font-size="10" fill="#555">+ contrôle lacunes</text>
-
+    <!-- ══ B4 — ASPIMAGE y=156 (dans pink y=148) ══ -->
+    <rect x="416" y="156" width="172" height="75" rx="5" fill="#E9F7EF" stroke="#27AE60" stroke-width="1.5"/>
+    <text x="502" y="176" text-anchor="middle" font-size="11" font-weight="700" fill="#1D6A39">ASPIMAGE</text>
+    <line x1="424" y1="182" x2="580" y2="182" stroke="#27AE60" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="502" y="197" text-anchor="middle" font-size="10" fill="#555">Extraction pluies spatialisées</text>
+    <text x="502" y="212" text-anchor="middle" font-size="10" fill="#555">+ contrôle lacunes</text>
     <!-- Flèche B4 → B5 (sort d'OPALE) -->
-    <line x1="588" y1="178" x2="619" y2="178" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+    <line x1="588" y1="193" x2="619" y2="193" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
 
-    <!-- ══ B5 — PLATHYNES Création modèle (hors OPALE) ══ -->
-    <rect x="622" y="141" width="242" height="108" rx="5" fill="#F5EEF8" stroke="#4A235A" stroke-width="1.5"/>
-    <text x="743" y="161" text-anchor="middle" font-size="11" font-weight="700" fill="#4A235A">PLATHYNES</text>
-    <text x="743" y="176" text-anchor="middle" font-size="10.5" fill="#4A235A">Création d'un nouveau modèle</text>
-    <line x1="630" y1="182" x2="856" y2="182" stroke="#C8A9D8" stroke-width="1" stroke-dasharray="3,2"/>
-    <text x="633" y="198" text-anchor="start" font-size="10" fill="#555">→ Création du modèle</text>
-    <text x="633" y="214" text-anchor="start" font-size="10" fill="#555">→ Ajout MNT</text>
-    <text x="633" y="230" text-anchor="start" font-size="10" fill="#555">→ Ajout masque</text>
-
+    <!-- ══ B5 — PLATHYNES Création modèle y=156 (hors OPALE) ══ -->
+    <rect x="622" y="156" width="242" height="108" rx="5" fill="#F5EEF8" stroke="#4A235A" stroke-width="1.5"/>
+    <text x="743" y="176" text-anchor="middle" font-size="11" font-weight="700" fill="#4A235A">PLATHYNES</text>
+    <text x="743" y="191" text-anchor="middle" font-size="10.5" fill="#4A235A">Création d'un nouveau modèle</text>
+    <line x1="630" y1="197" x2="856" y2="197" stroke="#C8A9D8" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="633" y="213" text-anchor="start" font-size="10" fill="#555">→ Création du modèle</text>
+    <text x="633" y="229" text-anchor="start" font-size="10" fill="#555">→ Ajout MNT</text>
+    <text x="633" y="245" text-anchor="start" font-size="10" fill="#555">→ Ajout masque</text>
     <!-- Flèche B5 → B6 (retour dans OPALE) -->
-    <path d="M 743,249 L 743,272 L 409,272 L 409,282"
+    <path d="M 743,264 L 743,287 L 409,287 L 409,298"
           stroke="#999" stroke-width="1.5" fill="none" stroke-dasharray="5,3"
           marker-end="url(#wf-arr)"/>
 
-    <!-- ══ B6 — PLATHYNES Ajout par évènement (dans OPALE) ══ -->
-    <rect x="220" y="282" width="378" height="120" rx="5" fill="#F5EEF8" stroke="#4A235A" stroke-width="1.5"/>
-    <text x="409" y="303" text-anchor="middle" font-size="11" font-weight="700" fill="#4A235A">PLATHYNES — Ajout par évènement</text>
-    <line x1="228" y1="309" x2="590" y2="309" stroke="#C8A9D8" stroke-width="1" stroke-dasharray="3,2"/>
-    <text x="230" y="325" text-anchor="start" font-size="9.5" fill="#555">→ Pluies, ajout manuel + pas de temps + création *.mrr</text>
-    <text x="230" y="340" text-anchor="start" font-size="9.5" fill="#555">→ Q + définition format colonnes</text>
-    <text x="230" y="355" text-anchor="start" font-size="9.5" fill="#555">→ Paramétrages des différents pas de temps (calcul, sorties, bilans)</text>
-    <text x="230" y="370" text-anchor="start" font-size="9.5" fill="#555">→ Définition du HU comme paramètre évènementiel + saisie HU initial</text>
+    <!-- ══ B6 — PLATHYNES Ajout evt y=298 (dans pink y=290) ══ -->
+    <rect x="220" y="298" width="378" height="120" rx="5" fill="#F5EEF8" stroke="#4A235A" stroke-width="1.5"/>
+    <text x="409" y="318" text-anchor="middle" font-size="11" font-weight="700" fill="#4A235A">PLATHYNES — Ajout par évènement</text>
+    <line x1="228" y1="324" x2="590" y2="324" stroke="#C8A9D8" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="230" y="340" text-anchor="start" font-size="9.5" fill="#555">→ Pluies, ajout manuel + pas de temps + création *.mrr</text>
+    <text x="230" y="355" text-anchor="start" font-size="9.5" fill="#555">→ Q + définition format colonnes</text>
+    <text x="230" y="370" text-anchor="start" font-size="9.5" fill="#555">→ Paramétrages des différents pas de temps (calcul, sorties, bilans)</text>
+    <text x="230" y="385" text-anchor="start" font-size="9.5" fill="#555">→ Définition du HU comme paramètre évènementiel + saisie HU initial</text>
 
     <!-- Flèche sortie OPALE → B7 -->
-    <line x1="409" y1="420" x2="409" y2="452" stroke="#2E86C1" stroke-width="1.5" marker-end="url(#wf-arr-b)"/>
+    <line x1="409" y1="458" x2="409" y2="488" stroke="#2E86C1" stroke-width="1.5" marker-end="url(#wf-arr-b)"/>
 
     <!-- ══ B7 — PLATHYNES Calage des paramètres (hors OPALE) ══ -->
-    <rect x="253" y="454" width="312" height="73" rx="6" fill="#EBF5FB" stroke="#2E86C1" stroke-width="1.5"/>
-    <text x="409" y="476" text-anchor="middle" font-size="11" font-weight="700" fill="#1A5276">PLATHYNES</text>
-    <text x="409" y="492" text-anchor="middle" font-size="10.5" fill="#1A5276">Calage des paramètres</text>
-    <text x="409" y="508" text-anchor="middle" font-size="10" fill="#555">(fonctions de régression…)</text>
-
+    <rect x="253" y="490" width="312" height="73" rx="6" fill="#EBF5FB" stroke="#2E86C1" stroke-width="1.5"/>
+    <text x="409" y="512" text-anchor="middle" font-size="11" font-weight="700" fill="#1A5276">PLATHYNES</text>
+    <text x="409" y="528" text-anchor="middle" font-size="10.5" fill="#1A5276">Calage des paramètres</text>
+    <text x="409" y="544" text-anchor="middle" font-size="10" fill="#555">(fonctions de régression…)</text>
     <!-- Flèche B7 → B8 -->
-    <line x1="409" y1="527" x2="409" y2="558" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+    <line x1="409" y1="563" x2="409" y2="593" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
 
     <!-- ══ B8 — POM (hors OPALE) ══ -->
-    <rect x="295" y="560" width="228" height="58" rx="6" fill="#D5F5E3" stroke="#1D6A39" stroke-width="1.5"/>
-    <text x="409" y="584" text-anchor="middle" font-size="11" font-weight="700" fill="#1D6A39">POM</text>
-    <text x="409" y="600" text-anchor="middle" font-size="10.5" fill="#1D6A39">Mise en POM du modèle calé</text>
+    <rect x="295" y="595" width="228" height="58" rx="6" fill="#D5F5E3" stroke="#1D6A39" stroke-width="1.5"/>
+    <text x="409" y="619" text-anchor="middle" font-size="11" font-weight="700" fill="#1D6A39">POM</text>
+    <text x="409" y="635" text-anchor="middle" font-size="10.5" fill="#1D6A39">Mise en POM du modèle calé</text>
 
     <!-- ══ LÉGENDE ══ -->
-    <text x="10" y="634" font-size="10" fill="#888" font-style="italic">Légende :</text>
-    <rect x="68" y="625" width="14" height="10" rx="2" fill="rgba(0,180,216,0.08)" stroke="#00B4D8" stroke-width="1.5"/>
-    <text x="86" y="634" font-size="10" fill="#555">Étapes prises en charge par OPALE</text>
-    <rect x="298" y="625" width="14" height="10" rx="2" fill="rgba(253,232,240,0.5)" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="3,2"/>
-    <text x="316" y="634" font-size="10" fill="#555">Répété × nb crues de calage</text>
-
+    <text x="10" y="668" font-size="10" fill="#888" font-style="italic">Légende :</text>
+    <rect x="68" y="659" width="14" height="10" rx="2" fill="rgba(0,180,216,0.08)" stroke="#00B4D8" stroke-width="1.5"/>
+    <text x="86" y="668" font-size="10" fill="#555">Étapes prises en charge par OPALE</text>
+    <rect x="298" y="659" width="14" height="10" rx="2" fill="rgba(253,232,240,0.5)" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <text x="316" y="668" font-size="10" fill="#555">Répété × nb crues de calage</text>
   </svg>
 </div>
 
