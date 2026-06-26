@@ -100,12 +100,44 @@
   .note-info  { background: var(--blue-light);  border-left: 4px solid var(--blue-med); }
   .note-warn  { background: #FDEBD0; border-left: 4px solid var(--orange); }
   .note-ok    { background: var(--green-light); border-left: 4px solid var(--green-dark); }
+
+  /* ── WORKFLOW PLATHYNES ── */
+  .wf-wrap { display:flex; flex-direction:column; align-items:center; gap:0; }
+  .wf-arrow-c { text-align:center; color:#2E86C1; font-size:22px; margin:3px 0; line-height:1; }
+  .wf-arrow-lbl { text-align:center; font-size:10px; color:#888; margin-bottom:2px; }
+  .wf-box-ext { border-radius:8px; padding:11px 18px; min-width:240px; text-align:center; }
+  .wf-box-ext strong { display:block; margin-bottom:5px; font-size:13px; }
+  .wf-box-ext ul { text-align:left; margin:0 0 0 16px; padding:0; font-size:12px; }
+  .wf-box-ext li { margin-bottom:2px; }
+  .wf-plath-create { background:#EBF5FB; border:2px solid #2E86C1; }
+  .wf-plath-calage { background:#EBF5FB; border:2px solid #2E86C1; }
+  .wf-fort         { background:var(--green-light); border:2px solid var(--green-dark); }
+  .wf-opale-outer  { border:3px solid #00B4D8; border-radius:14px; padding:22px 18px 18px; background:#F0FBFF; position:relative; width:100%; max-width:820px; }
+  .wf-opale-lbl    { position:absolute; top:-14px; left:16px; background:#00B4D8; color:#fff; font-weight:700; font-size:12px; padding:2px 14px; border-radius:10px; letter-spacing:1px; }
+  .wf-input-row    { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .wf-input-b      { background:#FDEBD0; border:1.5px solid #E59866; border-radius:6px; padding:7px 12px; font-size:12px; }
+  .wf-input-b strong { display:block; font-size:12px; margin-bottom:2px; }
+  .wf-inner-grid   { display:grid; grid-template-columns:1fr 24px 1fr 24px 1fr; gap:8px; align-items:start; }
+  .wf-col          { display:flex; flex-direction:column; gap:8px; }
+  .wf-mid-arrow    { display:flex; align-items:flex-start; justify-content:center; padding-top:18px; color:#aaa; font-size:18px; }
+  .wf-ib           { border-radius:6px; padding:9px 12px; font-size:12px; }
+  .wf-ib strong    { display:block; margin-bottom:4px; font-size:13px; }
+  .wf-ib em        { font-size:11px; color:#666; display:block; margin-top:3px; }
+  .wf-octave       { background:#FEF9E7; border:1.5px solid #E59866; }
+  .wf-qgis         { background:#EBF5FB; border:1.5px solid #2E86C1; }
+  .wf-bdimg        { background:#E9F7EF; border:1.5px solid #27AE60; }
+  .wf-xsel         { background:#FDE8F0; border:2px dashed #C0392B; }
+  .wf-xisb         { background:#FDE8F0; border:2px solid #C0392B; }
+  .wf-plath-import { background:#F5EEF8; border:2px solid #4A235A; }
+  .wf-loop-note    { display:flex; align-items:center; gap:8px; font-size:11px; color:#888; margin:4px 0; }
+  .wf-loop-arrow   { font-size:20px; color:#2E86C1; }
 </style>
 </head>
 <body>
 
 <div class="tab-bar">
   <button class="tab-btn" onclick="showTab('install')">⚙️ Installation</button>
+  <button class="tab-btn" onclick="showTab('workflow')">🔄 Workflow calage</button>
   <button class="tab-btn active" onclick="showTab('tuto')">🎓 Tutoriel utilisateur</button>
   <button class="tab-btn" onclick="showTab('archi')">🏗️ Architecture</button>
   <button class="tab-btn" onclick="showTab('archi-visual')">🗺️ Architecture visuelle</button>
@@ -189,6 +221,118 @@
     </div>
   </div>
 
+</div>
+
+<!-- ══════════════════════════════════════════════════════ WORKFLOW CALAGE -->
+<div id="tab-workflow" class="tab-panel">
+  <h1>Workflow — Calage sous Plathynes</h1>
+  <p>Ce synoptique situe OPALE dans l'ensemble du processus de calage hydrologique. OPALE automatise la <strong>phase de préparation des données</strong> (encadré cyan), entre la sélection des crues et le calage effectif dans Plathynes.</p>
+
+  <div class="note note-info" style="margin-bottom:20px">
+    <strong>Légende des couleurs :</strong>
+    <span style="background:#FDE8F0;border:2px dashed #C0392B;padding:1px 8px;border-radius:4px;font-size:12px;margin:0 4px">rose/tiretés</span> = étapes auparavant réalisées manuellement avec XISBERT, désormais prises en charge par OPALE.
+  </div>
+
+  <div class="wf-wrap">
+
+    <!-- ① PLATHYNES — création modèle (une fois) -->
+    <div class="wf-box-ext wf-plath-create">
+      <strong>🔷 PLATHYNES — Création du modèle <em style="font-weight:400;font-size:12px">(une fois)</em></strong>
+      <ul>
+        <li>Création d'un nouveau modèle</li>
+        <li>Ajout MNT</li>
+        <li>Ajout masque</li>
+      </ul>
+    </div>
+
+    <div class="wf-arrow-c">↕</div>
+    <div class="wf-arrow-lbl">initialisation du modèle</div>
+
+    <!-- ② OPALE (encadré principal) -->
+    <div class="wf-opale-outer">
+      <span class="wf-opale-lbl">OPALE</span>
+
+      <!-- Entrée : sélection crues -->
+      <div class="wf-input-row">
+        <div class="wf-input-b">
+          <strong>Sélection des crues</strong>
+          OCTAVE → Catalogue *.csv
+        </div>
+        <span style="color:#aaa;font-size:20px">→</span>
+      </div>
+
+      <!-- Grille interne 3 colonnes -->
+      <div class="wf-inner-grid">
+
+        <!-- Colonne 1 : OCTAVE + QGIS -->
+        <div class="wf-col">
+          <div class="wf-ib wf-octave">
+            <strong>OCTAVE</strong>
+            Extraction Q + ctrl lacunes<br>
+            Visualisation HU<br>
+            <em>(source : OCTAVE ou SN)</em>
+          </div>
+          <div class="wf-ib wf-qgis">
+            <strong>QGIS</strong>
+            Définition Bounding Box BV
+          </div>
+        </div>
+
+        <!-- Flèche →  -->
+        <div class="wf-mid-arrow">→</div>
+
+        <!-- Colonne 2 : BDImage / ASPIMAGE -->
+        <div class="wf-col">
+          <div class="wf-ib wf-bdimg">
+            <strong>OPALE — BDImage</strong>
+            Extraction pluies spatialisées<br>
+            + contrôle lacunes
+          </div>
+        </div>
+
+        <!-- Flèche →  -->
+        <div class="wf-mid-arrow">→</div>
+
+        <!-- Colonne 3 : sélection crues + XISBERT (ancien) + import Plathynes -->
+        <div class="wf-col">
+          <div class="wf-ib wf-xsel">
+            <strong>Sélection X crues pour calage</strong>
+            <em>(filtre dans OPALE)</em>
+          </div>
+          <div class="wf-ib wf-xisb">
+            <strong>XISBERT</strong>
+            <em>Mise en forme des fichiers<br>(étape remplacée par OPALE)</em>
+          </div>
+          <div class="wf-ib wf-plath-import">
+            <strong>🟣 PLATHYNES — Import par évènement</strong>
+            → Pluies + modification pdt<br>
+            → Q + définition format colonnes<br>
+            → HU de départ
+          </div>
+        </div>
+
+      </div><!-- /inner-grid -->
+    </div><!-- /wf-opale-outer -->
+
+    <!-- Flèche vers calage + boucle -->
+    <div class="wf-loop-note">
+      <span class="wf-loop-arrow">↓</span>
+      <span>itération possible → boucle retour vers OPALE si ajustement nécessaire</span>
+    </div>
+
+    <!-- ③ PLATHYNES — Calage -->
+    <div class="wf-box-ext wf-plath-calage">
+      <strong>🔷 PLATHYNES — Calage des paramètres</strong>
+    </div>
+
+    <div class="wf-arrow-c">↓</div>
+
+    <!-- ④ FORT — mise en port -->
+    <div class="wf-box-ext wf-fort">
+      <strong>✅ FORT — Mise en port du modèle</strong>
+    </div>
+
+  </div><!-- /wf-wrap -->
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ TUTORIEL -->
