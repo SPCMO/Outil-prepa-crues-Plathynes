@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aide — OPALE</title>
+<title>Aide — OP₂ALE</title>
 <style>
   :root {
     --blue-dark: #1A5276; --blue-med: #2E86C1; --blue-light: #D6EAF8;
@@ -148,10 +148,10 @@
 
 <!-- ══════════════════════════════════════════════════════ INSTALLATION -->
 <div id="tab-install" class="tab-panel">
-  <h1>Installation d'OPALE</h1>
-  <p>Suivez les étapes ci-dessous pour installer OPALE sur votre poste.</p>
+  <h1>Installation d'OP<sub>2</sub>ALE</h1>
+  <p>Suivez les étapes ci-dessous pour installer OP<sub>2</sub>ALE sur votre poste.</p>
 
-  <h2>Étape 1 — Copier le dossier OPALE en local</h2>
+  <h2>Étape 1 — Copier le dossier OP<sub>2</sub>ALE en local</h2>
   <div class="step">
     <div class="step-num">1</div>
     <div class="step-content">
@@ -225,7 +225,7 @@
     <p style="margin-top:8px">⚠️ Ne laissez pas votre PC connecté simultanément au RIE et à Internet sans autorisation — respectez la politique de sécurité de votre entité.</p>
   </div>
 
-  <h2>Étape 5 — Lancer OPALE</h2>
+  <h2>Étape 5 — Lancer OP<sub>2</sub>ALE</h2>
   <div class="step">
     <div class="step-num">5</div>
     <div class="step-content">
@@ -240,7 +240,7 @@
 <!-- ══════════════════════════════════════════════════════ WORKFLOW CALAGE -->
 <div id="tab-workflow" class="tab-panel">
   <h1>Workflow — Calage sous Plathynes</h1>
-  <p>Vue d'ensemble du processus de calage hydrologique. OPALE intervient dans la <strong>phase de préparation des données</strong> (encadré bleu/cyan). Les étapes en <span style="display:inline-block;width:26px;height:10px;border:2px dashed #C0392B;background:#FFF0F5;border-radius:3px;vertical-align:middle"></span> rose tiretés sont répétées autant de fois qu'il y a de crues de calage.</p>
+  <p>Vue d'ensemble du processus de calage hydrologique. OP<sub>2</sub>ALE intervient dans la <strong>phase de préparation des données</strong> (encadré bleu/cyan). Les étapes en <span style="display:inline-block;width:26px;height:10px;border:2px dashed #C0392B;background:#FFF0F5;border-radius:3px;vertical-align:middle"></span> rose tiretés sont répétées autant de fois qu'il y a de crues de calage.</p>
 
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 675" style="width:100%;max-width:900px;display:block;margin:0 auto;font-family:'Segoe UI',Arial,sans-serif">
     <defs>
@@ -361,7 +361,7 @@
     <!-- ══ LÉGENDE ══ -->
     <text x="10" y="668" font-size="10" fill="#888" font-style="italic">Légende :</text>
     <rect x="68" y="659" width="14" height="10" rx="2" fill="rgba(0,180,216,0.08)" stroke="#00B4D8" stroke-width="1.5"/>
-    <text x="86" y="668" font-size="10" fill="#555">Étapes prises en charge par OPALE</text>
+    <text x="86" y="668" font-size="10" fill="#555">Étapes prises en charge par OP₂ALE</text>
     <rect x="298" y="659" width="14" height="10" rx="2" fill="rgba(253,232,240,0.5)" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="3,2"/>
     <text x="316" y="668" font-size="10" fill="#555">Répété × nb crues de calage</text>
   </svg>
@@ -369,11 +369,11 @@
 
 <!-- ═══════════════════════════════════════════════════════════ TUTORIEL -->
 <div id="tab-tuto" class="tab-panel active">
-  <h1>Guide d'utilisation — OPALE <small style="font-size:0.5em;font-weight:400;color:#555">Outil de Préparation et d'Analyse pour le caLage d'Épisodes sous Plathynes</small></h1>
-  <p>Ce guide vous accompagne pas à pas dans l'utilisation d'OPALE, de la configuration initiale jusqu'à l'import des épisodes de crue dans Plathynes.</p>
+  <h1>Guide d'utilisation — OP<sub>2</sub>ALE <small style="font-size:0.5em;font-weight:400;color:#555">Outil pour Plathynes de Préparation et d'Analyse pour le caLage d'Épisodes</small></h1>
+  <p>Ce guide vous accompagne pas à pas dans l'utilisation d'OP<sub>2</sub>ALE, de la configuration initiale jusqu'à l'import des épisodes de crue dans Plathynes.</p>
 
   <h2>Avant de commencer</h2>
-  <p>OPALE nécessite :</p>
+  <p>OP<sub>2</sub>ALE nécessite :</p>
   <ul>
     <li>Un accès au réseau <strong>RIE</strong> (réseau interne SPC / SCV)</li>
     <li>Un compte <strong>PHyC</strong> (identifiant + mot de passe)</li>
@@ -1492,19 +1492,19 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <p>Chaque appel à <code>_refresh_analyse()</code> ajoutait une nouvelle colorbar sans supprimer l'ancienne, réduisant progressivement la zone graphique. Corrigé en remplaçant <code>ax.cla()</code> par <code>fig.clear()</code> + <code>fig.add_subplot(111)</code>, qui efface l'intégralité de la figure (axes et objets figure-level comme les colorbars) avant chaque tracé.</p>
   </div>
 
-  <h2>Nommage — OPALE</h2>
+  <h2>Nommage — OP<sub>2</sub>ALE</h2>
 
   <div class="change-entry">
     <span class="change-tag ct-ux">UX</span>
-    <strong>L'outil s'appelle désormais OPALE</strong>
-    <p><strong>OPALE — Outil de Préparation et d'Analyse pour le caLage d'Épisodes sous Plathynes.</strong> Le titre de la fenêtre principale, le lanceur (<code>Lancer_OPALE.bat</code>), l'icône (<code>logo_OPALE.ico</code>) et le SVG source (<code>logo_OPALE.svg</code>) ont été renommés en conséquence. L'icône intègre désormais le texte "OPALE" en blanc pour les tailles ≥ 48 px (généré par <code>creer_icone.py</code>).</p>
+    <strong>L'outil s'appelle désormais OP<sub>2</sub>ALE</strong>
+    <p><strong>OP<sub>2</sub>ALE — Outil pour Plathynes de Préparation et d'Analyse pour le caLage d'Épisodes.</strong> Le titre de la fenêtre principale, le lanceur (<code>Lancer_OPALE.bat</code>), l'icône (<code>logo_OPALE.ico</code>) et le SVG source (<code>logo_OPALE.svg</code>) ont été renommés en conséquence. L'icône intègre désormais le texte "OPALE" en blanc pour les tailles ≥ 48 px (généré par <code>creer_icone.py</code>).</p>
   </div>
 
   <h2>Icône et logo</h2>
 
   <div class="change-entry">
     <span class="change-tag ct-feat">Fonctionnalité</span>
-    <strong>Logo et icône OPALE</strong>
+    <strong>Logo et icône OP<sub>2</sub>ALE</strong>
     <p>Création d'un logo vectoriel (<code>logo_OPALE.svg</code>) représentant un hydrogramme de crue méditerranéenne : long plateau de débit de base, montée quasi-verticale, décrue exponentielle lente, point rouge au pic, trois seuils de vigilance en pointillés colorés, goutte d'eau et silhouette de montagne sur fond bleu nuit arrondi. Le script <code>creer_icone.py</code> (Pillow requis) génère <code>logo_OPALE.ico</code> en 6 tailles (16 à 256 px) pour association au raccourci <code>Lancer_OPALE.bat</code>.</p>
   </div>
 

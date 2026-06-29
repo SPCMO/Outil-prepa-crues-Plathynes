@@ -31,7 +31,7 @@ except ImportError:
     HAS_MPL = False
 
 
-TITRE = "OPALE — Outil de Préparation et d'Analyse pour le caLage d'Épisodes sous Plathynes"
+TITRE = "OP₂ALE — Outil pour Plathynes de Préparation et d'Analyse pour le caLage d'Épisodes"
 PDT_PLUIES_OPTIONS = {"15 minutes": 15, "30 minutes": 30, "1 heure": 60}
 PDT_DEBITS_OPTIONS = {"15 minutes": 15, "30 minutes": 30, "1 heure": 60}
 # PDT_HU est proposé directement dans _build_tab_extraction sous forme de liste
