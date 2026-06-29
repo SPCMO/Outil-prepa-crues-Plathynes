@@ -2028,6 +2028,11 @@ class App(tk.Tk):
                   relief="flat", bd=0, padx=10, pady=4,
                   font=("TkDefaultFont", 9, "bold"), cursor="hand2",
                   command=self._plath_run_import).pack(side=tk.LEFT, padx=(0, 12))
+        self._var_plath_seuils = tk.BooleanVar(value=False)
+        tk.Checkbutton(r, text="Importer les seuils de vigilance dans Plathynes",
+                       variable=self._var_plath_seuils, bg=bg3,
+                       activebackground=bg3,
+                       font=("TkDefaultFont", 9)).pack(side=tk.LEFT, padx=(0, 12))
         self._var_plath_ouvrir = tk.BooleanVar(value=False)
         tk.Checkbutton(r, text="Ouvrir Plathynes avec le projet après l'import",
                        variable=self._var_plath_ouvrir, bg=bg3,
