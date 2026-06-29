@@ -24,5 +24,6 @@ Format données sortie/
 test_hu_bv.py
 test_phyc.py
 test_pluie_bv.py
+test_pluie_panthere.py
 test_seuils.py
 Crues H-Q Cassaignes sup 1m20.csv

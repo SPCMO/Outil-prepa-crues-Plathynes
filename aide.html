@@ -149,11 +149,22 @@
 <!-- ══════════════════════════════════════════════════════ INSTALLATION -->
 <div id="tab-install" class="tab-panel">
   <h1>Installation d'OPALE</h1>
-  <p>Avant le premier lancement, vérifiez que votre environnement Python est complet en exécutant le script de test fourni.</p>
+  <p>Suivez les étapes ci-dessous pour installer OPALE sur votre poste.</p>
 
-  <h2>Étape 1 — Lancer le vérificateur d'environnement</h2>
+  <h2>Étape 1 — Copier le dossier OPALE en local</h2>
   <div class="step">
     <div class="step-num">1</div>
+    <div class="step-content">
+      <h3>Copier <code>Stand alone - OPALE</code> depuis le réseau vers votre poste</h3>
+      <p>Depuis le partage réseau :</p>
+      <pre style="background:#EEF2F7;padding:10px;border-radius:6px;font-size:12px;font-family:Consolas,monospace">\\10.11.208.239\suivi\Pole_prevision\40_Modèles Opérationnels\20_Modeles_Plathynes\Stand alone - OPALE\</pre>
+      <p>Copiez l'intégralité du dossier <strong>Stand alone - OPALE</strong> à un emplacement local de votre choix (ex. <code>C:\OPALE\</code> ou <code>D:\Outils\OPALE\</code>). Travaillez toujours depuis cette copie locale — ne lancez pas l'outil directement depuis le réseau.</p>
+    </div>
+  </div>
+
+  <h2>Étape 2 — Lancer le vérificateur d'environnement</h2>
+  <div class="step">
+    <div class="step-num">2</div>
     <div class="step-content">
       <h3>Double-cliquez sur <code>Test_pr_install.bat</code></h3>
       <p>Une fenêtre de commande s'ouvre et le script enchaîne automatiquement quatre vérifications :</p>
@@ -177,7 +188,7 @@
   </div>
 
   <div class="step">
-    <div class="step-num">2</div>
+    <div class="step-num">3</div>
     <div class="step-content">
       <h3>Installation automatique des packages manquants</h3>
       <p>Si des packages <strong>requis</strong> sont absents, le script propose de les installer automatiquement via <code>pip</code> :</p>
@@ -188,7 +199,7 @@
   </div>
 
   <div class="step">
-    <div class="step-num">3</div>
+    <div class="step-num">4</div>
     <div class="step-content">
       <h3>Bilan affiché en fin de script</h3>
       <p>Le script se conclut par un bilan :</p>
@@ -211,9 +222,9 @@
     <p style="margin-top:8px">⚠️ Ne laissez pas votre PC connecté simultanément au RIE et à Internet sans autorisation — respectez la politique de sécurité de votre entité.</p>
   </div>
 
-  <h2>Étape 4 — Lancer OPALE</h2>
+  <h2>Étape 5 — Lancer OPALE</h2>
   <div class="step">
-    <div class="step-num">4</div>
+    <div class="step-num">5</div>
     <div class="step-content">
       <h3>Double-cliquez sur <code>Lancer_OPALE.bat</code></h3>
       <p>L'interface graphique s'ouvre. Configurez ensuite votre station dans l'onglet <span class="badge badge-config">Configuration</span> (voir le <strong>Tutoriel utilisateur</strong>).</p>
