@@ -561,7 +561,13 @@
         <li><strong>.mrr</strong> — liste des fichiers GRD de pluies observées</li>
         <li><strong>.mqo</strong> — fichier de débits observés (format Plathynes)</li>
       </ol>
-      <p>Le projet <code>.prj</code> est mis à jour (nombre d'événements + ligne <code>Evenement:</code>), puis Plathynes est lancé automatiquement avec le projet via <code>plathynes.bat</code> et le chemin absolu du <code>.prj</code>.</p>
+      <p>Le projet <code>.prj</code> est mis à jour (nombre d'événements + ligne <code>Evenement:</code>).</p>
+
+      <p>Deux options sont disponibles à droite du bouton d'import (cochées par défaut, mémorisées dans <code>config.json</code>) :</p>
+      <ul>
+        <li><strong>Importer les seuils de vigilance dans Plathynes</strong> — écrit les 6 seuils de vigilance (ZT Jaune, Jaune, ZT Orange, Orange, ZT Rouge, Rouge) à la fin de la ligne <code>Station hydro:</code> du fichier <code>.prj</code>. Les valeurs sont lues depuis la configuration (onglet <span class="badge badge-config">Configuration</span>, section Seuils). Si une ou plusieurs valeurs sont manquantes, un <strong>avertissement</strong> est affiché dans le journal sans bloquer l'import des épisodes.</li>
+        <li><strong>Ouvrir Plathynes avec le projet après l'import</strong> — lance automatiquement Plathynes via <code>plathynes.bat</code> avec le chemin absolu du <code>.prj</code> une fois l'import terminé.</li>
+      </ul>
 
       <div class="note note-info">
         <strong>Nommage des épisodes :</strong> le nom de l'évènement intègre la date et le niveau de vigilance maximal. Ex. : <code>10_04_2009_ZT_Jn</code> (ZT Jaune), <code>29_11_2014_ZT_Or</code> (ZT Orange), <code>15_10_2018_ZT_R</code> (ZT Rouge).
@@ -1109,7 +1115,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
       <div><strong>Visualisation :</strong> _refresh_visu_list, _plot_episode, _draw_antpan_stats_panel, _calc_ep_antpan_stats, _get_global_antpan_max</div>
       <div><strong>Analyse pluies :</strong> _build_tab_pluies, _refresh_pluies_tab</div>
       <div><strong>Caractérisation crues :</strong> _collect_analyse_data, _plot_analyse</div>
-      <div><strong>Import Plathynes :</strong> _build_tab_plathynes, _plath_refresh, _plath_apply_filter, _plath_run_import, _plath_ouvrir_avec_projet, _plath_aide_pdt</div>
+      <div><strong>Import Plathynes :</strong> _build_tab_plathynes, _plath_refresh, _plath_apply_filter, _plath_run_import, _plath_importer_seuils, _on_plath_pref_change, _plath_ouvrir_avec_projet, _plath_aide_pdt</div>
       <div><strong>Paramétrage :</strong> _build_tab_parametrage, _save_parametrage, _refresh_parametrage_ui</div>
     </div>
     <div class="dep-out">↓ appelle : extractor.py, phyc_client.py, bdimage_client.py, config_manager.py, csv_loader.py, phyc_diag.py, plathynes_importer.py</div>
@@ -1554,6 +1560,12 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <span class="change-tag ct-feat">Fonctionnalité</span>
     <strong>Pas de temps configurables via comboboxes</strong>
     <p>Les quatre pas de temps (forçage, calcul, sorties, bilans) sont configurables indépendamment via des comboboxes (valeurs : 00:15, 00:30, 01:00). Les valeurs sont mémorisées dans <code>config.json</code> sous <code>plathynes.pdt_forcage</code>, <code>pdt_calcul</code>, <code>pdt_sorties</code>, <code>pdt_bilans</code>. Le bouton <strong>ℹ Aide Plathynes</strong> ouvre <code>TOC_PLATHYNES_new.html</code> dans le navigateur système (si le répertoire Plathynes est renseigné).</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Import des seuils de vigilance dans le fichier .prj Plathynes</strong>
+    <p>Nouvelle case à cocher <strong>"Importer les seuils de vigilance dans Plathynes"</strong> dans le bloc Lancer import (cochée par défaut). Lorsqu'elle est active, les 6 seuils (ZT Jaune, Jaune, ZT Orange, Orange, ZT Rouge, Rouge) lus depuis <code>config.json</code> (<code>seuils_q</code> ou <code>seuils_h</code>) sont écrits à la fin de la ligne <code>Station hydro:</code> du fichier <code>.prj</code>, ce qui les affiche dans l'interface Plathynes. Si des valeurs sont manquantes, un avertissement est logué sans bloquer l'import. La case <strong>"Ouvrir Plathynes avec le projet après l'import"</strong> est également passée à <code>True</code> par défaut. Les deux préférences sont auto-sauvegardées dans <code>config.json</code> sous <code>plathynes.importer_seuils</code> et <code>plathynes.ouvrir_apres_import</code> à chaque changement.</p>
   </div>
 
   <div class="change-entry">
