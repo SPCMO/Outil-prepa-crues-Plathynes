@@ -2028,16 +2028,18 @@ class App(tk.Tk):
                   relief="flat", bd=0, padx=10, pady=4,
                   font=("TkDefaultFont", 9, "bold"), cursor="hand2",
                   command=self._plath_run_import).pack(side=tk.LEFT, padx=(0, 12))
-        self._var_plath_seuils = tk.BooleanVar(value=False)
+        self._var_plath_seuils = tk.BooleanVar(value=True)
         tk.Checkbutton(r, text="Importer les seuils de vigilance dans Plathynes",
                        variable=self._var_plath_seuils, bg=bg3,
                        activebackground=bg3,
                        font=("TkDefaultFont", 9)).pack(side=tk.LEFT, padx=(0, 12))
-        self._var_plath_ouvrir = tk.BooleanVar(value=False)
+        self._var_plath_ouvrir = tk.BooleanVar(value=True)
         tk.Checkbutton(r, text="Ouvrir Plathynes avec le projet après l'import",
                        variable=self._var_plath_ouvrir, bg=bg3,
                        activebackground=bg3,
                        font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
+        self._var_plath_seuils.trace_add("write", self._on_plath_pref_change)
+        self._var_plath_ouvrir.trace_add("write", self._on_plath_pref_change)
 
         # Journal
         inn4, bg4 = self._make_section(frm, "Journal d'import", "gris")
@@ -2400,9 +2402,88 @@ class App(tk.Tk):
         # Actualiser la liste (statuts mis à jour)
         self._plath_refresh()
 
+        # Importer les seuils de vigilance si demandé
+        if self._var_plath_seuils.get():
+            self._plath_importer_seuils(prj_path)
+
         # Ouvrir Plathynes si demandé
         if self._var_plath_ouvrir.get():
             self._plath_ouvrir_avec_projet(prj_path)
+
+    def _on_plath_pref_change(self, *_):
+        """Auto-sauvegarde des préférences cases à cocher Import Plathynes."""
+        self.config_data.setdefault("plathynes", {}).update({
+            "importer_seuils":     self._var_plath_seuils.get(),
+            "ouvrir_apres_import": self._var_plath_ouvrir.get(),
+        })
+        try:
+            save_config(self.config_data)
+        except Exception:
+            pass
+
+    def _plath_importer_seuils(self, prj_path):
+        """Écrit les seuils de vigilance dans la ligne 'Station hydro:' du .prj."""
+        grandeur = self.config_data.get("extraction", {}).get("grandeur", "Q")
+        if grandeur == "H":
+            seuils = self.config_data.get("seuils_h", {})
+        else:
+            seuils = self.config_data.get("seuils_q",
+                     self.config_data.get("seuils", {}))
+
+        ordre = ("zt_jaune", "jaune", "zt_orange", "orange", "zt_rouge", "rouge")
+        labels = ("ZT Jaune", "Jaune", "ZT Orange", "Orange", "ZT Rouge", "Rouge")
+        valeurs = [seuils.get(k, "") for k in ordre]
+
+        manquants = [labels[i] for i, v in enumerate(valeurs) if v == "" or v is None]
+        if manquants:
+            self._plath_log_msg(
+                f"  [AVERT] Seuils non importés : valeurs manquantes dans la configuration "
+                f"({', '.join(manquants)}). Renseignez-les dans l'onglet Configuration.", "avert")
+            return
+
+        try:
+            vals_str = " ".join(str(float(v)) for v in valeurs)
+        except (ValueError, TypeError) as e:
+            self._plath_log_msg(
+                f"  [AVERT] Seuils non importés : valeur non numérique ({e}).", "avert")
+            return
+
+        try:
+            with open(prj_path, "r", encoding="utf-8") as f:
+                lignes = f.readlines()
+        except Exception as e:
+            self._plath_log_msg(
+                f"  [AVERT] Seuils non importés : impossible de lire le .prj ({e}).", "avert")
+            return
+
+        modifie = False
+        for i, ligne in enumerate(lignes):
+            if ligne.startswith("Station hydro:"):
+                parties = ligne.rstrip().split()
+                # Format : Station hydro: <nom> <code> <x> <y> <alt> [seuils…]
+                # → 7 tokens de base ; si >= 13, seuils déjà présents
+                base = parties[:7]
+                lignes[i] = " ".join(base) + " " + vals_str + "\n"
+                modifie = True
+                break
+
+        if not modifie:
+            self._plath_log_msg(
+                "  [AVERT] Seuils non importés : ligne 'Station hydro:' introuvable dans le .prj.",
+                "avert")
+            return
+
+        try:
+            with open(prj_path, "w", encoding="utf-8") as f:
+                f.writelines(lignes)
+        except Exception as e:
+            self._plath_log_msg(
+                f"  [AVERT] Seuils non importés : impossible d'écrire le .prj ({e}).", "avert")
+            return
+
+        self._plath_log_msg(
+            f"  [OK] Seuils importés — "
+            + " | ".join(f"{labels[i]}={valeurs[i]}" for i in range(6)), "ok")
 
     def _plath_aide_pdt(self):
         """Ouvre l'aide Plathynes sur les formats de fichier .evt."""
@@ -3317,6 +3398,8 @@ class App(tk.Tk):
             val = plath.get(key, "")
             if val:
                 getattr(self, attr).set(val)
+        self._var_plath_seuils.set(plath.get("importer_seuils", True))
+        self._var_plath_ouvrir.set(plath.get("ouvrir_apres_import", True))
         if prj:
             self._plath_refresh()
 
@@ -3372,14 +3455,16 @@ class App(tk.Tk):
         seuils_key = "seuils_h" if self.var_seuils_grandeur.get() == "H (m)" else "seuils_q"
         self.config_data[seuils_key] = seuils
         self.config_data["plathynes"] = {
-            "prj_path":    self.var_prj_path.get().strip(),
-            "install_dir": self.var_plath_install_dir.get().strip(),
-            "pluies_dir":  self.var_plath_pluies_dir.get().strip(),
-            "debits_dir":  self.var_plath_debits_dir.get().strip(),
-            "pdt_forcage": self.var_plath_pdt_forcage.get(),
-            "pdt_calcul":  self.var_plath_pdt_calcul.get(),
-            "pdt_sorties": self.var_plath_pdt_sorties.get(),
-            "pdt_bilans":  self.var_plath_pdt_bilans.get(),
+            "prj_path":          self.var_prj_path.get().strip(),
+            "install_dir":       self.var_plath_install_dir.get().strip(),
+            "pluies_dir":        self.var_plath_pluies_dir.get().strip(),
+            "debits_dir":        self.var_plath_debits_dir.get().strip(),
+            "pdt_forcage":       self.var_plath_pdt_forcage.get(),
+            "pdt_calcul":        self.var_plath_pdt_calcul.get(),
+            "pdt_sorties":       self.var_plath_pdt_sorties.get(),
+            "pdt_bilans":        self.var_plath_pdt_bilans.get(),
+            "importer_seuils":   self._var_plath_seuils.get(),
+            "ouvrir_apres_import": self._var_plath_ouvrir.get(),
         }
         try:
             save_config(self.config_data)
