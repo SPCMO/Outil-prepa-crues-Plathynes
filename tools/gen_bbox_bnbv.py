@@ -19,7 +19,7 @@ SHP = os.path.join(os.path.dirname(__file__), "..", "BNBV_SPCMO", "BNBV_Bassins_
 DBF = os.path.join(os.path.dirname(__file__), "..", "BNBV_SPCMO", "BNBV_Bassins_SPCMO.dbf")
 OUT = os.path.join(os.path.dirname(__file__), "..", "config", "bbox_bnbv.json")
 
-MARGE_M = 5000  # 5 km de marge autour de chaque BV
+MARGE_M = 1000  # 1 km de marge autour de chaque BV
 
 
 # ---------------------------------------------------------------------------
