@@ -2478,7 +2478,7 @@ class App(tk.Tk):
                 pan_v = idx_pan.get(key_n) if idx_pan else None
                 if ant_v is None and pan_v is None:
                     lbl = tk.Label(frame, text="—", bg=row_bg, fg=C_NEU,
-                                   font=("TkDefaultFont", 8), anchor="center",
+                                   font=("TkDefaultFont", 8, "underline"), anchor="center",
                                    padx=4, pady=5, cursor="hand2")
                     lbl.grid(row=i, column=col_j, sticky="nsew", padx=1, pady=0)
                 else:
@@ -2488,7 +2488,7 @@ class App(tk.Tk):
                     txt_p = f"{pan_v:.2f}" if pan_v is not None else "—"
                     lbl = tk.Label(frame, text=f"{txt_a} / {txt_p}",
                                    bg=bg, fg=fg,
-                                   font=("TkDefaultFont", 8, "bold"), anchor="center",
+                                   font=("TkDefaultFont", 8, "bold underline"), anchor="center",
                                    padx=4, pady=5, cursor="hand2")
                     lbl.grid(row=i, column=col_j, sticky="nsew", padx=1, pady=0)
                 lbl.bind("<Button-1>",
