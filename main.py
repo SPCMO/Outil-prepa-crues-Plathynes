@@ -2390,9 +2390,9 @@ class App(tk.Tk):
             ("Cumul Antilope (mm)", C_ANT,     False),
             ("Cumul Panthère (mm)", C_PAN,     False),
             ("Écart (%)",           "#333333", False),
-            ("Coeff. Var.",         "#333333", True),   # True = afficher ⓘ
-            ("Gini",                "#333333", False),
-            ("Max/Moy",             "#333333", False),
+            ("Coeff. Var.\n(Ant./Pant.)", "#333333", True),   # True = afficher ⓘ
+            ("Gini\n(Ant./Pant.)",   "#333333", False),
+            ("Max/Moy\n(Ant./Pant.)","#333333", False),
         ]
         for j, (lbl, fg, avec_info) in enumerate(col_defs):
             if avec_info:
@@ -2467,30 +2467,32 @@ class App(tk.Tk):
                 tk.Label(frame, text=txt, bg=row_bg, fg=fg,
                          font=("TkDefaultFont", 8, "bold"), anchor="center", padx=8, pady=5
                          ).grid(row=i, column=j, sticky="nsew", padx=1, pady=0)
-            # Colonnes indices : Antilope / Panthère séparés par "/"
+            # Colonnes indices : Antilope / Panthère — cliquable → cumuls spatiaux
+            ep_ref = self._visu_episodes[i]
             for col_j, fn_s, key_n in [
                 (5, App._seuil_cv,     "cv"),
                 (6, App._seuil_gini,   "gini"),
                 (7, App._seuil_maxmoy, "max_moy"),
             ]:
-                # Affiche Antilope / Panthère dans la même cellule, coloré sur le max
                 ant_v = idx_ant.get(key_n) if idx_ant else None
                 pan_v = idx_pan.get(key_n) if idx_pan else None
                 if ant_v is None and pan_v is None:
-                    tk.Label(frame, text="—", bg=row_bg, fg=C_NEU,
-                             font=("TkDefaultFont", 8), anchor="center",
-                             padx=4, pady=5).grid(
-                        row=i, column=col_j, sticky="nsew", padx=1, pady=0)
+                    lbl = tk.Label(frame, text="—", bg=row_bg, fg=C_NEU,
+                                   font=("TkDefaultFont", 8), anchor="center",
+                                   padx=4, pady=5, cursor="hand2")
+                    lbl.grid(row=i, column=col_j, sticky="nsew", padx=1, pady=0)
                 else:
                     worst = max(v for v in (ant_v, pan_v) if v is not None)
-                    libelle, fg, bg = fn_s(worst)
+                    _libelle, fg, bg = fn_s(worst)
                     txt_a = f"{ant_v:.2f}" if ant_v is not None else "—"
                     txt_p = f"{pan_v:.2f}" if pan_v is not None else "—"
-                    tk.Label(frame, text=f"{txt_a} / {txt_p}",
-                             bg=bg, fg=fg,
-                             font=("TkDefaultFont", 8, "bold"), anchor="center",
-                             padx=4, pady=5).grid(
-                        row=i, column=col_j, sticky="nsew", padx=1, pady=0)
+                    lbl = tk.Label(frame, text=f"{txt_a} / {txt_p}",
+                                   bg=bg, fg=fg,
+                                   font=("TkDefaultFont", 8, "bold"), anchor="center",
+                                   padx=4, pady=5, cursor="hand2")
+                    lbl.grid(row=i, column=col_j, sticky="nsew", padx=1, pady=0)
+                lbl.bind("<Button-1>",
+                         lambda _e, _ep=ep_ref: self._visu_ouvrir_cumuls_spatiaux(_ep))
 
         # ── Frise chronologique ──────────────────────────────────────────────
         if not HAS_MPL:
