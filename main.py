@@ -1681,7 +1681,9 @@ class App(tk.Tk):
                 ax.text(0.5, 0.5, f"Données {titre}\nnon disponibles",
                         ha="center", va="center", transform=ax.transAxes,
                         fontsize=10, color="#888888")
-                ax.set_title(titre, fontsize=10, fontweight="bold")
+                ax.text(0.5, 1.03, titre, transform=ax.transAxes,
+                        ha="center", va="bottom", fontsize=10, fontweight="bold",
+                        clip_on=False)
                 continue
 
             arr, hdr = res
@@ -1695,12 +1697,15 @@ class App(tk.Tk):
             img_ref = img
             _appliquer_masque(ax, hdr)
 
-            ax.set_title(titre, fontsize=10, fontweight="bold")
+            ax.text(0.5, 1.03, titre, transform=ax.transAxes,
+                    ha="center", va="bottom", fontsize=10, fontweight="bold",
+                    clip_on=False)
             ax.set_xlabel("Lambert 93 X (m)", fontsize=7)
             if i == 0:
                 ax.set_ylabel("Lambert 93 Y (m)", fontsize=7)
             else:
                 ax.tick_params(labelleft=False)
+                ax.yaxis.offsetText.set_visible(False)
             ax.tick_params(labelsize=6)
 
         # Colorbar unique à droite
