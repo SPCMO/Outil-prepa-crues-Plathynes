@@ -1800,6 +1800,9 @@ class App(tk.Tk):
                 [str(v) for v in tick_vals[:-1]] + [f"> {tick_vals[-1]}"]
             )
             cb.ax.tick_params(labelsize=7)
+            cb.ax.text(0.5, -0.02, "Palette « Hydro »\nSuperviseur national",
+                       ha="center", va="top", fontsize=5, color="#666666",
+                       transform=cb.ax.transAxes)
 
         fig.suptitle(f"Cumuls spatialisés — {key}", fontsize=11, fontweight="bold", y=0.97)
 
