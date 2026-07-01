@@ -1626,7 +1626,7 @@ class App(tk.Tk):
         fig = Figure(figsize=(11.5, 5.8), dpi=96)
         fig.patch.set_facecolor("#F8F9FA")
         gs = GridSpec(1, 3, figure=fig, width_ratios=[1, 1, 0.06],
-                      wspace=0.18, left=0.06, right=0.92, top=0.89, bottom=0.10)
+                      wspace=0.18, left=0.06, right=0.92, top=0.84, bottom=0.10)
 
         bounds = [0, 1, 3, 5, 7, 10, 15, 20, 30, 50, 70, 100, 9999]
         colors_cls = [
@@ -1711,7 +1711,7 @@ class App(tk.Tk):
             cb.set_ticks([b for b in bounds if b < 9999])
             cb.ax.tick_params(labelsize=7)
 
-        fig.suptitle(f"Cumuls spatialisés — {key}", fontsize=11, fontweight="bold")
+        fig.suptitle(f"Cumuls spatialisés — {key}", fontsize=11, fontweight="bold", y=0.97)
 
         canvas = FigureCanvasTkAgg(fig, master=top)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
