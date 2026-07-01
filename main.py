@@ -588,6 +588,19 @@ class App(tk.Tk):
         ttk.Combobox(r, textvariable=self.var_pdt_debits,
                      values=list(PDT_DEBITS_OPTIONS.keys()), state="readonly", width=15).pack(side=tk.LEFT)
 
+        # Section Masque BV
+        inn, bg = self._make_section(frm, "Masque BV — fichier .asc (optionnel, pour visualisation spatialisée)", "bleu")
+        r = self._row(inn, bg)
+        tk.Label(r, text="Fichier masque :", bg=bg, font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
+        self.var_masque_asc = tk.StringVar()
+        tk.Entry(r, textvariable=self.var_masque_asc, width=46,
+                 font=("TkDefaultFont", 9)).pack(side=tk.LEFT, padx=(6, 4))
+        tk.Button(r, text="Parcourir…", font=("TkDefaultFont", 9),
+                  command=self._browse_masque_asc).pack(side=tk.LEFT)
+        tk.Label(r,
+                 text="  Grille binaire Lambert 93 (0=hors BV, 1=dans BV) — généré par QGIS/GDAL",
+                 bg=bg, fg="#555555", font=("TkDefaultFont", 8, "italic")).pack(side=tk.LEFT, padx=(8, 0))
+
         # Boutons + progression
         btn_frame = tk.Frame(frm, bg="#F0F0F0")
         btn_frame.pack(fill=tk.X, padx=12, pady=(12, 4))
@@ -720,6 +733,10 @@ class App(tk.Tk):
                                   ha="center", va="center",
                                   transform=self._visu_ax_q.transAxes,
                                   fontsize=12, color="#888888")
+            # Tableau légende cliquable (Produit | Cumul) — entre la barre ctrl et le canvas
+            self._visu_legende_frame = tk.Frame(right, bg="white", bd=0)
+            self._visu_legende_frame.pack(fill=tk.X, padx=6, pady=(2, 0))
+
             self._visu_canvas = FigureCanvasTkAgg(self._visu_fig, master=right)
             self._visu_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
             self._visu_canvas.draw()
@@ -1250,23 +1267,9 @@ class App(tk.Tk):
         # Label Panthère : cumul Pan. sur la même ligne, précédé d'un tiret
         _cum_pan_sfx = (f"  -  cumul Pan. : {_sum_pant} mm" if _sum_pant is not None else "")
 
-        all_h, all_l = [], []
-        if ant_handles:
-            # 1ère entrée Antilope (inf ≤ seuil) : label + cumul AJ1
-            all_h.append(ant_handles[0])
-            all_l.append(ant_labels[0] + _cum_ant_sfx)
-            # 2ème entrée Antilope (sup > seuil) si présente
-            if len(ant_handles) > 1:
-                all_h.append(ant_handles[1])
-                all_l.append(ant_labels[1])
-        for ph, pl in zip(pant_handles, pant_labels):
-            all_h.append(ph)
-            all_l.append(pl + _cum_pan_sfx)
-        all_h += h_hu;  all_l += l_hu
-
-        if all_h:
-            self._visu_ax_p.legend(all_h, all_l, loc="upper right", fontsize=8,
-                                    handlelength=1.5)
+        self._visu_update_legende(
+            ant_handles, ant_labels, pant_handles, pant_labels,
+            h_hu, l_hu, _sum_ant, _sum_pant, ep)
 
         # ── Encart stats Ant. vs Pan. (bas-droite) ────────────────────────────
         if p_dates and pant_dates:
@@ -1469,6 +1472,278 @@ class App(tk.Tk):
             self._visu_tooltip_artist.set_visible(True)
 
         self._visu_canvas.draw_idle()
+
+    # ── Tableau légende cliquable (Produit | Cumul) ──────────────────────────
+
+    def _visu_update_legende(self, ant_handles, ant_labels, pant_handles, pant_labels,
+                              h_hu, l_hu, sum_ant, sum_pant, ep):
+        """Reconstruit le tableau légende 2 colonnes sous la barre de contrôle."""
+        frm = getattr(self, "_visu_legende_frame", None)
+        if frm is None:
+            return
+        for w in frm.winfo_children():
+            w.destroy()
+
+        # Couleurs des produits (cohérentes avec le graphique)
+        C_P    = "#1565C0"
+        C_PANT = "#E65100"
+        C_HU   = "#B71C1C"
+
+        # En-têtes
+        hdr_bg = "#EEF2F7"
+        tk.Label(frm, text="Produit", bg=hdr_bg, fg="#333333",
+                 font=("TkDefaultFont", 8, "bold"), padx=6, pady=2,
+                 relief="flat", bd=0, width=22, anchor="w").grid(row=0, column=0, sticky="ew", padx=(0, 1))
+        tk.Label(frm, text="Cumul épisode", bg=hdr_bg, fg="#333333",
+                 font=("TkDefaultFont", 8, "bold"), padx=6, pady=2,
+                 relief="flat", bd=0, width=16, anchor="w").grid(row=0, column=1, sticky="ew", padx=(0, 2))
+        tk.Label(frm, text="", bg="white").grid(row=0, column=2, sticky="ew")
+        frm.columnconfigure(2, weight=1)
+
+        row = 1
+
+        def _make_produit_lbl(parent, text, color, row_i):
+            f = tk.Frame(parent, bg="white")
+            f.grid(row=row_i, column=0, sticky="ew", padx=(0, 1), pady=1)
+            tk.Label(f, text="■ ", bg="white", fg=color,
+                     font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
+            tk.Label(f, text=text, bg="white", fg="#222222",
+                     font=("TkDefaultFont", 8)).pack(side=tk.LEFT)
+
+        def _make_cumul_btn(parent, cumul_mm, produit_key, row_i, color):
+            if cumul_mm is not None:
+                txt = f"{cumul_mm} mm"
+                btn = tk.Label(parent, text=txt, bg="white", fg=color,
+                               font=("TkDefaultFont", 8, "underline"),
+                               cursor="hand2", padx=4)
+                btn.grid(row=row_i, column=1, sticky="w", pady=1)
+                btn.bind("<Button-1>", lambda _e, p=produit_key: self._visu_ouvrir_cumul_spatial(p, ep))
+            else:
+                tk.Label(parent, text="—", bg="white", fg="#AAAAAA",
+                         font=("TkDefaultFont", 8), padx=4).grid(row=row_i, column=1, sticky="w", pady=1)
+
+        # Ligne Antilope inf
+        if ant_handles:
+            lbl_inf = ant_labels[0] if ant_labels else "Antilope BV"
+            _make_produit_lbl(frm, lbl_inf, C_P, row)
+            _make_cumul_btn(frm, sum_ant, "antilope", row, C_P)
+            row += 1
+            # Antilope sup (si présent)
+            if len(ant_labels) > 1:
+                _make_produit_lbl(frm, ant_labels[1], C_P, row)
+                tk.Label(frm, text="", bg="white").grid(row=row, column=1, sticky="w")
+                row += 1
+
+        # Ligne Panthère
+        if pant_handles:
+            lbl_pan = pant_labels[0] if pant_labels else "Panthère BV"
+            _make_produit_lbl(frm, lbl_pan, C_PANT, row)
+            _make_cumul_btn(frm, sum_pant, "panthere", row, C_PANT)
+            row += 1
+
+        # Ligne HU
+        if h_hu:
+            _make_produit_lbl(frm, l_hu[0] if l_hu else "HU moyen", C_HU, row)
+            tk.Label(frm, text="", bg="white").grid(row=row, column=1, sticky="w")
+
+    # ── Visualisation spatialisée cumul pluie ────────────────────────────────
+
+    def _visu_ouvrir_cumul_spatial(self, produit, ep):
+        """Ouvre une fenêtre Toplevel avec la carte spatialisée du cumul GRD."""
+        import numpy as np
+        if not HAS_MPL:
+            return
+
+        # Répertoires
+        _, _, pluies_dir, bv_dir = self._get_out_dirs()
+        key = ep.get("label", "")
+        # Normaliser la clé (label → clé dossier)
+        # Les dossiers sont AntJ1-Ep_<key> / Pant-Ep_<key>
+        # On cherche d'abord un cumul GRD déjà calculé, sinon on le calcule
+        if produit == "antilope":
+            grd_dir_candidates = [
+                os.path.join(pluies_dir, f"AntJ1-Ep_{key}"),
+                os.path.join(pluies_dir, f"Pluie-Ep_{key}"),
+            ]
+            cumul_fname = f"AntJ1_CumulGRD-Ep_{key}.grd"
+        else:
+            grd_dir_candidates = [os.path.join(pluies_dir, f"Pant-Ep_{key}")]
+            cumul_fname = f"Pant_CumulGRD-Ep_{key}.grd"
+
+        cumul_path = os.path.join(bv_dir, cumul_fname)
+
+        # Calculer cumul GRD si absent
+        if not os.path.isfile(cumul_path):
+            grd_dir = next((d for d in grd_dir_candidates if os.path.isdir(d)), None)
+            if grd_dir is None:
+                messagebox.showwarning(
+                    "Cumul spatial",
+                    f"Dossier GRD introuvable pour l'épisode « {key} »\n"
+                    f"(cherché : {', '.join(grd_dir_candidates)})")
+                return
+            try:
+                cumul_array, header = self._calculer_cumul_grd(grd_dir)
+                os.makedirs(bv_dir, exist_ok=True)
+                self._ecrire_grd(cumul_path, cumul_array, header)
+            except Exception as exc:
+                messagebox.showerror("Cumul spatial", f"Erreur calcul cumul GRD :\n{exc}")
+                return
+        else:
+            try:
+                cumul_array, header = self._lire_grd(cumul_path)
+            except Exception as exc:
+                messagebox.showerror("Cumul spatial", f"Erreur lecture cumul GRD :\n{exc}")
+                return
+
+        # Masque BV
+        masque_path = self.config_data.get("station", {}).get("masque_asc", "")
+        masque_array = None
+        mask_header  = None
+        if masque_path and os.path.isfile(masque_path):
+            try:
+                masque_array, mask_header = self._lire_asc(masque_path)
+            except Exception as exc:
+                print(f"[WARN] masque BV non chargé : {exc}")
+
+        # Ouvrir la fenêtre
+        titre_prod = "Antilope" if produit == "antilope" else "Panthère"
+        top = tk.Toplevel(self)
+        top.title(f"Cumul {titre_prod} — {key}")
+        top.geometry("700x620")
+
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+        import matplotlib.colors as mcolors
+        import matplotlib.patches as mpatches
+
+        fig = Figure(figsize=(7, 6), dpi=96)
+        fig.patch.set_facecolor("#F8F9FA")
+        ax = fig.add_subplot(111)
+
+        ncols   = header["ncols"]
+        nrows   = header["nrows"]
+        xll     = header["xllcorner"]
+        yll     = header["yllcorner"]
+        cs      = header["cellsize"]
+        nodata  = header["nodata"]
+
+        data = np.where(cumul_array == nodata, np.nan, cumul_array)
+
+        # Extent géographique (Lambert 93, mètres)
+        extent = [xll, xll + ncols * cs, yll, yll + nrows * cs]
+
+        # Palette discrète (classes en mm) — cohérente avec PJ
+        bounds = [0, 1, 3, 5, 7, 10, 15, 20, 30, 50, 70, 100, 9999]
+        colors_cls = [
+            "#FFFFFF", "#C6E9F7", "#7EC8E3", "#3A9FD6",
+            "#1A5FA8", "#0B3D8C", "#1B7C38", "#4CAF50",
+            "#FFEB3B", "#FF9800", "#F44336", "#9C27B0",
+        ]
+        cmap_disc = mcolors.ListedColormap(colors_cls)
+        norm_disc = mcolors.BoundaryNorm(bounds, cmap_disc.N)
+
+        img = ax.imshow(data, origin="upper", extent=extent,
+                        cmap=cmap_disc, norm=norm_disc, interpolation="nearest")
+
+        # Superposer le masque BV
+        if masque_array is not None and mask_header is not None:
+            mx    = mask_header["xllcorner"]
+            my    = mask_header["yllcorner"]
+            mcs   = mask_header["cellsize"]
+            mnr   = mask_header["nrows"]
+            mnc   = mask_header["ncols"]
+            mext  = [mx, mx + mnc * mcs, my, my + mnr * mcs]
+            outside = np.where(masque_array == 1, np.nan, 1.0)
+            ax.imshow(outside, origin="upper", extent=mext,
+                      cmap="Greys", vmin=0, vmax=1, alpha=0.45,
+                      interpolation="nearest", zorder=2)
+            # Contour BV
+            import matplotlib.pyplot as _plt_tmp
+            ax.contour(masque_array, levels=[0.5], colors=["#000000"],
+                       linewidths=[1.2], origin="upper", extent=mext, zorder=3)
+
+        ax.set_xlabel("Lambert 93 X (m)", fontsize=8)
+        ax.set_ylabel("Lambert 93 Y (m)", fontsize=8)
+        ax.set_title(f"Cumul {titre_prod} — {key}", fontsize=10)
+        ax.tick_params(labelsize=7)
+
+        # Colorbar
+        cb = fig.colorbar(img, ax=ax, fraction=0.03, pad=0.02)
+        cb.set_label("mm", fontsize=8)
+        cb_ticks = [b for b in bounds if b < 9999]
+        cb.set_ticks(cb_ticks)
+        cb.ax.tick_params(labelsize=7)
+
+        canvas = FigureCanvasTkAgg(fig, master=top)
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        canvas.draw()
+
+    # ── Helpers GRD ──────────────────────────────────────────────────────────
+
+    def _lire_grd(self, filepath):
+        """Lit un fichier GRD/ASC (format ESRI ASCII) → (np.array float32, header dict)."""
+        import numpy as np
+        header = {}
+        header_keys = {"ncols", "nrows", "xllcorner", "yllcorner",
+                       "xllcenter", "yllcenter", "cellsize", "nodata_value"}
+        rows = []
+        with open(filepath, "r") as fh:
+            for line in fh:
+                parts = line.strip().split()
+                if not parts:
+                    continue
+                if parts[0].lower() in header_keys:
+                    header[parts[0].lower()] = float(parts[1])
+                else:
+                    rows.append([float(v) for v in parts])
+        arr = np.array(rows, dtype=np.float32)
+        h = {
+            "ncols":    int(header.get("ncols", arr.shape[1])),
+            "nrows":    int(header.get("nrows", arr.shape[0])),
+            "xllcorner": header.get("xllcorner", header.get("xllcenter", 0)),
+            "yllcorner": header.get("yllcorner", header.get("yllcenter", 0)),
+            "cellsize":  header.get("cellsize", 1000),
+            "nodata":    header.get("nodata_value", -1),
+        }
+        return arr, h
+
+    def _lire_asc(self, filepath):
+        """Identique à _lire_grd mais pour fichiers .asc avec clé NODATA_VALUE."""
+        return self._lire_grd(filepath)
+
+    def _calculer_cumul_grd(self, grd_dir):
+        """Somme tous les .grd du dossier (valeurs × 0.1 → mm) → (cumul array, header)."""
+        import numpy as np
+        fichiers = sorted(
+            f for f in os.listdir(grd_dir)
+            if f.lower().endswith(".grd") or f.lower().endswith(".asc"))
+        if not fichiers:
+            raise ValueError(f"Aucun fichier GRD dans {grd_dir}")
+        cumul = None
+        header = None
+        for fname in fichiers:
+            arr, h = self._lire_grd(os.path.join(grd_dir, fname))
+            valid = arr != h["nodata"]
+            vals  = np.where(valid, arr * 0.1, 0.0)
+            if cumul is None:
+                cumul  = vals
+                header = h
+            else:
+                cumul += vals
+        return cumul, header
+
+    def _ecrire_grd(self, filepath, array, header):
+        """Écrit un tableau numpy en format ESRI ASCII GRD."""
+        import numpy as np
+        with open(filepath, "w") as fh:
+            fh.write(f"ncols         {header['ncols']}\n")
+            fh.write(f"nrows         {header['nrows']}\n")
+            fh.write(f"xllcorner     {header['xllcorner']:.2f}\n")
+            fh.write(f"yllcorner     {header['yllcorner']:.2f}\n")
+            fh.write(f"cellsize      {header['cellsize']:.2f}\n")
+            fh.write(f"NODATA_VALUE  -1\n")
+            for row in array:
+                fh.write(" ".join(f"{v:.4f}" for v in row) + "\n")
 
     # ── Encart stats Antilope vs Panthère ───────────────────────────────────
 
@@ -3403,6 +3678,14 @@ class App(tk.Tk):
         if prj:
             self._plath_refresh()
 
+    def _browse_masque_asc(self):
+        from tkinter import filedialog
+        p = filedialog.askopenfilename(
+            title="Sélectionner le fichier masque BV",
+            filetypes=[("Fichiers ASC/GRD", "*.asc *.grd"), ("Tous", "*.*")])
+        if p:
+            self.var_masque_asc.set(p)
+
     def _refresh_extraction_ui(self):
         """Restaure les préférences d'extraction depuis config_data."""
         ext = self.config_data.get("extraction", {})
@@ -3421,6 +3704,9 @@ class App(tk.Tk):
         rev_q = {v: k for k, v in PDT_DEBITS_OPTIONS.items()}
         self.var_pdt_debits.set(rev_q.get(pdt_q, "15 minutes"))
         self.var_grandeur.set(ext.get("grandeur", "Q"))
+        # Masque BV
+        masque = self.config_data.get("station", {}).get("masque_asc", "")
+        self.var_masque_asc.set(masque)
 
     def _save_config(self):
         if "phyc"    not in self.config_data: self.config_data["phyc"]    = {}
@@ -3442,6 +3728,7 @@ class App(tk.Tk):
             "nom_station": self.var_nom_station.get().strip(),
             "ul": self.var_ul.get().strip(),
             "lr": self.var_lr.get().strip(),
+            "masque_asc":  self.var_masque_asc.get().strip(),
         }
         # Seuils de vigilance — lire depuis les champs UI, clé dépend de la grandeur
         seuils = {}
