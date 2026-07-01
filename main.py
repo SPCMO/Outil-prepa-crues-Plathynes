@@ -1646,19 +1646,19 @@ class App(tk.Tk):
         bounds = [0, 2, 5, 10, 17, 25, 35, 45, 55, 70, 100, 150, 200, 300, 9999]
         colors_cls = [
             "#FFFFFF",   # 0–2   (pas de pluie significative)
-            "#7B1FA2",   # 2–5   violet
-            "#283593",   # 5–10  bleu marine
-            "#1976D2",   # 10–17 bleu
-            "#81D4FA",   # 17–25 bleu ciel
-            "#C8E6C9",   # 25–35 vert très clair
-            "#388E3C",   # 35–45 vert
-            "#AFB42B",   # 45–55 jaune-vert
-            "#FDD835",   # 55–70 jaune
-            "#F57C00",   # 70–100 orange
-            "#C62828",   # 100–150 rouge
-            "#4E342E",   # 150–200 brun foncé
-            "#E91E63",   # 200–300 rose/magenta
-            "#FCE4EC",   # >300  rose très clair
+            "#55007F",   # 2–5   violet
+            "#003DB9",   # 5–10  bleu marine
+            "#2385F5",   # 10–17 bleu
+            "#77FFF4",   # 17–25 cyan clair
+            "#00E100",   # 25–35 vert vif
+            "#458530",   # 35–45 vert foncé
+            "#F7E44C",   # 45–55 jaune-vert
+            "#FFBF1D",   # 55–70 jaune-orange
+            "#FF8202",   # 70–100 orange
+            "#FF0000",   # 100–150 rouge
+            "#942503",   # 150–200 brun rouge foncé
+            "#FF55FF",   # 200–300 magenta
+            "#FFAAFF",   # >300  rose clair
         ]
         cmap_disc = mcolors.ListedColormap(colors_cls)
         norm_disc = mcolors.BoundaryNorm(bounds, cmap_disc.N)
