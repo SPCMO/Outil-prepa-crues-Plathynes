@@ -1540,9 +1540,9 @@ class App(tk.Tk):
         for lh, ll in zip(h_hu, l_hu):
             _ligne(ll, None, C_HU, "")
 
-        # Positionner en haut-droite du canvas, avec marge de 8 px
+        # Positionner : relx=0.93 correspond au right=0.93 du GridSpec matplotlib
         frm.update_idletasks()
-        frm.place(relx=1.0, rely=0.0, anchor="ne", x=-8, y=8)
+        frm.place(relx=0.93, rely=0.0, anchor="ne", y=5)
 
     # ── Visualisation spatialisée cumul pluie ────────────────────────────────
 
@@ -1592,8 +1592,10 @@ class App(tk.Tk):
                 messagebox.showerror("Cumul spatial", f"Erreur lecture cumul GRD :\n{exc}")
                 return
 
-        # Masque BV
-        masque_path = self.config_data.get("station", {}).get("masque_asc", "")
+        # Masque BV — lire depuis l'UI (pas besoin de sauvegarder config)
+        masque_path = getattr(self, "var_masque_asc", None)
+        masque_path = masque_path.get().strip() if masque_path else \
+                      self.config_data.get("station", {}).get("masque_asc", "")
         masque_array = None
         mask_header  = None
         if masque_path and os.path.isfile(masque_path):
@@ -1607,6 +1609,12 @@ class App(tk.Tk):
         top = tk.Toplevel(self)
         top.title(f"Cumul {titre_prod} — {key}")
         top.geometry("700x620")
+        _ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo_OPALE.ico")
+        if os.path.isfile(_ico):
+            try:
+                top.iconbitmap(_ico)
+            except Exception:
+                pass
 
         from matplotlib.figure import Figure
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -1650,14 +1658,18 @@ class App(tk.Tk):
             mnr   = mask_header["nrows"]
             mnc   = mask_header["ncols"]
             mext  = [mx, mx + mnc * mcs, my, my + mnr * mcs]
-            outside = np.where(masque_array == 1, np.nan, 1.0)
+            # Zone hors BV (masque==0) → gris semi-transparent ; dedans → transparent
+            outside = np.where(masque_array == 0, 1.0, np.nan).astype(np.float32)
             ax.imshow(outside, origin="upper", extent=mext,
                       cmap="Greys", vmin=0, vmax=1, alpha=0.45,
                       interpolation="nearest", zorder=2)
-            # Contour BV
-            import matplotlib.pyplot as _plt_tmp
+            # Contour de la limite BV
+            import numpy as _np2
+            # contour attend (ncols, nrows) ou utilise extent pour les coords
             ax.contour(masque_array, levels=[0.5], colors=["#000000"],
-                       linewidths=[1.2], origin="upper", extent=mext, zorder=3)
+                       linewidths=[1.5], origin="upper",
+                       extent=[mx, mx + mnc * mcs, my, my + mnr * mcs],
+                       zorder=3)
 
         ax.set_xlabel("Lambert 93 X (m)", fontsize=8)
         ax.set_ylabel("Lambert 93 Y (m)", fontsize=8)
