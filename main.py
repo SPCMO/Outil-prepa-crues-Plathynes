@@ -1541,9 +1541,9 @@ class App(tk.Tk):
         for lh, ll in zip(h_hu, l_hu):
             _ligne(ll, None, C_HU, "")
 
-        # Positionner : relx=0.93 correspond au right=0.93 du GridSpec matplotlib
+        # relx=0.93 → right=0.93 du GridSpec ; rely=0.03 → top=0.97 du GridSpec
         frm.update_idletasks()
-        frm.place(relx=0.93, rely=0.0, anchor="ne", y=5)
+        frm.place(relx=0.93, rely=0.03, anchor="ne")
 
     # ── Visualisation spatialisée cumul pluie ────────────────────────────────
 
@@ -1695,7 +1695,8 @@ class App(tk.Tk):
         import numpy as np
         header = {}
         header_keys = {"ncols", "nrows", "xllcorner", "yllcorner",
-                       "xllcenter", "yllcenter", "cellsize", "nodata_value"}
+                       "xllcenter", "yllcenter", "cellsize",
+                       "nodata_value", "nodata"}  # .asc utilise parfois "nodata"
         rows = []
         with open(filepath, "r") as fh:
             for line in fh:
@@ -1713,7 +1714,7 @@ class App(tk.Tk):
             "xllcorner": header.get("xllcorner", header.get("xllcenter", 0)),
             "yllcorner": header.get("yllcorner", header.get("yllcenter", 0)),
             "cellsize":  header.get("cellsize", 1000),
-            "nodata":    header.get("nodata_value", -1),
+            "nodata":    header.get("nodata_value", header.get("nodata", -1)),
         }
         return arr, h
 
