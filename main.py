@@ -1599,16 +1599,25 @@ class App(tk.Tk):
                       self.config_data.get("station", {}).get("masque_asc", "")
         masque_array = None
         mask_header  = None
-        if masque_path and os.path.isfile(masque_path):
+        _masque_status = ""
+        if not masque_path:
+            _masque_status = "Chemin masque non renseigné"
+        elif not os.path.isfile(masque_path):
+            _masque_status = f"Fichier introuvable :\n{masque_path}"
+        else:
             try:
-                masque_array, mask_header = self._lire_asc(masque_path)
+                masque_array, mask_header = self._lire_asc_numpy(masque_path)
+                _masque_status = f"OK ({mask_header['nrows']}×{mask_header['ncols']})"
             except Exception as exc:
+                _masque_status = f"Erreur lecture : {exc}"
                 print(f"[WARN] masque BV non chargé : {exc}")
 
         # Ouvrir la fenêtre
         titre_prod = "Antilope" if produit == "antilope" else "Panthère"
         top = tk.Toplevel(self)
-        top.title(f"Cumul {titre_prod} — {key}")
+        masque_ok = masque_array is not None
+        top.title(f"Cumul {titre_prod} — {key}"
+                  + ("" if masque_ok else f"  [Masque: {_masque_status}]"))
         top.geometry("700x620")
         _ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo_OPALE.ico")
         if os.path.isfile(_ico):
@@ -1688,6 +1697,38 @@ class App(tk.Tk):
         canvas.draw()
 
     # ── Helpers GRD ──────────────────────────────────────────────────────────
+
+    def _lire_asc_numpy(self, filepath):
+        """Lecture rapide d'un fichier ESRI ASCII (.asc/.grd) via numpy.loadtxt."""
+        import numpy as np
+        header = {}
+        header_keys = {"ncols", "nrows", "xllcorner", "yllcorner",
+                       "xllcenter", "yllcenter", "cellsize",
+                       "nodata_value", "nodata"}
+        skip = 0
+        with open(filepath, "r") as fh:
+            for line in fh:
+                parts = line.strip().split()
+                if not parts:
+                    skip += 1
+                    continue
+                if parts[0].lower() in header_keys:
+                    header[parts[0].lower()] = float(parts[1])
+                    skip += 1
+                else:
+                    break   # première ligne de données
+        ncols_hdr = int(header.get("ncols", 0))
+        uc = range(ncols_hdr) if ncols_hdr else None
+        arr = np.loadtxt(filepath, skiprows=skip, dtype=np.float32, usecols=uc)
+        h = {
+            "ncols":     int(header.get("ncols",     arr.shape[1])),
+            "nrows":     int(header.get("nrows",     arr.shape[0])),
+            "xllcorner": header.get("xllcorner", header.get("xllcenter", 0)),
+            "yllcorner": header.get("yllcorner", header.get("yllcenter", 0)),
+            "cellsize":  header.get("cellsize", 1000),
+            "nodata":    header.get("nodata_value", header.get("nodata", -1)),
+        }
+        return arr, h
 
     def _lire_grd(self, filepath):
         """Lit un fichier GRD/ASC (format ESRI ASCII) → (np.array float32, header dict)."""
