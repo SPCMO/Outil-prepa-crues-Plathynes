@@ -1861,43 +1861,97 @@ class App(tk.Tk):
         if os.path.isfile(_ico):
             try: info.iconbitmap(_ico)
             except Exception: pass
-        lignes = (
-            "Coeff. Var.  (Coefficient de Variation)  =  σ / μ\n"
-            "  σ = écart-type des valeurs de pluie sur les pixels BV\n"
-            "  μ = moyenne des valeurs de pluie sur les pixels BV\n"
-            "  < 0.10        : Très homogène\n"
-            "  0.10 – 0.25  : Homogène\n"
-            "  0.25 – 0.40  : Modérément hétérogène\n"
-            "  0.40 – 0.60  : Hétérogène\n"
-            "  > 0.60        : Très hétérogène\n\n"
-            "Gini  =  (2·Σ(i·xᵢ) / (n·Σxᵢ)) − (n+1)/n\n"
-            "  xᵢ = pixels triés par ordre croissant, i = rang (1 à n)\n"
-            "  0 = distribution parfaitement uniforme, 1 = concentration totale\n"
-            "  < 0.10        : Très homogène\n"
-            "  0.10 – 0.20  : Homogène\n"
-            "  0.20 – 0.35  : Modérément hétérogène\n"
-            "  0.35 – 0.50  : Hétérogène\n"
-            "  > 0.50        : Très hétérogène\n\n"
-            "Max/Moy  =  max(x) / μ\n"
-            "  Rapport entre la valeur maximale et la moyenne sur les pixels BV\n"
-            "  < 1.30        : Très homogène\n"
-            "  1.30 – 1.60  : Homogène\n"
-            "  1.60 – 2.00  : Modérément hétérogène\n"
-            "  2.00 – 3.00  : Hétérogène\n"
-            "  > 3.00        : Très hétérogène"
+
+        BG = "#F8F9FA"
+        info.configure(bg=BG)
+        outer = tk.Frame(info, bg=BG, padx=18, pady=12)
+        outer.pack(fill="both", expand=True)
+
+        # Seuils communs aux 3 indices (libellé, fg, bg)
+        # Les bornes sont spécifiques à chaque indice mais les libellés/couleurs
+        # sont identiques → on les définit une fois pour la légende partagée.
+        SEUILS_CV      = [("<0.10",         "< 0.10"),
+                          ("0.10 – 0.25",   "0.10 – 0.25"),
+                          ("0.25 – 0.40",   "0.25 – 0.40"),
+                          ("0.40 – 0.60",   "0.40 – 0.60"),
+                          (">0.60",         "> 0.60")]
+        SEUILS_GINI    = [("<0.10",         "< 0.10"),
+                          ("0.10 – 0.20",   "0.10 – 0.20"),
+                          ("0.20 – 0.35",   "0.20 – 0.35"),
+                          ("0.35 – 0.50",   "0.35 – 0.50"),
+                          (">0.50",         "> 0.50")]
+        SEUILS_MAXMOY  = [("<1.30",         "< 1.30"),
+                          ("1.30 – 1.60",   "1.30 – 1.60"),
+                          ("1.60 – 2.00",   "1.60 – 2.00"),
+                          ("2.00 – 3.00",   "2.00 – 3.00"),
+                          (">3.00",         "> 3.00")]
+        GRADATIONS = [
+            ("Très homogène",        "#1B5E20", "#E8F5E9"),
+            ("Homogène",              "#2E7D32", "#C8E6C9"),
+            ("Modérément hétérogène", "#F57F17", "#FFF9C4"),
+            ("Hétérogène",            "#E65100", "#FFE0B2"),
+            ("Très hétérogène",       "#B71C1C", "#FFCDD2"),
+        ]
+
+        def _bloc(titre, formule, desc, seuils):
+            blk = tk.Frame(outer, bg=BG)
+            blk.pack(fill="x", pady=(0, 10))
+            tk.Label(blk, text=titre, bg=BG,
+                     font=("TkDefaultFont", 10, "bold"), anchor="w").pack(fill="x")
+            tk.Label(blk, text=f"  {formule}", bg=BG,
+                     font=("Courier", 9), anchor="w", fg="#1A237E").pack(fill="x")
+            tk.Label(blk, text=f"  {desc}", bg=BG,
+                     font=("TkDefaultFont", 8), anchor="w", fg="#555555").pack(fill="x", pady=(0, 4))
+            for (borne, borne_lbl), (libelle, fg, bg) in zip(seuils, GRADATIONS):
+                row = tk.Frame(blk, bg=BG)
+                row.pack(fill="x", pady=1)
+                tk.Label(row, text=f"  {borne_lbl}", bg=BG,
+                         font=("Courier", 9), width=14, anchor="w").pack(side="left")
+                tk.Label(row, text=" : ", bg=BG,
+                         font=("Courier", 9)).pack(side="left")
+                tk.Label(row, text=f"  {libelle}  ", fg=fg, bg=bg,
+                         font=("TkDefaultFont", 9, "bold"),
+                         padx=6, pady=2, relief="flat").pack(side="left")
+            tk.Frame(outer, bg="#CCCCCC", height=1).pack(fill="x", pady=(6, 0))
+
+        _bloc(
+            "Coeff. Var.  (Coefficient de Variation)",
+            "= σ / μ",
+            "σ = écart-type sur pixels BV   |   μ = moyenne sur pixels BV",
+            SEUILS_CV,
         )
-        tk.Label(info, text=lignes, justify="left",
-                 font=("Courier", 9), padx=16, pady=10).pack()
-        tk.Button(info, text="Fermer", command=info.destroy,
-                  padx=12).pack(pady=(0, 10))
+        _bloc(
+            "Gini",
+            "= (2·Σ(i·xᵢ) / (n·Σxᵢ)) − (n+1)/n",
+            "xᵢ = pixels triés par ordre croissant, i = rang   |   0 = uniforme, 1 = concentration totale",
+            SEUILS_GINI,
+        )
+        _bloc(
+            "Max/Moy",
+            "= max(x) / μ",
+            "Rapport entre la valeur maximale et la moyenne sur les pixels BV",
+            SEUILS_MAXMOY,
+        )
+
+        tk.Button(outer, text="Fermer", command=info.destroy,
+                  padx=14).pack(pady=(6, 0))
 
     def _indices_ep(self, ep, produit="antilope"):
         """Charge le GRD cumul et calcule CV, Gini, Max/Moy sur les pixels BV.
-        Retourne dict {cv, gini, max_moy} ou None si données manquantes."""
+        Retourne dict {cv, gini, max_moy} ou None si données manquantes.
+        Double cache : masque rechargé seulement si chemin change ;
+        résultats indices jamais recalculés pour un (key, produit) déjà traité."""
         import numpy as np
+        key = ep.get("_key", ep.get("label", ""))
+        cache_key = (key, produit)
+        if not hasattr(self, "_indices_cache"):
+            self._indices_cache = {}
+        if cache_key in self._indices_cache:
+            return self._indices_cache[cache_key]
+
+        result = None
         try:
             _, _, pluies_dir, bv_dir = self._get_out_dirs()
-            key = ep.get("_key", ep.get("label", ""))
             cumul_dir = os.path.join(bv_dir, "GRD cumuls")
             if produit == "antilope":
                 candidates = [f"AntJ1-Ep_{key}", f"Pluie-Ep_{key}"]
@@ -1913,46 +1967,65 @@ class App(tk.Tk):
                     (os.path.join(pluies_dir, c) for c in candidates
                      if os.path.isdir(os.path.join(pluies_dir, c))), None)
                 if grd_dir is None:
+                    self._indices_cache[cache_key] = None
                     return None
                 arr, hdr = self._calculer_cumul_grd(grd_dir)
                 os.makedirs(cumul_dir, exist_ok=True)
                 self._ecrire_grd(cumul_path, arr, hdr)
             data = np.where(arr == hdr["nodata"], np.nan, arr)
-            # Masque BV
+
+            # ── Masque BV avec cache (une seule lecture par chemin) ───────────
             masque_path = getattr(self, "var_masque_asc", None)
             masque_path = masque_path.get().strip() if masque_path else \
                           self.config_data.get("station", {}).get("masque_asc", "")
-            masque_array = None
-            mask_header  = None
-            if masque_path and os.path.isfile(masque_path):
+            if not hasattr(self, "_masque_cache"):
+                self._masque_cache = (None, None, None)
+            cached_path, masque_array, mask_header = self._masque_cache
+            if masque_path and masque_path != cached_path and os.path.isfile(masque_path):
                 masque_array, mask_header = self._lire_asc_numpy(masque_path)
-            # Pixels BV
+                self._masque_cache = (masque_path, masque_array, mask_header)
+            elif masque_path != cached_path:
+                masque_array, mask_header = None, None
+                self._masque_cache = (masque_path, None, None)
+
+            # ── Pixels BV via numpy vectorisé ────────────────────────────────
             if masque_array is not None and mask_header is not None:
-                mx  = mask_header["xllcorner"]; my  = mask_header["yllcorner"]
-                mcs = mask_header["cellsize"];   mnr = mask_header["nrows"]
+                mx   = mask_header["xllcorner"]; my  = mask_header["yllcorner"]
+                mcs  = mask_header["cellsize"];  mnr = mask_header["nrows"]
+                mnc  = mask_header["ncols"]
                 nc_g = hdr["ncols"]; nr_g = hdr["nrows"]
                 cs_g = hdr["cellsize"]
                 xll_g = hdr["xllcorner"]; yll_g = hdr["yllcorner"]
+                # Centres X/Y de chaque pixel GRD
+                cols_g = np.arange(nc_g)
+                rows_g = np.arange(nr_g)
+                gx = xll_g + (cols_g + 0.5) * cs_g          # (nc_g,)
+                gy = yll_g + (nr_g - rows_g - 0.5) * cs_g   # (nr_g,)
+                # Indices dans le masque
+                mj = ((gx - mx) / mcs).astype(int)           # (nc_g,)
+                mi = ((my + mnr * mcs - gy) / mcs).astype(int)  # (nr_g,)
+                valid_col = (mj >= 0) & (mj < mnc)
+                valid_row = (mi >= 0) & (mi < mnr)
                 vals = []
-                for row_g in range(nr_g):
-                    gy = yll_g + (nr_g - row_g - 0.5) * cs_g
-                    for col_g in range(nc_g):
-                        gx  = xll_g + (col_g + 0.5) * cs_g
-                        v   = data[row_g, col_g]
-                        if np.isnan(v):
+                for ri in range(nr_g):
+                    if not valid_row[ri]:
+                        continue
+                    for ci in range(nc_g):
+                        if not valid_col[ci]:
                             continue
-                        mi = int((my + mnr * mcs - gy) / mcs)
-                        mj = int((gx - mx) / mcs)
-                        if 0 <= mi < mnr and 0 <= mj < mask_header["ncols"]:
-                            if masque_array[mi, mj] == 1:
-                                vals.append(v)
+                        v = data[ri, ci]
+                        if not np.isnan(v) and masque_array[mi[ri], mj[ci]] == 1:
+                            vals.append(v)
                 pixels_bv = np.array(vals, dtype=np.float32)
             else:
                 pixels_bv = data[~np.isnan(data)]
+
             if pixels_bv.size <= 1:
+                self._indices_cache[cache_key] = None
                 return None
             mu = float(np.mean(pixels_bv))
             if mu <= 0:
+                self._indices_cache[cache_key] = None
                 return None
             cv      = float(np.std(pixels_bv)) / mu
             max_moy = float(np.max(pixels_bv)) / mu
@@ -1961,10 +2034,11 @@ class App(tk.Tk):
             gini = float(
                 (2 * np.dot(np.arange(1, n_s + 1, dtype=np.float64), px_s)
                  / (n_s * float(np.sum(px_s)))) - (n_s + 1) / n_s)
-            return {"cv": max(0.0, cv), "gini": max(0.0, gini), "max_moy": max_moy}
+            result = {"cv": max(0.0, cv), "gini": max(0.0, gini), "max_moy": max_moy}
         except Exception as exc:
-            print(f"[WARN] indices {produit} ep={ep.get('_key','?')} : {exc}")
-            return None
+            print(f"[WARN] indices {produit} ep={key} : {exc}")
+        self._indices_cache[cache_key] = result
+        return result
 
     # ── Helpers GRD ──────────────────────────────────────────────────────────
 
