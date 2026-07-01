@@ -1829,8 +1829,8 @@ class App(tk.Tk):
 
     @staticmethod
     def _seuil_cv(v):
-        if v < 0.10: return ("Très homogène",        "#1B5E20", "#E8F5E9")
-        if v < 0.25: return ("Homogène",              "#2E7D32", "#C8E6C9")
+        if v < 0.10: return ("Très homogène",        "#2E7D32", "#C8E6C9")
+        if v < 0.25: return ("Homogène",              "#1B5E20", "#E8F5E9")
         if v < 0.40: return ("Modérément hétérogène", "#F57F17", "#FFF9C4")
         if v < 0.60: return ("Hétérogène",            "#E65100", "#FFE0B2")
         return              ("Très hétérogène",        "#B71C1C", "#FFCDD2")
