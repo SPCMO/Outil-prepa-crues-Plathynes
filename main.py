@@ -1547,107 +1547,87 @@ class App(tk.Tk):
 
     # ── Visualisation spatialisée cumul pluie ────────────────────────────────
 
-    def _visu_ouvrir_cumul_spatial(self, produit, ep):
-        """Ouvre une fenêtre Toplevel avec la carte spatialisée du cumul GRD."""
+    def _visu_ouvrir_cumul_spatial(self, _produit, ep):
+        """Redirige vers la fenêtre unifiée (Antilope + Panthère côte à côte)."""
+        self._visu_ouvrir_cumuls_spatiaux(ep)
+
+    def _visu_ouvrir_cumuls_spatiaux(self, ep):
+        """Fenêtre unique : cumuls Antilope et Panthère côte à côte, masque BV, colorbar commune."""
         import numpy as np
         if not HAS_MPL:
             return
 
-        # Répertoires
         _, _, pluies_dir, bv_dir = self._get_out_dirs()
-        key = ep.get("_key", ep.get("label", ""))   # clé brute "DD_MM_YYYY_Station"
+        key      = ep.get("_key", ep.get("label", ""))
         cumul_dir = os.path.join(bv_dir, "GRD cumuls")
 
-        if produit == "antilope":
-            grd_dir_candidates = [
-                os.path.join(pluies_dir, f"AntJ1-Ep_{key}"),
-                os.path.join(pluies_dir, f"Pluie-Ep_{key}"),
-            ]
-            cumul_fname = f"AntJ1_CumulGRD-Ep_{key}.grd"
-        else:
-            grd_dir_candidates = [os.path.join(pluies_dir, f"Pant-Ep_{key}")]
-            cumul_fname = f"Pant_CumulGRD-Ep_{key}.grd"
+        # ── Charger / calculer les deux GRDs ────────────────────────────────
+        PRODUITS = [
+            ("antilope", [f"AntJ1-Ep_{key}", f"Pluie-Ep_{key}"], "AntJ1_CumulGRD-Ep_"),
+            ("panthere", [f"Pant-Ep_{key}"],                      "Pant_CumulGRD-Ep_"),
+        ]
+        results = {}
+        for produit, candidates, pfx in PRODUITS:
+            cumul_path = os.path.join(cumul_dir, f"{pfx}{key}.grd")
+            if not os.path.isfile(cumul_path):
+                grd_dir = next(
+                    (os.path.join(pluies_dir, c) for c in candidates
+                     if os.path.isdir(os.path.join(pluies_dir, c))), None)
+                if grd_dir is None:
+                    results[produit] = None
+                    continue
+                try:
+                    arr, hdr = self._calculer_cumul_grd(grd_dir)
+                    os.makedirs(cumul_dir, exist_ok=True)
+                    self._ecrire_grd(cumul_path, arr, hdr)
+                    results[produit] = (arr, hdr)
+                except Exception as exc:
+                    print(f"[WARN] cumul {produit} : {exc}")
+                    results[produit] = None
+            else:
+                try:
+                    results[produit] = self._lire_grd(cumul_path)
+                except Exception as exc:
+                    print(f"[WARN] lecture cumul {produit} : {exc}")
+                    results[produit] = None
 
-        cumul_path = os.path.join(cumul_dir, cumul_fname)
+        if all(v is None for v in results.values()):
+            messagebox.showwarning("Cumul spatial",
+                f"Aucune donnée GRD disponible pour l'épisode « {key} »")
+            return
 
-        # Calculer cumul GRD si absent
-        if not os.path.isfile(cumul_path):
-            grd_dir = next((d for d in grd_dir_candidates if os.path.isdir(d)), None)
-            if grd_dir is None:
-                messagebox.showwarning(
-                    "Cumul spatial",
-                    f"Dossier GRD introuvable pour l'épisode « {key} »\n"
-                    f"(cherché : {', '.join(grd_dir_candidates)})")
-                return
-            try:
-                cumul_array, header = self._calculer_cumul_grd(grd_dir)
-                os.makedirs(cumul_dir, exist_ok=True)
-                self._ecrire_grd(cumul_path, cumul_array, header)
-            except Exception as exc:
-                messagebox.showerror("Cumul spatial", f"Erreur calcul cumul GRD :\n{exc}")
-                return
-        else:
-            try:
-                cumul_array, header = self._lire_grd(cumul_path)
-            except Exception as exc:
-                messagebox.showerror("Cumul spatial", f"Erreur lecture cumul GRD :\n{exc}")
-                return
-
-        # Masque BV — lire depuis l'UI (pas besoin de sauvegarder config)
+        # ── Masque BV ────────────────────────────────────────────────────────
         masque_path = getattr(self, "var_masque_asc", None)
         masque_path = masque_path.get().strip() if masque_path else \
                       self.config_data.get("station", {}).get("masque_asc", "")
         masque_array = None
         mask_header  = None
-        _masque_status = ""
-        if not masque_path:
-            _masque_status = "Chemin masque non renseigné"
-        elif not os.path.isfile(masque_path):
-            _masque_status = f"Fichier introuvable :\n{masque_path}"
-        else:
+        if masque_path and os.path.isfile(masque_path):
             try:
                 masque_array, mask_header = self._lire_asc_numpy(masque_path)
-                _masque_status = f"OK ({mask_header['nrows']}×{mask_header['ncols']})"
             except Exception as exc:
-                _masque_status = f"Erreur lecture : {exc}"
-                print(f"[WARN] masque BV non chargé : {exc}")
+                print(f"[WARN] masque BV : {exc}")
 
-        # Ouvrir la fenêtre
-        titre_prod = "Antilope" if produit == "antilope" else "Panthère"
+        # ── Fenêtre ──────────────────────────────────────────────────────────
         top = tk.Toplevel(self)
-        masque_ok = masque_array is not None
-        top.title(f"Cumul {titre_prod} — {key}"
-                  + ("" if masque_ok else f"  [Masque: {_masque_status}]"))
-        top.geometry("700x620")
+        top.title(f"Cumuls spatialisés — {key}")
+        top.geometry("1150x600")
         _ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo_OPALE.ico")
         if os.path.isfile(_ico):
-            try:
-                top.iconbitmap(_ico)
-            except Exception:
-                pass
+            try: top.iconbitmap(_ico)
+            except Exception: pass
 
         from matplotlib.figure import Figure
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+        from matplotlib.gridspec import GridSpec
         import matplotlib.colors as mcolors
-        import matplotlib.patches as mpatches
+        from matplotlib.patches import Rectangle
 
-        fig = Figure(figsize=(7, 6), dpi=96)
+        fig = Figure(figsize=(11.5, 5.8), dpi=96)
         fig.patch.set_facecolor("#F8F9FA")
-        ax = fig.add_subplot(111)
+        gs = GridSpec(1, 3, figure=fig, width_ratios=[1, 1, 0.06],
+                      wspace=0.18, left=0.06, right=0.92, top=0.89, bottom=0.10)
 
-        ncols   = header["ncols"]
-        nrows   = header["nrows"]
-        xll     = header["xllcorner"]
-        yll     = header["yllcorner"]
-        cs      = header["cellsize"]
-        nodata  = header["nodata"]
-
-        data = np.where(cumul_array == nodata, np.nan, cumul_array)
-
-        # Extent géographique (Lambert 93, mètres)
-        extent = [xll, xll + ncols * cs, yll, yll + nrows * cs]
-
-        # Palette discrète (classes en mm) — cohérente avec PJ
         bounds = [0, 1, 3, 5, 7, 10, 15, 20, 30, 50, 70, 100, 9999]
         colors_cls = [
             "#FFFFFF", "#C6E9F7", "#7EC8E3", "#3A9FD6",
@@ -1657,40 +1637,81 @@ class App(tk.Tk):
         cmap_disc = mcolors.ListedColormap(colors_cls)
         norm_disc = mcolors.BoundaryNorm(bounds, cmap_disc.N)
 
-        img = ax.imshow(data, origin="upper", extent=extent,
-                        cmap=cmap_disc, norm=norm_disc, interpolation="nearest")
+        img_ref  = None
+        GREY     = [0.25, 0.25, 0.25, 0.50]
 
-        # Superposer le masque BV
-        if masque_array is not None and mask_header is not None:
-            mx   = mask_header["xllcorner"]
-            my   = mask_header["yllcorner"]
-            mcs  = mask_header["cellsize"]
-            mnr  = mask_header["nrows"]
-            mnc  = mask_header["ncols"]
-            mext = [mx, mx + mnc * mcs, my, my + mnr * mcs]
+        def _appliquer_masque(ax, hdr_grd):
+            """Overlay gris hors BV + contour BV + rectangles jusqu'aux bords bbox."""
+            if masque_array is None or mask_header is None:
+                return
+            mx  = mask_header["xllcorner"]; my  = mask_header["yllcorner"]
+            mcs = mask_header["cellsize"]
+            mnr = mask_header["nrows"];     mnc = mask_header["ncols"]
+            mx2 = mx + mnc * mcs;          my2 = my + mnr * mcs
+            mext = [mx, mx2, my, my2]
 
-            # Overlay RGBA : gris semi-transparent hors BV, transparent dedans
+            # Pixels hors BV dans l'extent du masque
             rgba = np.zeros((mnr, mnc, 4), dtype=np.float32)
-            outside_mask = (masque_array == 0)
-            rgba[outside_mask] = [0.25, 0.25, 0.25, 0.50]   # gris foncé alpha 50 %
+            rgba[masque_array == 0] = GREY
             ax.imshow(rgba, origin="upper", extent=mext,
                       interpolation="nearest", zorder=2)
 
-            # Contour de la limite BV (ligne noire)
+            # 4 bandes entre bbox GRD et extent masque
+            gx1 = hdr_grd["xllcorner"]; gy1 = hdr_grd["yllcorner"]
+            gx2 = gx1 + hdr_grd["ncols"] * hdr_grd["cellsize"]
+            gy2 = gy1 + hdr_grd["nrows"] * hdr_grd["cellsize"]
+            for xy, w, h in [
+                ((gx1, gy1), mx  - gx1, gy2 - gy1),   # gauche
+                ((mx2, gy1), gx2 - mx2, gy2 - gy1),   # droite
+                ((mx,  gy1), mnc * mcs, my  - gy1),   # bas
+                ((mx,  my2), mnc * mcs, gy2 - my2),   # haut
+            ]:
+                if w > 0 and h > 0:
+                    ax.add_patch(Rectangle(xy, w, h, color=GREY, zorder=2))
+
+            # Contour BV
             ax.contour(masque_array, levels=[0.5], colors=["#000000"],
-                       linewidths=[1.5], origin="upper", extent=mext, zorder=3)
+                       linewidths=[1.2], origin="upper", extent=mext, zorder=3)
 
-        ax.set_xlabel("Lambert 93 X (m)", fontsize=8)
-        ax.set_ylabel("Lambert 93 Y (m)", fontsize=8)
-        ax.set_title(f"Cumul {titre_prod} — {key}", fontsize=10)
-        ax.tick_params(labelsize=7)
+        for i, (produit, titre) in enumerate(
+                [("antilope", "Antilope"), ("panthere", "Panthère")]):
+            ax = fig.add_subplot(gs[0, i])
+            res = results.get(produit)
+            if res is None:
+                ax.text(0.5, 0.5, f"Données {titre}\nnon disponibles",
+                        ha="center", va="center", transform=ax.transAxes,
+                        fontsize=10, color="#888888")
+                ax.set_title(titre, fontsize=10, fontweight="bold")
+                continue
 
-        # Colorbar
-        cb = fig.colorbar(img, ax=ax, fraction=0.03, pad=0.02)
-        cb.set_label("mm", fontsize=8)
-        cb_ticks = [b for b in bounds if b < 9999]
-        cb.set_ticks(cb_ticks)
-        cb.ax.tick_params(labelsize=7)
+            arr, hdr = res
+            nc  = hdr["ncols"];  nr  = hdr["nrows"]
+            xll = hdr["xllcorner"]; yll = hdr["yllcorner"]; cs = hdr["cellsize"]
+            data = np.where(arr == hdr["nodata"], np.nan, arr)
+            ext  = [xll, xll + nc*cs, yll, yll + nr*cs]
+
+            img = ax.imshow(data, origin="upper", extent=ext,
+                            cmap=cmap_disc, norm=norm_disc, interpolation="nearest")
+            img_ref = img
+            _appliquer_masque(ax, hdr)
+
+            ax.set_title(titre, fontsize=10, fontweight="bold")
+            ax.set_xlabel("Lambert 93 X (m)", fontsize=7)
+            if i == 0:
+                ax.set_ylabel("Lambert 93 Y (m)", fontsize=7)
+            else:
+                ax.tick_params(labelleft=False)
+            ax.tick_params(labelsize=6)
+
+        # Colorbar unique à droite
+        if img_ref is not None:
+            ax_cb = fig.add_subplot(gs[0, 2])
+            cb = fig.colorbar(img_ref, cax=ax_cb)
+            cb.set_label("mm", fontsize=8)
+            cb.set_ticks([b for b in bounds if b < 9999])
+            cb.ax.tick_params(labelsize=7)
+
+        fig.suptitle(f"Cumuls spatialisés — {key}", fontsize=11, fontweight="bold")
 
         canvas = FigureCanvasTkAgg(fig, master=top)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
