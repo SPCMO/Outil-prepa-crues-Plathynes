@@ -589,7 +589,7 @@ def _grd_mean(filepath, nodata):
                         count += 1
     except Exception:
         return None
-    return (total / count) * 0.1 if count > 0 else 0.0
+    return total / count if count > 0 else 0.0
 
 
 def _fmt_duree(minutes):

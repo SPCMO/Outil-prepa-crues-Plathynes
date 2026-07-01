@@ -2118,7 +2118,7 @@ class App(tk.Tk):
         return self._lire_grd(filepath)
 
     def _calculer_cumul_grd(self, grd_dir):
-        """Somme tous les .grd du dossier (valeurs × 0.1 → mm) → (cumul array, header)."""
+        """Somme tous les .grd du dossier (valeurs en mm) → (cumul array, header)."""
         import numpy as np
         fichiers = sorted(
             f for f in os.listdir(grd_dir)
@@ -2130,7 +2130,7 @@ class App(tk.Tk):
         for fname in fichiers:
             arr, h = self._lire_grd(os.path.join(grd_dir, fname))
             valid = arr != h["nodata"]
-            vals  = np.where(valid, arr * 0.1, 0.0)
+            vals  = np.where(valid, arr, 0.0)
             if cumul is None:
                 cumul  = vals
                 header = h
