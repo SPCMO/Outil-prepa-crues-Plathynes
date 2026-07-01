@@ -1016,7 +1016,8 @@ class App(tk.Tk):
                     key = fname[len("Pant_BV-Ep_"):-4]
                     _get_ep(key)["pant_path"] = os.path.join(bv_dir, fname)
 
-        # Générer AntJ1_BV à la volée si .grd présent mais CSV absent
+        # Générer AntJ1_BV et Pant_BV à la volée si .grd présent mais CSV absent
+        from modules.bdimage_client import calculer_pluie_bv_csv
         for key, ep in eps.items():
             if ep["p_path"] is None:
                 p_path = os.path.join(bv_dir, f"AntJ1_BV-Ep_{key}.csv")
@@ -1025,13 +1026,23 @@ class App(tk.Tk):
                     if os.path.isdir(grd_dir):
                         try:
                             os.makedirs(bv_dir, exist_ok=True)
-                            from modules.bdimage_client import calculer_pluie_bv_csv
                             calculer_pluie_bv_csv(grd_dir, p_path)
                             ep["p_path"] = p_path
                         except Exception as _e:
-                            print(f"[WARN] _refresh_visu_list : calcul BV échoué "
+                            print(f"[WARN] _refresh_visu_list : calcul Ant BV échoué "
                                   f"pour {key} ({grd_dir}) — {type(_e).__name__}: {_e}")
                         break
+            if ep["pant_path"] is None:
+                pant_path = os.path.join(bv_dir, f"Pant_BV-Ep_{key}.csv")
+                grd_dir = os.path.join(pluies_dir, f"Pant-Ep_{key}")
+                if os.path.isdir(grd_dir):
+                    try:
+                        os.makedirs(bv_dir, exist_ok=True)
+                        calculer_pluie_bv_csv(grd_dir, pant_path)
+                        ep["pant_path"] = pant_path
+                    except Exception as _e:
+                        print(f"[WARN] _refresh_visu_list : calcul Pant BV échoué "
+                              f"pour {key} ({grd_dir}) — {type(_e).__name__}: {_e}")
 
         # Trier par date décroissante
         sorted_eps = sorted(eps.values(), key=lambda e: e["_dt"], reverse=True)
