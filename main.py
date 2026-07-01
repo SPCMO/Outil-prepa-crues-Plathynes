@@ -1653,24 +1653,23 @@ class App(tk.Tk):
 
         # Superposer le masque BV
         if masque_array is not None and mask_header is not None:
-            mx    = mask_header["xllcorner"]
-            my    = mask_header["yllcorner"]
-            mcs   = mask_header["cellsize"]
-            mnr   = mask_header["nrows"]
-            mnc   = mask_header["ncols"]
-            mext  = [mx, mx + mnc * mcs, my, my + mnr * mcs]
-            # Zone hors BV (masque==0) → gris semi-transparent ; dedans → transparent
-            outside = np.where(masque_array == 0, 1.0, np.nan).astype(np.float32)
-            ax.imshow(outside, origin="upper", extent=mext,
-                      cmap="Greys", vmin=0, vmax=1, alpha=0.45,
+            mx   = mask_header["xllcorner"]
+            my   = mask_header["yllcorner"]
+            mcs  = mask_header["cellsize"]
+            mnr  = mask_header["nrows"]
+            mnc  = mask_header["ncols"]
+            mext = [mx, mx + mnc * mcs, my, my + mnr * mcs]
+
+            # Overlay RGBA : gris semi-transparent hors BV, transparent dedans
+            rgba = np.zeros((mnr, mnc, 4), dtype=np.float32)
+            outside_mask = (masque_array == 0)
+            rgba[outside_mask] = [0.25, 0.25, 0.25, 0.50]   # gris foncé alpha 50 %
+            ax.imshow(rgba, origin="upper", extent=mext,
                       interpolation="nearest", zorder=2)
-            # Contour de la limite BV
-            import numpy as _np2
-            # contour attend (ncols, nrows) ou utilise extent pour les coords
+
+            # Contour de la limite BV (ligne noire)
             ax.contour(masque_array, levels=[0.5], colors=["#000000"],
-                       linewidths=[1.5], origin="upper",
-                       extent=[mx, mx + mnc * mcs, my, my + mnr * mcs],
-                       zorder=3)
+                       linewidths=[1.5], origin="upper", extent=mext, zorder=3)
 
         ax.set_xlabel("Lambert 93 X (m)", fontsize=8)
         ax.set_ylabel("Lambert 93 Y (m)", fontsize=8)
