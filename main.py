@@ -988,7 +988,7 @@ class App(tk.Tk):
         def _get_ep(key):
             if key not in eps:
                 dt, label = _parse_key(key)
-                eps[key] = {"label": label, "_dt": dt,
+                eps[key] = {"label": label, "_dt": dt, "_key": key,
                             "q_path": None, "hu_path": None,
                             "p_path": None, "pant_path": None}
             return eps[key]
@@ -1267,9 +1267,24 @@ class App(tk.Tk):
         # Label Panthère : cumul Pan. sur la même ligne, précédé d'un tiret
         _cum_pan_sfx = (f"  -  cumul Pan. : {_sum_pant} mm" if _sum_pant is not None else "")
 
-        self._visu_update_legende(
-            ant_handles, ant_labels, pant_handles, pant_labels,
-            h_hu, l_hu, _sum_ant, _sum_pant, ep)
+        # Légende matplotlib dans le graphique (haut droite)
+        all_h, all_l = [], []
+        if ant_handles:
+            all_h.append(ant_handles[0])
+            all_l.append(ant_labels[0] + (_cum_ant_sfx if ant_handles else ""))
+            if len(ant_handles) > 1:
+                all_h.append(ant_handles[1])
+                all_l.append(ant_labels[1])
+        for ph, pl in zip(pant_handles, pant_labels):
+            all_h.append(ph)
+            all_l.append(pl + _cum_pan_sfx)
+        all_h += h_hu;  all_l += l_hu
+        if all_h:
+            self._visu_ax_p.legend(all_h, all_l, loc="upper right", fontsize=8,
+                                    handlelength=1.5)
+
+        # Bandeau cliquable cumul spatial (sous la barre ctrl)
+        self._visu_update_legende(ant_handles, pant_handles, _sum_ant, _sum_pant, ep)
 
         # ── Encart stats Ant. vs Pan. (bas-droite) ────────────────────────────
         if p_dates and pant_dates:
@@ -1475,76 +1490,35 @@ class App(tk.Tk):
 
     # ── Tableau légende cliquable (Produit | Cumul) ──────────────────────────
 
-    def _visu_update_legende(self, ant_handles, ant_labels, pant_handles, pant_labels,
-                              h_hu, l_hu, sum_ant, sum_pant, ep):
-        """Reconstruit le tableau légende 2 colonnes sous la barre de contrôle."""
+    def _visu_update_legende(self, ant_handles, pant_handles, sum_ant, sum_pant, ep):
+        """Bandeau compact sous la barre ctrl : boutons cliquables pour la carte spatialisée."""
         frm = getattr(self, "_visu_legende_frame", None)
         if frm is None:
             return
         for w in frm.winfo_children():
             w.destroy()
+        if not ant_handles and not pant_handles:
+            return
 
-        # Couleurs des produits (cohérentes avec le graphique)
         C_P    = "#1565C0"
         C_PANT = "#E65100"
-        C_HU   = "#B71C1C"
 
-        # En-têtes
-        hdr_bg = "#EEF2F7"
-        tk.Label(frm, text="Produit", bg=hdr_bg, fg="#333333",
-                 font=("TkDefaultFont", 8, "bold"), padx=6, pady=2,
-                 relief="flat", bd=0, width=22, anchor="w").grid(row=0, column=0, sticky="ew", padx=(0, 1))
-        tk.Label(frm, text="Cumul épisode", bg=hdr_bg, fg="#333333",
-                 font=("TkDefaultFont", 8, "bold"), padx=6, pady=2,
-                 relief="flat", bd=0, width=16, anchor="w").grid(row=0, column=1, sticky="ew", padx=(0, 2))
-        tk.Label(frm, text="", bg="white").grid(row=0, column=2, sticky="ew")
-        frm.columnconfigure(2, weight=1)
+        tk.Label(frm, text="Carte spatialisée :", bg="white", fg="#555555",
+                 font=("TkDefaultFont", 8)).pack(side=tk.LEFT, padx=(4, 6))
 
-        row = 1
+        if ant_handles and sum_ant is not None:
+            txt = f"Antilope — {sum_ant} mm"
+            btn = tk.Label(frm, text=txt, bg="white", fg=C_P,
+                           font=("TkDefaultFont", 8, "underline"), cursor="hand2", padx=4)
+            btn.pack(side=tk.LEFT, padx=2)
+            btn.bind("<Button-1>", lambda _e: self._visu_ouvrir_cumul_spatial("antilope", ep))
 
-        def _make_produit_lbl(parent, text, color, row_i):
-            f = tk.Frame(parent, bg="white")
-            f.grid(row=row_i, column=0, sticky="ew", padx=(0, 1), pady=1)
-            tk.Label(f, text="■ ", bg="white", fg=color,
-                     font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
-            tk.Label(f, text=text, bg="white", fg="#222222",
-                     font=("TkDefaultFont", 8)).pack(side=tk.LEFT)
-
-        def _make_cumul_btn(parent, cumul_mm, produit_key, row_i, color):
-            if cumul_mm is not None:
-                txt = f"{cumul_mm} mm"
-                btn = tk.Label(parent, text=txt, bg="white", fg=color,
-                               font=("TkDefaultFont", 8, "underline"),
-                               cursor="hand2", padx=4)
-                btn.grid(row=row_i, column=1, sticky="w", pady=1)
-                btn.bind("<Button-1>", lambda _e, p=produit_key: self._visu_ouvrir_cumul_spatial(p, ep))
-            else:
-                tk.Label(parent, text="—", bg="white", fg="#AAAAAA",
-                         font=("TkDefaultFont", 8), padx=4).grid(row=row_i, column=1, sticky="w", pady=1)
-
-        # Ligne Antilope inf
-        if ant_handles:
-            lbl_inf = ant_labels[0] if ant_labels else "Antilope BV"
-            _make_produit_lbl(frm, lbl_inf, C_P, row)
-            _make_cumul_btn(frm, sum_ant, "antilope", row, C_P)
-            row += 1
-            # Antilope sup (si présent)
-            if len(ant_labels) > 1:
-                _make_produit_lbl(frm, ant_labels[1], C_P, row)
-                tk.Label(frm, text="", bg="white").grid(row=row, column=1, sticky="w")
-                row += 1
-
-        # Ligne Panthère
-        if pant_handles:
-            lbl_pan = pant_labels[0] if pant_labels else "Panthère BV"
-            _make_produit_lbl(frm, lbl_pan, C_PANT, row)
-            _make_cumul_btn(frm, sum_pant, "panthere", row, C_PANT)
-            row += 1
-
-        # Ligne HU
-        if h_hu:
-            _make_produit_lbl(frm, l_hu[0] if l_hu else "HU moyen", C_HU, row)
-            tk.Label(frm, text="", bg="white").grid(row=row, column=1, sticky="w")
+        if pant_handles and sum_pant is not None:
+            txt = f"Panthère — {sum_pant} mm"
+            btn = tk.Label(frm, text=txt, bg="white", fg=C_PANT,
+                           font=("TkDefaultFont", 8, "underline"), cursor="hand2", padx=4)
+            btn.pack(side=tk.LEFT, padx=2)
+            btn.bind("<Button-1>", lambda _e: self._visu_ouvrir_cumul_spatial("panthere", ep))
 
     # ── Visualisation spatialisée cumul pluie ────────────────────────────────
 
@@ -1556,10 +1530,9 @@ class App(tk.Tk):
 
         # Répertoires
         _, _, pluies_dir, bv_dir = self._get_out_dirs()
-        key = ep.get("label", "")
-        # Normaliser la clé (label → clé dossier)
-        # Les dossiers sont AntJ1-Ep_<key> / Pant-Ep_<key>
-        # On cherche d'abord un cumul GRD déjà calculé, sinon on le calcule
+        key = ep.get("_key", ep.get("label", ""))   # clé brute "DD_MM_YYYY_Station"
+        cumul_dir = os.path.join(bv_dir, "GRD cumuls")
+
         if produit == "antilope":
             grd_dir_candidates = [
                 os.path.join(pluies_dir, f"AntJ1-Ep_{key}"),
@@ -1570,7 +1543,7 @@ class App(tk.Tk):
             grd_dir_candidates = [os.path.join(pluies_dir, f"Pant-Ep_{key}")]
             cumul_fname = f"Pant_CumulGRD-Ep_{key}.grd"
 
-        cumul_path = os.path.join(bv_dir, cumul_fname)
+        cumul_path = os.path.join(cumul_dir, cumul_fname)
 
         # Calculer cumul GRD si absent
         if not os.path.isfile(cumul_path):
@@ -1583,7 +1556,7 @@ class App(tk.Tk):
                 return
             try:
                 cumul_array, header = self._calculer_cumul_grd(grd_dir)
-                os.makedirs(bv_dir, exist_ok=True)
+                os.makedirs(cumul_dir, exist_ok=True)
                 self._ecrire_grd(cumul_path, cumul_array, header)
             except Exception as exc:
                 messagebox.showerror("Cumul spatial", f"Erreur calcul cumul GRD :\n{exc}")
