@@ -1704,6 +1704,8 @@ class App(tk.Tk):
             ax.contour(masque_array, levels=[0.5], colors=["#000000"],
                        linewidths=[1.2], origin="upper", extent=mext, zorder=3)
 
+        stats_by_prod = {}   # {produit: {"cv":…, "gini":…, "max_moy":…} | None}
+
         for i, (produit, titre) in enumerate(
                 [("antilope", "Antilope"), ("panthere", "Panthère")]):
             ax = fig.add_subplot(gs[0, i])
@@ -1732,6 +1734,26 @@ class App(tk.Tk):
             pixels_bv = _pixels_dans_bv(data, hdr)
             cumul_txt = f"{round(float(np.nanmean(pixels_bv)))} mm" \
                         if pixels_bv.size > 0 else "— mm"
+            # Indices de variabilité spatiale sur les pixels dans le BV
+            if pixels_bv.size > 1:
+                mu_bv = float(np.mean(pixels_bv))
+                if mu_bv > 0:
+                    cv_bv     = float(np.std(pixels_bv)) / mu_bv
+                    maxmoy_bv = float(np.max(pixels_bv)) / mu_bv
+                    px_s = np.sort(pixels_bv)
+                    n_s  = len(px_s)
+                    gini_bv = float(
+                        (2 * np.dot(np.arange(1, n_s + 1, dtype=np.float64), px_s)
+                         / (n_s * float(np.sum(px_s)))) - (n_s + 1) / n_s)
+                    stats_by_prod[produit] = {
+                        "cv":      max(0.0, cv_bv),
+                        "gini":    max(0.0, gini_bv),
+                        "max_moy": maxmoy_bv,
+                    }
+                else:
+                    stats_by_prod[produit] = None
+            else:
+                stats_by_prod[produit] = None
             couleur_titre = COULEURS[produit]
             ax.text(0.5, 1.03, f"{titre} — Cumul : {cumul_txt}",
                     transform=ax.transAxes, ha="center", va="bottom",
@@ -1755,6 +1777,106 @@ class App(tk.Tk):
 
         fig.suptitle(f"Cumuls spatialisés — {key}", fontsize=11, fontweight="bold", y=0.97)
 
+        # ── Fonctions seuils couleur ─────────────────────────────────────────
+        def _seuil_cv(v):
+            if v < 0.10: return ("Très homogène",        "#1B5E20", "#E8F5E9")
+            if v < 0.25: return ("Homogène",              "#2E7D32", "#C8E6C9")
+            if v < 0.40: return ("Modérément hétérogène", "#F57F17", "#FFF9C4")
+            if v < 0.60: return ("Hétérogène",            "#E65100", "#FFE0B2")
+            return              ("Très hétérogène",        "#B71C1C", "#FFCDD2")
+
+        def _seuil_gini(v):
+            if v < 0.10: return ("Très homogène",        "#1B5E20", "#E8F5E9")
+            if v < 0.20: return ("Homogène",              "#2E7D32", "#C8E6C9")
+            if v < 0.35: return ("Modérément hétérogène", "#F57F17", "#FFF9C4")
+            if v < 0.50: return ("Hétérogène",            "#E65100", "#FFE0B2")
+            return              ("Très hétérogène",        "#B71C1C", "#FFCDD2")
+
+        def _seuil_maxmoy(v):
+            if v < 1.30: return ("Très homogène",        "#1B5E20", "#E8F5E9")
+            if v < 1.60: return ("Homogène",              "#2E7D32", "#C8E6C9")
+            if v < 2.00: return ("Modérément hétérogène", "#F57F17", "#FFF9C4")
+            if v < 3.00: return ("Hétérogène",            "#E65100", "#FFE0B2")
+            return              ("Très hétérogène",        "#B71C1C", "#FFCDD2")
+
+        def _open_info():
+            info = tk.Toplevel(top)
+            info.title("Indices de variabilité spatiale — Formules")
+            info.resizable(False, False)
+            info.grab_set()
+            lignes = (
+                "CV  (Coefficient de Variation)  =  σ / μ\n"
+                "  σ = écart-type des valeurs de pluie sur les pixels BV\n"
+                "  μ = moyenne des valeurs de pluie sur les pixels BV\n"
+                "  < 0.10        : Très homogène\n"
+                "  0.10 – 0.25  : Homogène\n"
+                "  0.25 – 0.40  : Modérément hétérogène\n"
+                "  0.40 – 0.60  : Hétérogène\n"
+                "  > 0.60        : Très hétérogène\n\n"
+                "Gini  =  (2·Σ(i·xᵢ) / (n·Σxᵢ)) − (n+1)/n\n"
+                "  xᵢ = pixels triés par ordre croissant, i = rang (1 à n)\n"
+                "  0 = distribution parfaitement uniforme, 1 = concentration totale\n"
+                "  < 0.10        : Très homogène\n"
+                "  0.10 – 0.20  : Homogène\n"
+                "  0.20 – 0.35  : Modérément hétérogène\n"
+                "  0.35 – 0.50  : Hétérogène\n"
+                "  > 0.50        : Très hétérogène\n\n"
+                "Max/Moy  =  max(x) / μ\n"
+                "  Rapport entre la valeur maximale et la moyenne sur les pixels BV\n"
+                "  < 1.30        : Très homogène\n"
+                "  1.30 – 1.60  : Homogène\n"
+                "  1.60 – 2.00  : Modérément hétérogène\n"
+                "  2.00 – 3.00  : Hétérogène\n"
+                "  > 3.00        : Très hétérogène"
+            )
+            tk.Label(info, text=lignes, justify="left",
+                     font=("Courier", 9), padx=16, pady=10).pack()
+            tk.Button(info, text="Fermer", command=info.destroy,
+                      padx=12).pack(pady=(0, 10))
+
+        def _ajouter_bloc_stats(parent, stats):
+            if stats is None:
+                tk.Label(parent, text="Données non disponibles",
+                         fg="#888888", bg="white",
+                         font=("Arial", 8)).pack(padx=8, anchor="w")
+                return
+            for idx_lbl, valeur, seuil_info in [
+                ("CV",       f"{stats['cv']:.2f}",      _seuil_cv(stats['cv'])),
+                ("Gini",     f"{stats['gini']:.2f}",    _seuil_gini(stats['gini'])),
+                ("Max/Moy",  f"{stats['max_moy']:.2f}", _seuil_maxmoy(stats['max_moy'])),
+            ]:
+                libelle, fg, bg = seuil_info
+                row = tk.Frame(parent, bg="white")
+                row.pack(anchor="w", padx=6, pady=1)
+                tk.Label(row, text=f"{idx_lbl} = {valeur}",
+                         width=13, anchor="w", bg="white",
+                         font=("Arial", 8, "bold")).pack(side="left")
+                tk.Label(row, text=libelle, fg=fg, bg=bg,
+                         font=("Arial", 8), padx=4, pady=1).pack(side="left")
+
+        # ── Bandeau stats (packé AVANT le canvas → reste en bas) ─────────────
+        stats_bar = tk.Frame(top, bg="white", relief="groove", bd=1)
+        stats_bar.pack(fill=tk.X, side=tk.BOTTOM, padx=4, pady=(2, 4))
+
+        tk.Button(stats_bar, text=" ⓘ ", font=("Arial", 10, "bold"),
+                  bg="#1F618D", fg="white", relief="flat", cursor="hand2",
+                  command=_open_info).pack(side="right", padx=10, pady=4)
+
+        frm_ant = tk.Frame(stats_bar, bg="white")
+        frm_ant.pack(side="left", fill="both", expand=True, padx=(8, 4), pady=2)
+        tk.Label(frm_ant, text="Antilope", fg=C_ANT, bg="white",
+                 font=("Arial", 8, "bold")).pack(anchor="w")
+        _ajouter_bloc_stats(frm_ant, stats_by_prod.get("antilope"))
+
+        tk.Frame(stats_bar, width=1, bg="#CCCCCC").pack(side="left", fill="y", pady=4)
+
+        frm_pant = tk.Frame(stats_bar, bg="white")
+        frm_pant.pack(side="left", fill="both", expand=True, padx=(4, 8), pady=2)
+        tk.Label(frm_pant, text="Panthère", fg=C_PANT, bg="white",
+                 font=("Arial", 8, "bold")).pack(anchor="w")
+        _ajouter_bloc_stats(frm_pant, stats_by_prod.get("panthere"))
+
+        # ── Canvas matplotlib ─────────────────────────────────────────────────
         canvas = FigureCanvasTkAgg(fig, master=top)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         canvas.draw()
