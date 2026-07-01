@@ -467,6 +467,34 @@
       <p>Les barres sont colorées en <span style="color:#1F618D;font-weight:600">bleu</span> si Antilope &gt; Panthère, en <span style="color:#CC5500;font-weight:600">orange</span> si Panthère &gt; Antilope. Leur longueur est proportionnelle au maximum observé sur l'ensemble des épisodes (référence globale propre à chaque indicateur). En pied d'encart : <em>"Panthère sous/sur-estime X % des pas de temps (nb : N) soit Y % du cumul global"</em>.</p>
       <p><strong>Note sur l'astérisque (*) :</strong> ces hyétogrammes sont une <em>reconstitution</em> de la pluie moyenne de bassin versant calculée à partir des pluies spatialisées téléchargées (fichiers <code>.grd</code>). La moyenne est effectuée sur l'ensemble des pixels de la grille (y compris la marge de 5 km de la bounding box). Il ne s'agit pas d'une mesure directe mais d'une estimation spatiale — valable pour Antilope comme pour Panthère.</p>
       <p>Les deux graphiques partagent la même échelle temporelle (x identique).</p>
+
+      <h3>Cumuls spatialisés (fenêtre dédiée)</h3>
+      <p>Un clic sur le cumul Antilope ou Panthère dans la <strong>légende du graphique</strong> (en haut à droite), ou sur les valeurs d'indices dans l'onglet <strong>Analyse pluies</strong>, ouvre une fenêtre affichant les cumuls spatialisés Antilope et Panthère côte à côte :</p>
+      <ul>
+        <li>Chaque carte affiche le cumul de pluie cumulée sur le bassin versant, masqué hors de l'emprise BV.</li>
+        <li>Le contour du bassin versant est tracé en noir.</li>
+        <li>Le titre de chaque carte mentionne le cumul moyen BV en mm.</li>
+        <li>Une <strong>colorbar commune</strong> (à droite) utilise la <strong>palette « Hydro » du Superviseur national</strong> avec les classes suivantes :</li>
+      </ul>
+      <table>
+        <tr><th>Classe</th><th>Couleur</th></tr>
+        <tr><td>0–2 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#FFFFFF;border:1px solid #ccc;vertical-align:middle"></span> Blanc (pas de pluie significative)</td></tr>
+        <tr><td>2–5 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#55007F;vertical-align:middle"></span> Violet</td></tr>
+        <tr><td>5–10 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#003DB9;vertical-align:middle"></span> Bleu marine</td></tr>
+        <tr><td>10–17 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#2385F5;vertical-align:middle"></span> Bleu</td></tr>
+        <tr><td>17–25 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#77FFF4;vertical-align:middle"></span> Cyan clair</td></tr>
+        <tr><td>25–35 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#00E100;vertical-align:middle"></span> Vert vif</td></tr>
+        <tr><td>35–45 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#458530;vertical-align:middle"></span> Vert foncé</td></tr>
+        <tr><td>45–55 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#F7E44C;vertical-align:middle"></span> Jaune-vert</td></tr>
+        <tr><td>55–70 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#FFBF1D;vertical-align:middle"></span> Jaune-orange</td></tr>
+        <tr><td>70–100 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#FF8202;vertical-align:middle"></span> Orange</td></tr>
+        <tr><td>100–150 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#FF0000;vertical-align:middle"></span> Rouge</td></tr>
+        <tr><td>150–200 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#942503;vertical-align:middle"></span> Brun rouge foncé</td></tr>
+        <tr><td>200–300 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#FF55FF;vertical-align:middle"></span> Magenta</td></tr>
+        <tr><td>&gt; 300 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#FFAAFF;vertical-align:middle"></span> Rose clair</td></tr>
+      </table>
+      <p>Sous la colorbar, une mention indique : <em>Palette « Hydro » / Superviseur national</em>.</p>
+      <p>En bas de la fenêtre, un bandeau affiche les <strong>indices de variabilité spatiale</strong> calculés sur les pixels du bassin versant (voir ci-dessous, onglet Analyse pluies).</p>
     </div>
   </div>
 
@@ -477,14 +505,30 @@
       <h3>Onglet <span class="badge badge-pluies">Analyse pluies</span></h3>
       <p>Cet onglet se remplit automatiquement dès que des épisodes sont disponibles dans le dossier de sorties. Il présente un <strong>tableau récapitulatif de tous les épisodes</strong> détectés :</p>
       <table>
-        <tr><th>Colonne</th><th>Description</th><th>Couleur</th></tr>
+        <tr><th>Colonne</th><th>Description</th><th>Couleur / interaction</th></tr>
         <tr><td>Date épisode</td><td>Label de l'épisode</td><td>Fond coloré par niveau de vigilance max (même palette que la listbox)</td></tr>
         <tr><td>Q max (m³/s)</td><td>Débit maximum de l'épisode, lu depuis le fichier extrait</td><td>Idem Vig. max.</td></tr>
         <tr><td>Cumul Antilope (mm)</td><td>Somme des valeurs du CSV <code>AntJ1_BV-Ep_*.csv</code></td><td>Texte toujours <span style="color:#1F618D;font-weight:600">bleu</span></td></tr>
         <tr><td>Cumul Panthère (mm)</td><td>Somme des valeurs du CSV <code>Pant_BV-Ep_*.csv</code></td><td>Texte toujours <span style="color:#CC5500;font-weight:600">orange</span></td></tr>
         <tr><td>Écart (%)</td><td>(∑Pan − ∑Ant) / ∑Ant × 100, signe + si Panthère &gt; Antilope</td><td>Bleu si Ant &gt; Pan, orange si Pan &gt; Ant</td></tr>
+        <tr><td>Coeff. Var. (Ant./Pant.) ⓘ</td><td>Coefficient de variation σ/μ sur les pixels BV (Antilope / Panthère)</td><td>Fond coloré selon homogénéité ; <strong>clic</strong> → cumuls spatialisés</td></tr>
+        <tr><td>Gini (Ant./Pant.)</td><td>Coefficient de Gini mesurant la dispersion spatiale (0 = parfait uniforme)</td><td>Fond coloré selon homogénéité ; <strong>clic</strong> → cumuls spatialisés</td></tr>
+        <tr><td>Max/Moy (Ant./Pant.)</td><td>Rapport entre le pixel maximal et la moyenne BV</td><td>Fond coloré selon homogénéité ; <strong>clic</strong> → cumuls spatialisés</td></tr>
       </table>
-      <p>Les colonnes Cumul Antilope et Cumul Panthère affichent <code>—</code> si le fichier correspondant est absent. En-têtes figés, scrollbar verticale + molette souris. Le tableau est rechargé automatiquement à chaque actualisation de la liste des épisodes.</p>
+      <p>Les colonnes Cumul et les trois indices affichent <code>—</code> si le fichier ou le masque BV correspondant est absent. En-têtes figés, scrollbar verticale + molette souris. Le tableau est rechargé automatiquement à chaque actualisation de la liste des épisodes.</p>
+
+      <h3>Indices de variabilité spatiale</h3>
+      <p>Les trois colonnes d'indices (soulignées, cliquables) quantifient <strong>l'homogénéité spatiale des cumuls</strong> sur le bassin versant. Chaque cellule affiche la valeur Antilope / la valeur Panthère, avec un fond coloré selon la pire des deux :</p>
+      <table>
+        <tr><th>Gradient</th><th>Coeff. Var.</th><th>Gini</th><th>Max/Moy</th></tr>
+        <tr><td><span style="background:#C8E6C9;color:#2E7D32;padding:1px 6px;border-radius:3px">Très homogène</span></td><td>&lt; 0,10</td><td>&lt; 0,10</td><td>&lt; 1,30</td></tr>
+        <tr><td><span style="background:#E8F5E9;color:#1B5E20;padding:1px 6px;border-radius:3px">Homogène</span></td><td>0,10 – 0,25</td><td>0,10 – 0,20</td><td>1,30 – 1,60</td></tr>
+        <tr><td><span style="background:#FFF9C4;color:#F57F17;padding:1px 6px;border-radius:3px">Modérément hétérogène</span></td><td>0,25 – 0,40</td><td>0,20 – 0,35</td><td>1,60 – 2,00</td></tr>
+        <tr><td><span style="background:#FFE0B2;color:#E65100;padding:1px 6px;border-radius:3px">Hétérogène</span></td><td>0,40 – 0,60</td><td>0,35 – 0,50</td><td>2,00 – 3,00</td></tr>
+        <tr><td><span style="background:#FFCDD2;color:#B71C1C;padding:1px 6px;border-radius:3px">Très hétérogène</span></td><td>&gt; 0,60</td><td>&gt; 0,50</td><td>&gt; 3,00</td></tr>
+      </table>
+      <p>Un clic sur l'une de ces cellules ouvre la <strong>fenêtre des cumuls spatialisés</strong> (Antilope et Panthère côte à côte) avec le bandeau d'indices en bas. Le bouton <strong>ⓘ</strong> dans l'en-tête "Coeff. Var." ouvre une fenêtre d'aide rappelant les formules et les seuils de chaque indice.</p>
+
       <p><strong>Frise chronologique</strong> (sous le tableau) — diagramme à barres divergentes sur l'ensemble de l'historique :</p>
       <ul>
         <li>Axe X = chronologie des épisodes (barres à espacement uniforme, étiquettes de dates)</li>
