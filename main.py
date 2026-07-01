@@ -1486,11 +1486,12 @@ class App(tk.Tk):
         for w in frm.winfo_children():
             w.destroy()
 
-        BG      = "#FAFAFA"
-        HDR_BG  = "#EEF2F7"
-        C_P     = "#1565C0"
-        C_PANT  = "#E65100"
-        C_HU    = "#B71C1C"
+        BG         = "#FAFAFA"
+        HDR_BG     = "#EEF2F7"
+        C_P        = "#1F618D"   # bleu foncé Antilope ≤ seuil
+        C_P_EXCESS = "#7D3C98"   # violet Antilope > seuil
+        C_PANT     = "#CC5500"   # orange foncé Panthère
+        C_HU       = "#C0392B"   # rouge HU
         frm.config(bg=BG)
 
         # En-têtes
@@ -1531,7 +1532,7 @@ class App(tk.Tk):
             _ligne(lbl0, sum_ant, C_P, "antilope")
             if len(ant_handles) > 1:
                 lbl1 = ant_labels[1] if len(ant_labels) > 1 else "Antilope BV sup"
-                _ligne(lbl1, None, C_P, "")
+                _ligne(lbl1, None, C_P_EXCESS, "")
 
         if pant_handles:
             lbl_pan = pant_labels[0] if pant_labels else "Panthère BV"
