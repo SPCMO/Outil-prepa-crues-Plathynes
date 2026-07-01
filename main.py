@@ -1804,6 +1804,9 @@ class App(tk.Tk):
             info.title("Indices de variabilité spatiale — Formules")
             info.resizable(False, False)
             info.grab_set()
+            if os.path.isfile(_ico):
+                try: info.iconbitmap(_ico)
+                except Exception: pass
             lignes = (
                 "CV  (Coefficient de Variation)  =  σ / μ\n"
                 "  σ = écart-type des valeurs de pluie sur les pixels BV\n"
