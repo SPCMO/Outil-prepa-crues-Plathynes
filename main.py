@@ -1777,66 +1777,6 @@ class App(tk.Tk):
 
         fig.suptitle(f"Cumuls spatialisés — {key}", fontsize=11, fontweight="bold", y=0.97)
 
-        # ── Fonctions seuils couleur ─────────────────────────────────────────
-        def _seuil_cv(v):
-            if v < 0.10: return ("Très homogène",        "#1B5E20", "#E8F5E9")
-            if v < 0.25: return ("Homogène",              "#2E7D32", "#C8E6C9")
-            if v < 0.40: return ("Modérément hétérogène", "#F57F17", "#FFF9C4")
-            if v < 0.60: return ("Hétérogène",            "#E65100", "#FFE0B2")
-            return              ("Très hétérogène",        "#B71C1C", "#FFCDD2")
-
-        def _seuil_gini(v):
-            if v < 0.10: return ("Très homogène",        "#1B5E20", "#E8F5E9")
-            if v < 0.20: return ("Homogène",              "#2E7D32", "#C8E6C9")
-            if v < 0.35: return ("Modérément hétérogène", "#F57F17", "#FFF9C4")
-            if v < 0.50: return ("Hétérogène",            "#E65100", "#FFE0B2")
-            return              ("Très hétérogène",        "#B71C1C", "#FFCDD2")
-
-        def _seuil_maxmoy(v):
-            if v < 1.30: return ("Très homogène",        "#1B5E20", "#E8F5E9")
-            if v < 1.60: return ("Homogène",              "#2E7D32", "#C8E6C9")
-            if v < 2.00: return ("Modérément hétérogène", "#F57F17", "#FFF9C4")
-            if v < 3.00: return ("Hétérogène",            "#E65100", "#FFE0B2")
-            return              ("Très hétérogène",        "#B71C1C", "#FFCDD2")
-
-        def _open_info():
-            info = tk.Toplevel(top)
-            info.title("Indices de variabilité spatiale — Formules")
-            info.resizable(False, False)
-            info.grab_set()
-            if os.path.isfile(_ico):
-                try: info.iconbitmap(_ico)
-                except Exception: pass
-            lignes = (
-                "CV  (Coefficient de Variation)  =  σ / μ\n"
-                "  σ = écart-type des valeurs de pluie sur les pixels BV\n"
-                "  μ = moyenne des valeurs de pluie sur les pixels BV\n"
-                "  < 0.10        : Très homogène\n"
-                "  0.10 – 0.25  : Homogène\n"
-                "  0.25 – 0.40  : Modérément hétérogène\n"
-                "  0.40 – 0.60  : Hétérogène\n"
-                "  > 0.60        : Très hétérogène\n\n"
-                "Gini  =  (2·Σ(i·xᵢ) / (n·Σxᵢ)) − (n+1)/n\n"
-                "  xᵢ = pixels triés par ordre croissant, i = rang (1 à n)\n"
-                "  0 = distribution parfaitement uniforme, 1 = concentration totale\n"
-                "  < 0.10        : Très homogène\n"
-                "  0.10 – 0.20  : Homogène\n"
-                "  0.20 – 0.35  : Modérément hétérogène\n"
-                "  0.35 – 0.50  : Hétérogène\n"
-                "  > 0.50        : Très hétérogène\n\n"
-                "Max/Moy  =  max(x) / μ\n"
-                "  Rapport entre la valeur maximale et la moyenne sur les pixels BV\n"
-                "  < 1.30        : Très homogène\n"
-                "  1.30 – 1.60  : Homogène\n"
-                "  1.60 – 2.00  : Modérément hétérogène\n"
-                "  2.00 – 3.00  : Hétérogène\n"
-                "  > 3.00        : Très hétérogène"
-            )
-            tk.Label(info, text=lignes, justify="left",
-                     font=("Courier", 9), padx=16, pady=10).pack()
-            tk.Button(info, text="Fermer", command=info.destroy,
-                      padx=12).pack(pady=(0, 10))
-
         def _ajouter_bloc_stats(parent, stats):
             if stats is None:
                 tk.Label(parent, text="Données non disponibles",
@@ -1844,15 +1784,15 @@ class App(tk.Tk):
                          font=("Arial", 8)).pack(padx=8, anchor="w")
                 return
             for idx_lbl, valeur, seuil_info in [
-                ("CV",       f"{stats['cv']:.2f}",      _seuil_cv(stats['cv'])),
-                ("Gini",     f"{stats['gini']:.2f}",    _seuil_gini(stats['gini'])),
-                ("Max/Moy",  f"{stats['max_moy']:.2f}", _seuil_maxmoy(stats['max_moy'])),
+                ("Coeff. Var.", f"{stats['cv']:.2f}",      App._seuil_cv(stats['cv'])),
+                ("Gini",        f"{stats['gini']:.2f}",    App._seuil_gini(stats['gini'])),
+                ("Max/Moy",     f"{stats['max_moy']:.2f}", App._seuil_maxmoy(stats['max_moy'])),
             ]:
                 libelle, fg, bg = seuil_info
                 row = tk.Frame(parent, bg="white")
                 row.pack(anchor="w", padx=6, pady=1)
                 tk.Label(row, text=f"{idx_lbl} = {valeur}",
-                         width=13, anchor="w", bg="white",
+                         width=15, anchor="w", bg="white",
                          font=("Arial", 8, "bold")).pack(side="left")
                 tk.Label(row, text=libelle, fg=fg, bg=bg,
                          font=("Arial", 8), padx=4, pady=1).pack(side="left")
@@ -1863,7 +1803,8 @@ class App(tk.Tk):
 
         tk.Button(stats_bar, text=" ⓘ ", font=("Arial", 10, "bold"),
                   bg="#1F618D", fg="white", relief="flat", cursor="hand2",
-                  command=_open_info).pack(side="right", padx=10, pady=4)
+                  command=lambda: self._popup_formules_indices(top)
+                  ).pack(side="right", padx=10, pady=4)
 
         frm_ant = tk.Frame(stats_bar, bg="white")
         frm_ant.pack(side="left", fill="both", expand=True, padx=(8, 4), pady=2)
@@ -1883,6 +1824,147 @@ class App(tk.Tk):
         canvas = FigureCanvasTkAgg(fig, master=top)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         canvas.draw()
+
+    # ── Seuils variabilité spatiale (réutilisés popup + tableau) ─────────────
+
+    @staticmethod
+    def _seuil_cv(v):
+        if v < 0.10: return ("Très homogène",        "#1B5E20", "#E8F5E9")
+        if v < 0.25: return ("Homogène",              "#2E7D32", "#C8E6C9")
+        if v < 0.40: return ("Modérément hétérogène", "#F57F17", "#FFF9C4")
+        if v < 0.60: return ("Hétérogène",            "#E65100", "#FFE0B2")
+        return              ("Très hétérogène",        "#B71C1C", "#FFCDD2")
+
+    @staticmethod
+    def _seuil_gini(v):
+        if v < 0.10: return ("Très homogène",        "#1B5E20", "#E8F5E9")
+        if v < 0.20: return ("Homogène",              "#2E7D32", "#C8E6C9")
+        if v < 0.35: return ("Modérément hétérogène", "#F57F17", "#FFF9C4")
+        if v < 0.50: return ("Hétérogène",            "#E65100", "#FFE0B2")
+        return              ("Très hétérogène",        "#B71C1C", "#FFCDD2")
+
+    @staticmethod
+    def _seuil_maxmoy(v):
+        if v < 1.30: return ("Très homogène",        "#1B5E20", "#E8F5E9")
+        if v < 1.60: return ("Homogène",              "#2E7D32", "#C8E6C9")
+        if v < 2.00: return ("Modérément hétérogène", "#F57F17", "#FFF9C4")
+        if v < 3.00: return ("Hétérogène",            "#E65100", "#FFE0B2")
+        return              ("Très hétérogène",        "#B71C1C", "#FFCDD2")
+
+    def _popup_formules_indices(self, parent=None):
+        """Ouvre le popup de description des formules des 3 indices de variabilité."""
+        info = tk.Toplevel(parent or self)
+        info.title("Indices de variabilité spatiale — Formules")
+        info.resizable(False, False)
+        info.grab_set()
+        _ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo_OPALE.ico")
+        if os.path.isfile(_ico):
+            try: info.iconbitmap(_ico)
+            except Exception: pass
+        lignes = (
+            "Coeff. Var.  (Coefficient de Variation)  =  σ / μ\n"
+            "  σ = écart-type des valeurs de pluie sur les pixels BV\n"
+            "  μ = moyenne des valeurs de pluie sur les pixels BV\n"
+            "  < 0.10        : Très homogène\n"
+            "  0.10 – 0.25  : Homogène\n"
+            "  0.25 – 0.40  : Modérément hétérogène\n"
+            "  0.40 – 0.60  : Hétérogène\n"
+            "  > 0.60        : Très hétérogène\n\n"
+            "Gini  =  (2·Σ(i·xᵢ) / (n·Σxᵢ)) − (n+1)/n\n"
+            "  xᵢ = pixels triés par ordre croissant, i = rang (1 à n)\n"
+            "  0 = distribution parfaitement uniforme, 1 = concentration totale\n"
+            "  < 0.10        : Très homogène\n"
+            "  0.10 – 0.20  : Homogène\n"
+            "  0.20 – 0.35  : Modérément hétérogène\n"
+            "  0.35 – 0.50  : Hétérogène\n"
+            "  > 0.50        : Très hétérogène\n\n"
+            "Max/Moy  =  max(x) / μ\n"
+            "  Rapport entre la valeur maximale et la moyenne sur les pixels BV\n"
+            "  < 1.30        : Très homogène\n"
+            "  1.30 – 1.60  : Homogène\n"
+            "  1.60 – 2.00  : Modérément hétérogène\n"
+            "  2.00 – 3.00  : Hétérogène\n"
+            "  > 3.00        : Très hétérogène"
+        )
+        tk.Label(info, text=lignes, justify="left",
+                 font=("Courier", 9), padx=16, pady=10).pack()
+        tk.Button(info, text="Fermer", command=info.destroy,
+                  padx=12).pack(pady=(0, 10))
+
+    def _indices_ep(self, ep, produit="antilope"):
+        """Charge le GRD cumul et calcule CV, Gini, Max/Moy sur les pixels BV.
+        Retourne dict {cv, gini, max_moy} ou None si données manquantes."""
+        import numpy as np
+        try:
+            _, _, pluies_dir, bv_dir = self._get_out_dirs()
+            key = ep.get("_key", ep.get("label", ""))
+            cumul_dir = os.path.join(bv_dir, "GRD cumuls")
+            if produit == "antilope":
+                candidates = [f"AntJ1-Ep_{key}", f"Pluie-Ep_{key}"]
+                pfx = "AntJ1_CumulGRD-Ep_"
+            else:
+                candidates = [f"Pant-Ep_{key}"]
+                pfx = "Pant_CumulGRD-Ep_"
+            cumul_path = os.path.join(cumul_dir, f"{pfx}{key}.grd")
+            if os.path.isfile(cumul_path):
+                arr, hdr = self._lire_grd(cumul_path)
+            else:
+                grd_dir = next(
+                    (os.path.join(pluies_dir, c) for c in candidates
+                     if os.path.isdir(os.path.join(pluies_dir, c))), None)
+                if grd_dir is None:
+                    return None
+                arr, hdr = self._calculer_cumul_grd(grd_dir)
+                os.makedirs(cumul_dir, exist_ok=True)
+                self._ecrire_grd(cumul_path, arr, hdr)
+            data = np.where(arr == hdr["nodata"], np.nan, arr)
+            # Masque BV
+            masque_path = getattr(self, "var_masque_asc", None)
+            masque_path = masque_path.get().strip() if masque_path else \
+                          self.config_data.get("station", {}).get("masque_asc", "")
+            masque_array = None
+            mask_header  = None
+            if masque_path and os.path.isfile(masque_path):
+                masque_array, mask_header = self._lire_asc_numpy(masque_path)
+            # Pixels BV
+            if masque_array is not None and mask_header is not None:
+                mx  = mask_header["xllcorner"]; my  = mask_header["yllcorner"]
+                mcs = mask_header["cellsize"];   mnr = mask_header["nrows"]
+                nc_g = hdr["ncols"]; nr_g = hdr["nrows"]
+                cs_g = hdr["cellsize"]
+                xll_g = hdr["xllcorner"]; yll_g = hdr["yllcorner"]
+                vals = []
+                for row_g in range(nr_g):
+                    gy = yll_g + (nr_g - row_g - 0.5) * cs_g
+                    for col_g in range(nc_g):
+                        gx  = xll_g + (col_g + 0.5) * cs_g
+                        v   = data[row_g, col_g]
+                        if np.isnan(v):
+                            continue
+                        mi = int((my + mnr * mcs - gy) / mcs)
+                        mj = int((gx - mx) / mcs)
+                        if 0 <= mi < mnr and 0 <= mj < mask_header["ncols"]:
+                            if masque_array[mi, mj] == 1:
+                                vals.append(v)
+                pixels_bv = np.array(vals, dtype=np.float32)
+            else:
+                pixels_bv = data[~np.isnan(data)]
+            if pixels_bv.size <= 1:
+                return None
+            mu = float(np.mean(pixels_bv))
+            if mu <= 0:
+                return None
+            cv      = float(np.std(pixels_bv)) / mu
+            max_moy = float(np.max(pixels_bv)) / mu
+            px_s = np.sort(pixels_bv)
+            n_s  = len(px_s)
+            gini = float(
+                (2 * np.dot(np.arange(1, n_s + 1, dtype=np.float64), px_s)
+                 / (n_s * float(np.sum(px_s)))) - (n_s + 1) / n_s)
+            return {"cv": max(0.0, cv), "gini": max(0.0, gini), "max_moy": max_moy}
+        except Exception as exc:
+            print(f"[WARN] indices {produit} ep={ep.get('_key','?')} : {exc}")
+            return None
 
     # ── Helpers GRD ──────────────────────────────────────────────────────────
 
@@ -2157,7 +2239,7 @@ class App(tk.Tk):
         C_ANT = "#1F618D"
         C_PAN = "#CC5500"
         C_NEU = "#888888"
-        COL_W = [230, 100, 155, 155, 100]
+        COL_W = [230, 100, 155, 155, 100, 110, 95, 105]
 
         # ── Lecture données ──────────────────────────────────────────────────
         def _bv_sum(path):
@@ -2198,7 +2280,7 @@ class App(tk.Tk):
             return best
 
         # ── Collecte des données (une seule lecture) ─────────────────────────
-        rows_data = []   # (date_lbl, vig_bg, vig_fg, q_txt, ant_txt, pan_txt, pct_txt, c_p)
+        rows_data = []   # (date_lbl, vig_bg, vig_fg, q_txt, ant_txt, pan_txt, pct_txt, c_p, idx_ant, idx_pan)
         chart_data = []  # (dt, pct_ecart_or_None) — None = données manquantes
         for ep in self._visu_episodes:
             date_lbl = ep.get("label", "—")
@@ -2218,8 +2300,10 @@ class App(tk.Tk):
                 pct     = None
                 pct_txt = "—"
                 c_p     = C_NEU
+            idx_ant = self._indices_ep(ep, "antilope")
+            idx_pan = self._indices_ep(ep, "panthere")
             rows_data.append((date_lbl, vig_bg, vig_fg, q_txt,
-                               ant_txt, pan_txt, pct_txt, c_p))
+                               ant_txt, pan_txt, pct_txt, c_p, idx_ant, idx_pan))
             chart_data.append((ep.get("_dt"), pct))
 
         # ── En-tête figé ─────────────────────────────────────────────────────
@@ -2227,18 +2311,35 @@ class App(tk.Tk):
         hdr_frame = tk.Frame(frm, bg=HDR_BG)
         hdr_frame.pack(fill=tk.X, side=tk.TOP)
         col_defs = [
-            ("Date épisode",        "#333333"),
-            ("Q max (m³/s)",        "#333333"),
-            ("Cumul Antilope (mm)", C_ANT),
-            ("Cumul Panthère (mm)", C_PAN),
-            ("Écart (%)",           "#333333"),
+            ("Date épisode",        "#333333", False),
+            ("Q max (m³/s)",        "#333333", False),
+            ("Cumul Antilope (mm)", C_ANT,     False),
+            ("Cumul Panthère (mm)", C_PAN,     False),
+            ("Écart (%)",           "#333333", False),
+            ("Coeff. Var.",         "#333333", True),   # True = afficher ⓘ
+            ("Gini",                "#333333", False),
+            ("Max/Moy",             "#333333", False),
         ]
-        for j, (lbl, fg) in enumerate(col_defs):
-            tk.Label(hdr_frame, text=lbl, bg=HDR_BG, fg=fg,
-                     font=("TkDefaultFont", 9, "bold"),
-                     width=COL_W[j] // 7, anchor="center",
-                     padx=6, pady=7, relief="flat"
-                     ).grid(row=0, column=j, sticky="nsew", padx=1, pady=0)
+        for j, (lbl, fg, avec_info) in enumerate(col_defs):
+            if avec_info:
+                # Cellule composite : label + bouton ⓘ
+                cell = tk.Frame(hdr_frame, bg=HDR_BG)
+                cell.grid(row=0, column=j, sticky="nsew", padx=1, pady=0)
+                tk.Label(cell, text=lbl, bg=HDR_BG, fg=fg,
+                         font=("TkDefaultFont", 9, "bold"),
+                         anchor="center", padx=4, pady=7
+                         ).pack(side="left", expand=True, fill="both")
+                tk.Button(cell, text="ⓘ", font=("Arial", 8, "bold"),
+                          bg="#1F618D", fg="white", relief="flat",
+                          cursor="hand2", padx=3, pady=2,
+                          command=lambda: self._popup_formules_indices(frm)
+                          ).pack(side="right", padx=(0, 4), pady=3)
+            else:
+                tk.Label(hdr_frame, text=lbl, bg=HDR_BG, fg=fg,
+                         font=("TkDefaultFont", 9, "bold"),
+                         width=COL_W[j] // 7, anchor="center",
+                         padx=6, pady=7, relief="flat"
+                         ).grid(row=0, column=j, sticky="nsew", padx=1, pady=0)
             hdr_frame.columnconfigure(j, weight=1, minsize=COL_W[j])
 
         # ── Canvas scrollable (tableau) ──────────────────────────────────────
@@ -2264,8 +2365,22 @@ class App(tk.Tk):
             canv.yview_scroll(int(-1 * (e.delta / 120)), "units")
         canv.bind_all("<MouseWheel>", _scroll)
 
+        def _idx_cell(parent, row, col, stats, fn_seuil, key_name, row_bg):
+            if stats is None or stats.get(key_name) is None:
+                tk.Label(parent, text="—", bg=row_bg, fg=C_NEU,
+                         font=("TkDefaultFont", 8), anchor="center", padx=4, pady=5
+                         ).grid(row=row, column=col, sticky="nsew", padx=1, pady=0)
+            else:
+                val = stats[key_name]
+                libelle, fg, bg = fn_seuil(val)
+                tk.Label(parent, text=f"{val:.2f}", bg=bg, fg=fg,
+                         font=("TkDefaultFont", 8, "bold"), anchor="center",
+                         padx=4, pady=5
+                         ).grid(row=row, column=col, sticky="nsew", padx=1, pady=0)
+
         for i, (date_lbl, vig_bg, vig_fg,
-                q_txt, ant_txt, pan_txt, pct_txt, c_p) in enumerate(rows_data):
+                q_txt, ant_txt, pan_txt, pct_txt, c_p,
+                idx_ant, idx_pan) in enumerate(rows_data):
             row_bg = "#F0F3F4" if i % 2 == 0 else "white"
             tk.Label(frame, text=date_lbl, bg=vig_bg, fg=vig_fg,
                      font=("TkDefaultFont", 8), anchor="center", padx=8, pady=5
@@ -2278,6 +2393,30 @@ class App(tk.Tk):
                 tk.Label(frame, text=txt, bg=row_bg, fg=fg,
                          font=("TkDefaultFont", 8, "bold"), anchor="center", padx=8, pady=5
                          ).grid(row=i, column=j, sticky="nsew", padx=1, pady=0)
+            # Colonnes indices : Antilope / Panthère séparés par "/"
+            for col_j, fn_s, key_n in [
+                (5, App._seuil_cv,     "cv"),
+                (6, App._seuil_gini,   "gini"),
+                (7, App._seuil_maxmoy, "max_moy"),
+            ]:
+                # Affiche Antilope / Panthère dans la même cellule, coloré sur le max
+                ant_v = idx_ant.get(key_n) if idx_ant else None
+                pan_v = idx_pan.get(key_n) if idx_pan else None
+                if ant_v is None and pan_v is None:
+                    tk.Label(frame, text="—", bg=row_bg, fg=C_NEU,
+                             font=("TkDefaultFont", 8), anchor="center",
+                             padx=4, pady=5).grid(
+                        row=i, column=col_j, sticky="nsew", padx=1, pady=0)
+                else:
+                    worst = max(v for v in (ant_v, pan_v) if v is not None)
+                    libelle, fg, bg = fn_s(worst)
+                    txt_a = f"{ant_v:.2f}" if ant_v is not None else "—"
+                    txt_p = f"{pan_v:.2f}" if pan_v is not None else "—"
+                    tk.Label(frame, text=f"{txt_a} / {txt_p}",
+                             bg=bg, fg=fg,
+                             font=("TkDefaultFont", 8, "bold"), anchor="center",
+                             padx=4, pady=5).grid(
+                        row=i, column=col_j, sticky="nsew", padx=1, pady=0)
 
         # ── Frise chronologique ──────────────────────────────────────────────
         if not HAS_MPL:
