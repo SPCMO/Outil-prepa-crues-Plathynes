@@ -1643,11 +1643,22 @@ class App(tk.Tk):
         gs = GridSpec(1, 3, figure=fig, width_ratios=[1, 1, 0.06],
                       wspace=0.18, left=0.06, right=0.92, top=0.84, bottom=0.10)
 
-        bounds = [0, 1, 3, 5, 7, 10, 15, 20, 30, 50, 70, 100, 9999]
+        bounds = [0, 2, 5, 10, 17, 25, 35, 45, 55, 70, 100, 150, 200, 300, 9999]
         colors_cls = [
-            "#FFFFFF", "#C6E9F7", "#7EC8E3", "#3A9FD6",
-            "#1A5FA8", "#0B3D8C", "#1B7C38", "#4CAF50",
-            "#FFEB3B", "#FF9800", "#F44336", "#9C27B0",
+            "#FFFFFF",   # 0–2   (pas de pluie significative)
+            "#7B1FA2",   # 2–5   violet
+            "#283593",   # 5–10  bleu marine
+            "#1976D2",   # 10–17 bleu
+            "#81D4FA",   # 17–25 bleu ciel
+            "#C8E6C9",   # 25–35 vert très clair
+            "#388E3C",   # 35–45 vert
+            "#AFB42B",   # 45–55 jaune-vert
+            "#FDD835",   # 55–70 jaune
+            "#F57C00",   # 70–100 orange
+            "#C62828",   # 100–150 rouge
+            "#4E342E",   # 150–200 brun foncé
+            "#E91E63",   # 200–300 rose/magenta
+            "#FCE4EC",   # >300  rose très clair
         ]
         cmap_disc = mcolors.ListedColormap(colors_cls)
         norm_disc = mcolors.BoundaryNorm(bounds, cmap_disc.N)
@@ -1783,7 +1794,11 @@ class App(tk.Tk):
             ax_cb = fig.add_subplot(gs[0, 2])
             cb = fig.colorbar(img_ref, cax=ax_cb)
             cb.set_label("mm", fontsize=8)
-            cb.set_ticks([b for b in bounds if b < 9999])
+            tick_vals = [b for b in bounds if 0 < b < 9999]
+            cb.set_ticks(tick_vals)
+            cb.set_ticklabels(
+                [str(v) for v in tick_vals[:-1]] + [f"> {tick_vals[-1]}"]
+            )
             cb.ax.tick_params(labelsize=7)
 
         fig.suptitle(f"Cumuls spatialisés — {key}", fontsize=11, fontweight="bold", y=0.97)
