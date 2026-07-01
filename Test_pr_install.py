@@ -12,6 +12,7 @@ import subprocess
 import importlib
 import os
 import io
+import urllib.request
 
 # Forcer UTF-8 sur stdout (évite les erreurs d'encodage sous Windows cp1252)
 if hasattr(sys.stdout, "buffer"):
@@ -121,6 +122,27 @@ def check_project_files():
     return manquants
 
 
+# ── 4. Détection du proxy ───────────────────────────────────────────────────
+def detecter_proxy():
+    """Retourne l'URL du proxy à utiliser, ou '' si aucun."""
+    # 1. Variable d'environnement standard
+    for var in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy"):
+        val = os.environ.get(var, "").strip()
+        if val:
+            return val
+
+    # 2. Proxy système Windows (registre via urllib)
+    try:
+        proxies = urllib.request.getproxies()
+        for key in ("https", "http"):
+            if key in proxies and proxies[key]:
+                return proxies[key]
+    except Exception:
+        pass
+
+    return ""
+
+
 # ── 4. Proposition d'installation ──────────────────────────────────────────
 def proposer_installation(manquants_requis, manquants_optionnels):
     if not manquants_requis and not manquants_optionnels:
@@ -146,24 +168,40 @@ def proposer_installation(manquants_requis, manquants_optionnels):
         print("\n  Seuls des packages optionnels manquent. Rien à installer pour le fonctionnement de base.")
         return
 
+    # ── Proxy ───────────────────────────────────────────────────────────────
+    proxy_auto = detecter_proxy()
+    if proxy_auto:
+        print(f"\n  Proxy détecté automatiquement : {proxy_auto}")
+        rep_proxy = input("  Utiliser ce proxy pour l'installation ? [O/n] : ").strip().lower()
+        proxy = proxy_auto if rep_proxy in ("", "o", "oui", "y", "yes") else ""
+        if not proxy:
+            proxy = input("  Entrez l'adresse du proxy (ex: direct.proxy.i2:8080) ou laisser vide : ").strip()
+    else:
+        print("\n  Aucun proxy système détecté.")
+        proxy = input("  Entrez l'adresse du proxy si nécessaire (ex: direct.proxy.i2:8080), ou Entrée pour ignorer : ").strip()
+
+    # ── Installation ────────────────────────────────────────────────────────
     print()
     reponse = input("  Voulez-vous installer les packages REQUIS manquants maintenant ? [O/n] : ").strip().lower()
     if reponse in ("", "o", "oui", "y", "yes"):
         print()
         for spec in tous:
-            print(f"  >> pip install {spec}")
-            result = subprocess.run(
-                [sys.executable, "-m", "pip", "install", spec],
-                capture_output=False,
-            )
+            cmd = [sys.executable, "-m", "pip", "install"]
+            if proxy:
+                cmd += ["--proxy", proxy]
+            cmd.append(spec)
+            print(f"  >> {' '.join(cmd)}")
+            result = subprocess.run(cmd, capture_output=False)
             if result.returncode == 0:
                 ok(f"{spec} installé.")
             else:
-                err(f"Échec de l'installation de {spec}. Lancez manuellement : pip install {spec}")
+                proxy_hint = f" --proxy {proxy}" if proxy else ""
+                err(f"Échec de l'installation de {spec}. Lancez manuellement : pip install{proxy_hint} {spec}")
     else:
         print("\n  Installation annulée. Lancez manuellement :")
+        proxy_hint = f" --proxy {proxy}" if proxy else ""
         for spec in tous:
-            print(f"    pip install {spec}")
+            print(f"    pip install{proxy_hint} {spec}")
 
 
 # ── 5. Bilan ────────────────────────────────────────────────────────────────
