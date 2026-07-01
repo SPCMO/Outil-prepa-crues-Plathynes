@@ -1562,6 +1562,10 @@ class App(tk.Tk):
         cumul_dir = os.path.join(bv_dir, "GRD cumuls")
 
         # ── Charger / calculer les deux GRDs ────────────────────────────────
+        C_ANT  = "#1F618D"   # bleu foncé Antilope (cohérent avec légende)
+        C_PANT = "#CC5500"   # orange foncé Panthère
+        COULEURS = {"antilope": C_ANT, "panthere": C_PANT}
+
         PRODUITS = [
             ("antilope", [f"AntJ1-Ep_{key}", f"Pluie-Ep_{key}"], "AntJ1_CumulGRD-Ep_"),
             ("panthere", [f"Pant-Ep_{key}"],                      "Pant_CumulGRD-Ep_"),
@@ -1640,6 +1644,33 @@ class App(tk.Tk):
         img_ref  = None
         GREY     = [0.25, 0.25, 0.25, 0.50]
 
+        def _pixels_dans_bv(data_grd, hdr_grd):
+            """Retourne les valeurs GRD non-NaN dont le centre de pixel est dans le masque BV."""
+            if masque_array is None or mask_header is None:
+                return data_grd[~np.isnan(data_grd)]
+            mx  = mask_header["xllcorner"]; my  = mask_header["yllcorner"]
+            mcs = mask_header["cellsize"]
+            mnr = mask_header["nrows"]
+            nc_g = hdr_grd["ncols"]; nr_g = hdr_grd["nrows"]
+            cs_g = hdr_grd["cellsize"]
+            xll_g = hdr_grd["xllcorner"]; yll_g = hdr_grd["yllcorner"]
+            vals = []
+            for row_g in range(nr_g):
+                # Centre Y du pixel GRD (origin="upper" → row 0 = haut = yll + (nr-0.5)*cs)
+                gy = yll_g + (nr_g - row_g - 0.5) * cs_g
+                for col_g in range(nc_g):
+                    gx = xll_g + (col_g + 0.5) * cs_g
+                    v  = data_grd[row_g, col_g]
+                    if np.isnan(v):
+                        continue
+                    # Pixel masque correspondant
+                    mi = int((my + mnr * mcs - gy) / mcs)
+                    mj = int((gx - mx) / mcs)
+                    if 0 <= mi < mnr and 0 <= mj < mask_header["ncols"]:
+                        if masque_array[mi, mj] == 1:
+                            vals.append(v)
+            return np.array(vals, dtype=np.float32)
+
         def _appliquer_masque(ax, hdr_grd):
             """Overlay gris hors BV + contour BV + rectangles jusqu'aux bords bbox."""
             if masque_array is None or mask_header is None:
@@ -1697,8 +1728,14 @@ class App(tk.Tk):
             img_ref = img
             _appliquer_masque(ax, hdr)
 
-            ax.text(0.5, 1.03, titre, transform=ax.transAxes,
-                    ha="center", va="bottom", fontsize=10, fontweight="bold",
+            # Cumul moyen sur les pixels valides (dans la bbox, ~représentatif du BV)
+            pixels_bv = _pixels_dans_bv(data, hdr)
+            cumul_txt = f"{round(float(np.nanmean(pixels_bv)))} mm" \
+                        if pixels_bv.size > 0 else "— mm"
+            couleur_titre = COULEURS[produit]
+            ax.text(0.5, 1.03, f"{titre} — Cumul : {cumul_txt}",
+                    transform=ax.transAxes, ha="center", va="bottom",
+                    fontsize=10, fontweight="bold", color=couleur_titre,
                     clip_on=False)
             ax.set_xlabel("Lambert 93 X (m)", fontsize=7)
             if i == 0:
