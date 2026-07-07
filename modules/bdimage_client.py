@@ -89,7 +89,7 @@ class BdimageClient:
             ul=ul, lr=lr,
             pdt=effective_pdt, duree=effective_pdt,
             bandes="rr",
-            facteur=0.1,          # 1/10e mm → mm
+            facteur=1.0,          # garder les 1/10 mm natifs BDImage (Plathynes ÷10 → mm)
             force_integer=True,
             output_dir=output_dir,
             log_fn=log_fn,
@@ -112,7 +112,7 @@ class BdimageClient:
             ul=ul, lr=lr,
             pdt=60, duree=60,
             bandes="rr",
-            facteur=0.1,
+            facteur=1.0,          # garder les 1/10 mm natifs BDImage (Plathynes ÷10 → mm)
             force_integer=True,
             output_dir=output_dir,
             log_fn=log_fn,
@@ -589,7 +589,7 @@ def _grd_mean(filepath, nodata):
                         count += 1
     except Exception:
         return None
-    return total / count if count > 0 else 0.0
+    return total / count * 0.1 if count > 0 else 0.0  # 1/10 mm → mm
 
 
 def _fmt_duree(minutes):
