@@ -1214,6 +1214,12 @@ class App(tk.Tk):
         self._visu_ax_p.grid(True, alpha=0.25, linestyle="--", color="#AAAAAA")
         self._visu_ax_p.set_facecolor("#F8F9FA")
 
+        if not hu_dates:
+            self._visu_ax_hu.text(
+                0.5, 0.5,
+                "HU non disponible\n(cochez « HU » lors de l'extraction)",
+                ha="center", va="center", transform=self._visu_ax_hu.transAxes,
+                fontsize=8, color="#AAAAAA", fontstyle="italic", multialignment="center")
         if hu_dates:
             self._visu_ax_hu.plot(hu_dates, hu_vals, color=C_HU, linewidth=1.5,
                                    linestyle="--", label="HU moyen (%)")
@@ -1358,6 +1364,13 @@ class App(tk.Tk):
                         va="bottom", fontsize=7, color=label_c,
                         transform=self._visu_ax_q.get_yaxis_transform(),
                         zorder=2)
+
+        if not q_dates:
+            self._visu_ax_q.text(
+                0.5, 0.5,
+                "Débits non disponibles\n(cochez « Débits (Q) » lors de l'extraction)",
+                ha="center", va="center", transform=self._visu_ax_q.transAxes,
+                fontsize=8, color="#AAAAAA", fontstyle="italic", multialignment="center")
 
         # Courbe Q — tracée après les spans pour rester visible
         if q_dates:
@@ -3547,12 +3560,32 @@ class App(tk.Tk):
         if not HAS_MPL:
             return
         debits_dir, hu_dir, pluies_dir, bv_dir = self._get_out_dirs()
+
+        # Diagnostic précoce pour message d'erreur explicite
+        raison_vide = None
+        if not os.path.isdir(debits_dir):
+            raison_vide = (
+                "Aucun dossier de débits trouvé.\n\n"
+                "Cochez « Débits (Q) » lors de l'extraction\n"
+                "pour alimenter cet onglet."
+            )
+        else:
+            q_files = [f for f in os.listdir(debits_dir)
+                       if (f.startswith("Q-Ep_") or f.startswith("H-Ep_"))
+                       and f.endswith(".txt")]
+            if not q_files:
+                raison_vide = (
+                    "Aucun fichier de débits (Q-Ep_*.txt) dans le dossier de sortie.\n\n"
+                    "Cochez « Débits (Q) » lors de l'extraction\n"
+                    "pour alimenter cet onglet."
+                )
+
         episodes = self._collect_analyse_data(debits_dir, hu_dir, bv_dir)
         vig_on = {v for v, bv in self._analyse_vig_chk.items() if bv.get()}
         if len(vig_on) < len(self._analyse_vig_chk):
             episodes = [ep for ep in episodes
                         if ep.get("vig") in vig_on]
-        self._plot_analyse(episodes)
+        self._plot_analyse(episodes, raison_vide=raison_vide)
 
     def _collect_analyse_data(self, debits_dir, hu_dir, bv_dir):
         """Lit les CSV de chaque épisode et retourne la liste des métriques."""
@@ -3619,7 +3652,7 @@ class App(tk.Tk):
             })
         return episodes
 
-    def _plot_analyse(self, episodes):
+    def _plot_analyse(self, episodes, raison_vide=None):
         # Effacer toute la figure (colorbars comprises) et recréer le subplot
         self._analyse_fig.clear()
         ax = self._analyse_fig.add_subplot(111)
@@ -3627,9 +3660,10 @@ class App(tk.Tk):
         ax.set_facecolor("#F8F9FA")
 
         if not episodes:
-            ax.text(0.5, 0.5, "Aucun épisode trouvé dans le dossier de sortie",
+            msg = raison_vide or "Aucun épisode trouvé dans le dossier de sortie."
+            ax.text(0.5, 0.5, msg,
                     ha="center", va="center", transform=ax.transAxes,
-                    fontsize=11, color="#888888")
+                    fontsize=11, color="#888888", multialignment="center")
             self._analyse_fig.tight_layout()
             self._analyse_canvas.draw()
             return
