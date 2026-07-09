@@ -47,6 +47,7 @@ def run_extraction(config, episodes, options, log_fn, progress_fn=None):
     )
 
     phyc = None
+    code_phyc = None
     if options.get("debits"):
         grandeur_opt = options.get("grandeur", "Q")
         # Pour H on requête sur le code station complet ; pour Q sur le code site
