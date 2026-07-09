@@ -1016,9 +1016,18 @@ class App(tk.Tk):
                     key = fname[len("Pant_BV-Ep_"):-4]
                     _get_ep(key)["pant_path"] = os.path.join(bv_dir, fname)
 
+        # Scan Pluies/ pour découvrir les épisodes via dossiers .grd (cas sans débits)
+        if os.path.isdir(pluies_dir):
+            for dname in os.listdir(pluies_dir):
+                for pfx in ("AntJ1-Ep_", "Pluie-Ep_", "Pant-Ep_"):
+                    if dname.startswith(pfx):
+                        key = dname[len(pfx):]
+                        _get_ep(key)
+                        break
+
         # Générer AntJ1_BV et Pant_BV à la volée si .grd présent mais CSV absent
         from modules.bdimage_client import calculer_pluie_bv_csv
-        for key, ep in eps.items():
+        for key, ep in list(eps.items()):
             if ep["p_path"] is None:
                 p_path = os.path.join(bv_dir, f"AntJ1_BV-Ep_{key}.csv")
                 for _pfx in ("AntJ1-Ep_", "Pluie-Ep_"):
