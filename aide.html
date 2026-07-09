@@ -427,8 +427,8 @@
       <h3>Onglet <span class="badge badge-extract">Extraction</span></h3>
       <p>Cochez les types de données à télécharger :</p>
       <ul>
-        <li><strong>Antilope</strong> (case à cocher, pas de temps configurable) — pluies spatialisées temps-différé. Génère des fichiers <code>.grd</code> (ESRI ASCII Grid) dans <code>{station}/Pluies/AntJ1-Ep_{date}/</code> et un CSV de pluie moyenne BV dans <code>Pluies temps moy BV pour graph/AntJ1_BV-Ep_{date}.csv</code>. <em>Produit BDImage : <code>antilope/j1</code> (60 mn) avant le 12/10/2020 ; <code>antilope/france-td-60mn</code> ou <code>france-td-15mn</code> après.</em></li>
-        <li><strong>Panthère</strong> (case à cocher, pas de temps fixé à 1 heure — seul produit disponible sur BDImage : <code>panthere/france</code>) — pluies radar temps-différé. Génère des <code>.grd</code> dans <code>{station}/Pluies/Pant-Ep_{date}/</code> et un CSV dans <code>Pluies temps moy BV pour graph/Pant_BV-Ep_{date}.csv</code>.</li>
+        <li><strong>Antilope</strong> (case à cocher, pas de temps configurable) — pluies spatialisées temps-différé. Génère des fichiers <code>.grd</code> (ESRI ASCII Grid) dans <code>{station}/Pluies/AntJ1-Ep_{date}/</code> et un CSV de pluie moyenne BV dans <code>Pluies temps moy BV pour graph/AntJ1_BV-Ep_{date}.csv</code>. <em>Produit BDImage : <code>antilope/j1</code> (60 mn) avant le 12/10/2020 ; <code>antilope/france-td-60mn</code> ou <code>france-td-15mn</code> après.</em> Les fichiers <code>.grd</code> sont écrits avec les <strong>valeurs natives BDImage en 1/10 mm</strong> (entiers) pour que Plathynes, qui divise par 10 à la lecture, obtienne des millimètres. La conversion en mm pour l'affichage (hyétogrammes, cumuls, visu spatialisée) est effectuée par l'outil (÷ 10).</li>
+        <li><strong>Panthère</strong> (case à cocher, pas de temps fixé à 1 heure — seul produit disponible sur BDImage : <code>panthere/france</code>) — pluies radar temps-différé. Génère des <code>.grd</code> dans <code>{station}/Pluies/Pant-Ep_{date}/</code> et un CSV dans <code>Pluies temps moy BV pour graph/Pant_BV-Ep_{date}.csv</code>. Même convention 1/10 mm que pour Antilope.</li>
         <li><strong>HU moyen BV</strong> (humidité des sols) — fichier CSV dans <code>{station}/HU/</code>, pas de temps : 1 heure (défaut) ou 1 jour à 06:00.</li>
         <li><strong>Débits / Hauteurs PHyC</strong> (Q ou H, pas de temps configurable) — fichier TXT dans <code>{station}/Debits/</code>.</li>
       </ul>
@@ -906,12 +906,12 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <h2>modules/bdimage_client.py</h2>
   <table>
     <tr><th>Méthode / Fonction</th><th>Rôle</th><th>Notes</th></tr>
-    <tr><td><code>extraire_pluies()</code></td><td>Télécharge les images Antilope temps-différé, écrit des .grd entiers</td><td>Produit <code>antilope/j1</code> (60 mn) avant le 12/10/2020 ; <code>antilope/france-td-60mn</code> ou <code>france-td-15mn</code> après. <code>force_integer=True</code> — valeurs arrondies pour compatibilité logiciel calage.</td></tr>
-    <tr><td><code>extraire_pluies_panthere()</code></td><td>Télécharge les images Panthère temps-différé, écrit des .grd entiers</td><td>Produit <code>panthere/france</code>, pas de temps fixé à 60 mn — seul sous-type valide sur BDImage SCHAPI (validé par sondage le 24/06/2026).</td></tr>
+    <tr><td><code>extraire_pluies()</code></td><td>Télécharge les images Antilope temps-différé, écrit des .grd entiers</td><td>Produit <code>antilope/j1</code> (60 mn) avant le 12/10/2020 ; <code>antilope/france-td-60mn</code> ou <code>france-td-15mn</code> après. <code>facteur=1.0</code> — valeurs stockées en 1/10 mm natifs BDImage pour compatibilité Plathynes (qui divise par 10 à la lecture). <code>force_integer=True</code>.</td></tr>
+    <tr><td><code>extraire_pluies_panthere()</code></td><td>Télécharge les images Panthère temps-différé, écrit des .grd entiers</td><td>Produit <code>panthere/france</code>, pas de temps fixé à 60 mn — seul sous-type valide sur BDImage SCHAPI (validé par sondage le 24/06/2026). <code>facteur=1.0</code>, même convention 1/10 mm.</td></tr>
     <tr><td><code>extraire_hu_bv()</code></td><td>Extrait la moyenne spatiale HU via <code>getObsStatsByZonesAsync</code></td><td>Retourne directement la moyenne BV (pas de .grd)</td></tr>
-    <tr><td><code>_xml_to_grds()</code></td><td>Parse XML BDImage → fichiers .grd (ESRI ASCII Grid)</td><td>Facteur 0.1 (1/10e mm → mm). Nodata = -1.</td></tr>
-    <tr><td><code>calculer_pluie_bv_csv()</code></td><td>Moyenne spatiale de tous les .grd d'un dossier → CSV</td><td>Ignore les pixels nodata=-1. Format date AAAAMMJJhhmm.</td></tr>
-    <tr><td><code>_grd_mean()</code></td><td>Lit un .grd, retourne la moyenne des pixels non-nodata</td><td>6 lignes d'en-tête ESRI à sauter</td></tr>
+    <tr><td><code>_xml_to_grds()</code></td><td>Parse XML BDImage → fichiers .grd (ESRI ASCII Grid)</td><td>Applique <code>facteur</code> à chaque pixel (1.0 pour pluies → 1/10 mm natifs ; autre valeur possible pour d'autres produits). Nodata = -1.</td></tr>
+    <tr><td><code>calculer_pluie_bv_csv()</code></td><td>Moyenne spatiale de tous les .grd d'un dossier → CSV en mm</td><td>Appelle <code>_grd_mean()</code> (÷ 10) pour convertir les 1/10 mm en mm. Format date AAAAMMJJhhmm.</td></tr>
+    <tr><td><code>_grd_mean()</code></td><td>Lit un .grd, retourne la moyenne des pixels non-nodata <strong>en mm</strong></td><td>Applique × 0.1 (÷ 10) sur la moyenne brute pour convertir les 1/10 mm stockés en mm affichables. 6 lignes d'en-tête ESRI à sauter.</td></tr>
   </table>
 
   <h2>modules/extractor.py</h2>
