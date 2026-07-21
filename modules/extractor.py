@@ -58,7 +58,7 @@ def run_extraction(config, episodes, options, log_fn, progress_fn=None):
                 "Verifiez l'onglet Configuration."
             )
         phyc = PhycClient(wsdl_url=phyc_cfg.get(
-            "url", "http://services.schapi.e2.rie.gouv.fr/phycop/bdtr.wsdl"))
+            "url", "http://services.schapi.e2.rie.gouv.fr/phycop/bdtrv21.wsdl"))
         log_fn("Connexion PHyC...")
         try:
             phyc.login(phyc_cfg.get("idcontact", ""), phyc_cfg.get("motdepasse", ""))

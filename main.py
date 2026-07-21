@@ -4103,12 +4103,24 @@ class App(tk.Tk):
     # Configuration
     # -----------------------------------------------------------------------
 
+    _WSDL_V1  = "http://services.schapi.e2.rie.gouv.fr/phycop/bdtr.wsdl"
+    _WSDL_V21 = "http://services.schapi.e2.rie.gouv.fr/phycop/bdtrv21.wsdl"
+
     def _load_config(self):
         try:
             self.config_data = load_config()
+            # Migration automatique : bdtr.wsdl (v1.1 obsolète) → bdtrv21.wsdl
+            phyc_url = self.config_data.get("phyc", {}).get("url", "")
+            if phyc_url == self._WSDL_V1:
+                self.config_data["phyc"]["url"] = self._WSDL_V21
+                try:
+                    from modules.config_manager import save_config
+                    save_config(self.config_data)
+                except Exception:
+                    pass
         except Exception:
             self.config_data = {
-                "phyc":    {"url": "http://services.schapi.e2.rie.gouv.fr/phycop/bdtr.wsdl",
+                "phyc":    {"url": "http://services.schapi.e2.rie.gouv.fr/phycop/bdtrv21.wsdl",
                              "idcontact": "", "motdepasse": ""},
                 "bdimage": {"url": "http://services.schapi.e2.rie.gouv.fr/bdimage/2016/wsbdi",
                              "timeout_async": 300, "epsg": 2154, "resol": 1000, "nodata": -1},
@@ -4406,23 +4418,36 @@ class App(tk.Tk):
                     f"Connexion impossible : {e}\nVérifiez le RIE et l'URL.", ok=False))
                 return
 
-            libelle = libelle_err = None
+            libelle = code_bnbv_phyc = libelle_err = None
             try:
-                libelle = phyc.get_libelle_station(code_site)
+                libelle, code_bnbv_phyc = phyc.get_libelle_et_bnbv(code_site)
             except Exception as e:
                 libelle_err = str(e)
             finally:
                 phyc.logout()
 
-            if libelle:
-                self.after(0, lambda: [
-                    self.var_nom_station.set(libelle),
-                    self._set_phyc_status(f"Connexion PHyC réussie. Libellé : {libelle}", ok=True)])
-            else:
-                detail = f" ({libelle_err})" if libelle_err else ""
-                self.after(0, lambda: self._set_phyc_status(
-                    f"Connexion réussie mais libellé non disponible pour '{code_site}'{detail}.\n"
-                    f"Saisissez le libellé manuellement.", ok=True))
+            def _apply(libelle=libelle, code_bnbv_phyc=code_bnbv_phyc, libelle_err=libelle_err):
+                msgs = []
+                if libelle:
+                    self.var_nom_station.set(libelle)
+                    msgs.append(f"Libellé : {libelle}")
+                if code_bnbv_phyc:
+                    pfx_b = self._pfx_bnbv
+                    suffix = code_bnbv_phyc[len(pfx_b):] if code_bnbv_phyc.startswith(pfx_b) else code_bnbv_phyc
+                    # N'écraser que si le champ BNBV est vide
+                    if not self.var_code_bnbv_suffix.get().strip():
+                        self.var_code_bnbv_suffix.set(suffix)
+                    msgs.append(f"BNBV : {code_bnbv_phyc}")
+                if msgs:
+                    self._set_phyc_status(
+                        f"Connexion PHyC réussie. {' — '.join(msgs)}", ok=True)
+                else:
+                    detail = f" ({libelle_err})" if libelle_err else ""
+                    self._set_phyc_status(
+                        f"Connexion réussie mais infos non disponibles pour '{code_site}'{detail}.\n"
+                        f"Saisissez le libellé et le code BNBV manuellement.", ok=True)
+
+            self.after(0, _apply)
 
         threading.Thread(target=_worker, daemon=True).start()
 

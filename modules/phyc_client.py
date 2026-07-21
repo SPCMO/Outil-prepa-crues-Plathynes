@@ -2,13 +2,15 @@
 """Client SOAP PHyC — authentification et extraction des débits (Q).
 
 PHyC expose un service WSDL/SOAP à l'adresse :
-    http://services.schapi.e2.rie.gouv.fr/phycop/bdtr.wsdl
+    http://services.schapi.e2.rie.gouv.fr/phycop/bdtrv21.wsdl  (v2.1, recommandée)
+    http://services.schapi.e2.rie.gouv.fr/phycop/bdtr.wsdl      (v1.1, obsolète)
 
 Nom du service zeep : WebservicesBdtr
 Ports utilisés :
     AuthentificationPort  -> authentifier(cdcontact, motdepasse) -> idsession
     ObservationsHydroPublicationPort -> publierObservationsHydroPasDeTemps(...)
-    SiteHydroPublicationPort -> publierSitesHydro(...) -> libellé station
+    SiteHydroPublicationPort -> publierSiteHydroListe(...) -> libellé station + CdBNBV
+    SeuilHydroPublicationPort -> publierSeuilHydro(...) -> seuils vigilance
 
 Syntaxe zeep pour accéder à un port nommé :
     client.bind('WebservicesBdtr', 'NomPort').methode(...)
@@ -22,7 +24,7 @@ from lxml import etree as lxml_etree
 from zeep import Client as ZeepClient, Settings as ZeepSettings
 from zeep.transports import Transport
 
-WSDL_URL = "http://services.schapi.e2.rie.gouv.fr/phycop/bdtr.wsdl"
+WSDL_URL = "http://services.schapi.e2.rie.gouv.fr/phycop/bdtrv21.wsdl"
 ZEEP_SERVICE = "WebservicesBdtr"
 
 # Schéma SOAP encoding standard (schemas.xmlsoap.org/soap/encoding/)
@@ -124,6 +126,15 @@ class PhycClient:
         Retourne:
             str : libellé, ou None si non disponible.
         """
+        libelle, _ = self.get_libelle_et_bnbv(code_site)
+        return libelle
+
+    def get_libelle_et_bnbv(self, code_site):
+        """Récupère le libellé et le code BNBV du site hydro via PHyC v2.1.
+
+        Retourne:
+            (libelle, code_bnbv) — l'un ou l'autre peut être None si absent.
+        """
         if self._client is None or self._idsession is None:
             raise PhycAuthError("Client PHyC non connecté. Appelez login() d'abord.")
 
@@ -141,14 +152,20 @@ class PhycClient:
             )
             if result and result.xmlprevcrues:
                 racine = ET.fromstring(result.xmlprevcrues)
+                libelle = None
                 for tag in ("LbUsuelSiteHydro", "LbSiteHydro", "LbStationHydro"):
                     val = racine.findtext(f".//{tag}")
                     if val and val.strip():
-                        return val.strip()
+                        libelle = val.strip()
+                        break
+                code_bnbv = racine.findtext(".//CdBNBV")
+                if code_bnbv:
+                    code_bnbv = code_bnbv.strip() or None
+                return libelle, code_bnbv
         except Exception:
             pass
 
-        return None
+        return None, None
 
     # ------------------------------------------------------------------
     # Extraction des débits Q
@@ -204,7 +221,11 @@ class PhycClient:
         # Récupérer l'URL du endpoint depuis le WSDL zeep
         svc = self._client.wsdl.services[self._service_name]
         port = svc.ports.get("ObservationsHydroPublicationPort")
-        endpoint = port.binding_options["address"] if port else self.wsdl_url.replace("bdtr.wsdl", "")
+        if port:
+            endpoint = port.binding_options["address"]
+        else:
+            # Fallback : déduire l'endpoint depuis l'URL du WSDL
+            endpoint = self.wsdl_url.rsplit("/", 1)[0] + "/"
 
         resp = _requests.post(
             endpoint,
