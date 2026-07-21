@@ -378,7 +378,7 @@
     <li>Un accès au réseau <strong>RIE</strong> (réseau interne SPC / SCV)</li>
     <li>Un compte <strong>PHyC</strong> (identifiant + mot de passe)</li>
     <li>Le <strong>code station hydrométrie</strong> de votre site (format <code>Yxxxxxxxxx</code>, 10 caractères — ex. <code>Y027401001</code> pour Le Boulou). Le code site à 8 caractères est dérivé automatiquement des 7 premiers chiffres. Le préfixe (<code>Y</code> par défaut) et la longueur du suffixe sont configurables dans l'onglet ⚙ Paramétrage.</li>
-    <li>Le <strong>code BNBV</strong> du bassin versant pour les pluies/HU (format <code>MOxxxxxx</code>). Le préfixe (<code>MO</code> par défaut) est configurable dans l'onglet ⚙ Paramétrage.</li>
+    <li>Le <strong>code BNBV</strong> du bassin versant pour les pluies/HU (format <code>MOxxxxxx</code>). Le préfixe (<code>MO</code> par défaut) est configurable dans l'onglet ⚙ Paramétrage. <em>En PHyC v2.1, le code BNBV est récupéré automatiquement lors du test de connexion</em> (bouton "Récup info PHyC") — il n'est plus nécessaire de le saisir manuellement.</li>
   </ul>
   <div class="note note-ok">
     <strong>La bounding box est précalculée — aucune saisie requise.</strong><br>
@@ -394,7 +394,7 @@
     <div class="step-content">
       <h3>Onglet <span class="badge badge-config">Configuration</span></h3>
       <p><strong>Section Station hydrologique :</strong> saisissez le <strong>code station hydrométrie</strong> complet sans le préfixe (<code>Y</code> par défaut, voir onglet ⚙ Paramétrage) — 9 chiffres (ex. <code>027401001</code> pour Le Boulou, soit <code>Y027401001</code>). Le <em>code site</em> à 8 caractères (<code>Y0274010</code>) est dérivé automatiquement des 7 premiers chiffres et utilisé pour les requêtes débit Q. Saisissez également le code BNBV sans le préfixe (<code>MO</code> par défaut), et le nom de la station. La bounding box est chargée automatiquement à partir du code BNBV.</p>
-      <p><strong>Section PHyC :</strong> vérifiez l'URL WSDL, saisissez votre identifiant et mot de passe. Utilisez le bouton <em>"Récup info PHyC"</em> pour valider la connexion et récupérer le libellé.</p>
+      <p><strong>Section PHyC :</strong> l'URL WSDL est pré-remplie avec la version 2.1 (<code>bdtrv21.wsdl</code>). Saisissez votre identifiant et mot de passe. Cliquez <em>"Récup info PHyC"</em> pour valider la connexion : le libellé de la station <strong>et le code BNBV</strong> sont récupérés automatiquement depuis PHyC v2.1 et pré-remplis (le BNBV n'est écrasé que s'il est vide). Si vous avez un ancien <code>config.json</code> avec l'URL <code>bdtr.wsdl</code> (v1.1 obsolète), elle est migrée automatiquement au démarrage.</p>
       <p><strong>Section Seuils de vigilance :</strong> choisissez d'abord la <strong>grandeur</strong> (Q en m³/s ou H en m). Saisissez les 6 seuils (Jaune, Orange, Rouge et leurs zones de transition ZT) dans l'unité correspondante. Pour Q, la requête PHyC utilise le code site (8 car.) ; pour H, elle utilise le code station complet (10 car.). Récupérez-les automatiquement via <em>"Récupérer depuis PHyC"</em>, puis cliquez <em>"Appliquer"</em>. Les deux jeux de seuils (Q et H) sont stockés indépendamment dans la configuration.</p>
       <p>Cliquez <strong>"Enregistrer la configuration"</strong> pour sauvegarder.</p>
     </div>
@@ -778,7 +778,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <h2>Services externes</h2>
   <table>
     <tr><th>Service</th><th>Protocole</th><th>Données</th><th>Port WSDL</th></tr>
-    <tr><td>PHyC</td><td>SOAP/XML (zeep + raw lxml)</td><td>Débits, Seuils vigilance</td><td>ObservationsHydroPublicationPort, SeuilHydroPublicationPort</td></tr>
+    <tr><td>PHyC</td><td>SOAP/XML (zeep + raw lxml)</td><td>Débits, Seuils vigilance, Libellé station, Code BNBV</td><td>ObservationsHydroPublicationPort, SeuilHydroPublicationPort, SiteHydroPublicationPort</td></tr>
     <tr><td>BDImage</td><td>SOAP/XML</td><td>Pluies Antilope et Panthère temps-différé (.grd), HU SIM</td><td>getObsByZonesAsync, getObsStatsByZonesAsync</td></tr>
   </table>
 
@@ -896,9 +896,11 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <h2>modules/phyc_client.py</h2>
   <table>
     <tr><th>Méthode</th><th>Rôle</th><th>Notes</th></tr>
-    <tr><td><code>login()</code></td><td>Authentification PHyC, récupère <code>idsession</code></td><td>zeep + _RieTransport (schémas W3C embarqués)</td></tr>
-    <tr><td><code>get_debits()</code></td><td>SOAP brut <code>publierObservationsHydroPasDeTemps</code></td><td>Bypass zeep car paramètre PHP <code>?array</code>. Retourne XML brut.</td></tr>
-    <tr><td><code>get_seuils_vigilance()</code></td><td>SOAP <code>publierSeuilHydro</code> → parse 6 seuils actifs</td><td>Filtre NatureSeuil=22, absence DtDesactivation</td></tr>
+    <tr><td><code>login()</code></td><td>Authentification PHyC, récupère <code>idsession</code></td><td>zeep + _RieTransport (schémas W3C embarqués). Compatible v1.1 et v2.1.</td></tr>
+    <tr><td><code>get_libelle_et_bnbv()</code></td><td>Récupère libellé station <strong>et</strong> <code>CdBNBV</code> via <code>publierSiteHydroListe</code></td><td>Nouveau en v2.1. Retourne <code>(libelle, code_bnbv)</code>. Nécessite <code>stations=True</code> pour exposer <code>CdBNBV</code>.</td></tr>
+    <tr><td><code>get_libelle_station()</code></td><td>Retourne uniquement le libellé (appelle <code>get_libelle_et_bnbv</code>)</td><td>Conservé pour compatibilité.</td></tr>
+    <tr><td><code>get_debits()</code></td><td>SOAP brut <code>publierObservationsHydroPasDeTemps</code></td><td>Bypass zeep car paramètre PHP <code>?array</code>. Port identique v1.1/v2.1. Retourne XML brut.</td></tr>
+    <tr><td><code>get_seuils_vigilance()</code></td><td>SOAP <code>publierSeuilHydro</code> → parse 6 seuils actifs</td><td>Filtre NatureSeuil=22, absence DtDesactivation. Port identique v1.1/v2.1.</td></tr>
     <tr><td><code>parse_series_xml()</code></td><td>Parse XML PHyC → <code>dict{code: [(dt, m³/s)]}</code></td><td>Divise par 1000 (L/s → m³/s)</td></tr>
     <tr><td><code>_INDICE_TO_KEY</code></td><td>Mapping indice gravité → clé seuil</td><td>24=zt_jaune, 26=jaune, 49=zt_orange, 51=orange, 74=zt_rouge, 76=rouge</td></tr>
   </table>
@@ -1660,6 +1662,38 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <span class="change-tag ct-fix">Correction</span>
     <strong>Suppression de toutes les constantes codées en dur</strong>
     <p>Les valeurs <code>"Y"</code>, <code>"MO"</code> et <code>9</code> étaient codées en dur à 9 endroits dans <code>main.py</code> (<code>_save_config</code>, <code>_refresh_config_ui</code>, <code>_recup_info_phyc</code>, <code>_recup_seuils_phyc</code>, <code>_run_extraction</code>, <code>_on_bnbv_change</code> et les labels UI). Elles sont désormais toutes remplacées par les propriétés dynamiques.</p>
+  </div>
+
+  <h2>Migration PHyC v2.1 — juillet 2026</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Passage au webservice PHyC v2.1 (<code>bdtrv21.wsdl</code>)</strong>
+    <p>Suite à un retour SCV, l'URL WSDL par défaut est mise à jour de <code>bdtr.wsdl</code> (v1.1, obsolète) vers <code>bdtrv21.wsdl</code>. Les ports utilisés par l'outil (<code>ObservationsHydroPublicationPort</code>, <code>SeuilHydroPublicationPort</code>, <code>SiteHydroPublicationPort</code>, <code>AuthentificationPort</code>) sont identiques en v1.1 et v2.1 — aucune rupture de fonctionnement.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Récupération automatique du code BNBV depuis PHyC</strong>
+    <p>La v2.1 expose le champ <code>CdBNBV</code> (ex. <code>MO698</code>) dans la réponse <code>publierSiteHydroListe</code> avec <code>stations=True</code>. La méthode <code>get_libelle_et_bnbv()</code> dans <code>phyc_client.py</code> récupère désormais libellé et code BNBV en un seul appel. Le bouton <em>"Récup info PHyC"</em> pré-remplit automatiquement le champ BNBV si celui-ci est vide.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Migration automatique des <code>config.json</code> existants</strong>
+    <p>Au démarrage, si le fichier <code>config.json</code> contient encore l'ancienne URL <code>bdtr.wsdl</code>, elle est remplacée silencieusement par <code>bdtrv21.wsdl</code> et la configuration est sauvegardée. Aucune action manuelle requise.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Messages explicites quand HU ou débits non extraits</strong>
+    <p>L'onglet <strong>Caractérisation crues</strong> affiche désormais un message ciblé ("Cochez « Débits (Q) » lors de l'extraction…") au lieu du générique "Aucun épisode trouvé". Dans l'onglet <strong>Visualisation</strong>, les axes HU et Q affichent un texte en gris italique lorsque les données n'ont pas été extraites.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Liste Visualisation vide quand seules les pluies sont extraites</strong>
+    <p>Quand la case Q n'est pas cochée, le scan du dossier <code>Pluies/</code> permet désormais de découvrir les épisodes via les dossiers <code>AntJ1-Ep_*</code> et <code>Pant-Ep_*</code>, même en l'absence de fichiers <code>Q-Ep_*.txt</code>.</p>
   </div>
 </div>
 
