@@ -337,6 +337,10 @@ class PhycClient:
     def parse_series_xml(xml_str, grandeur="Q"):
         """Parse le XML PHyC et retourne les séries temporelles.
 
+        Gère les deux formats :
+          - v1.1 : <Donnees><Series><...><GrdSerie>
+          - v2.1 : <hydrometrie><Donnees><SeriesObsHydro><SerieObsHydro><GrdSerieObsHydro>
+
         Retourne:
             dict { code_entite (str): [(datetime, float_m3s), ...] }
         """
@@ -347,15 +351,22 @@ class PhycClient:
         donnees = racine.find("Donnees")
         if donnees is None:
             return {}
-        series_el = donnees.find("Series")
-        if series_el is None:
-            return {}
+
+        # Détecter le format v2.1 (SeriesObsHydro) ou v1.1 (Series)
+        series_el = donnees.find("SeriesObsHydro")
+        if series_el is not None:
+            tag_grd = "GrdSerieObsHydro"
+        else:
+            series_el = donnees.find("Series")
+            if series_el is None:
+                return {}
+            tag_grd = "GrdSerie"
 
         tag_code = "CdSiteHydro" if grandeur == "Q" else "CdStationHydro"
 
         result = {}
         for serie in series_el:
-            grd = serie.findtext("GrdSerie", "")
+            grd = serie.findtext(tag_grd, "")
             if grd != grandeur:
                 continue
             code = serie.findtext(tag_code)
