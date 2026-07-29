@@ -901,7 +901,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <tr><td><code>get_libelle_station()</code></td><td>Retourne uniquement le libellé (appelle <code>get_libelle_et_bnbv</code>)</td><td>Conservé pour compatibilité.</td></tr>
     <tr><td><code>get_debits()</code></td><td>SOAP brut <code>publierObservationsHydroPasDeTemps</code></td><td>Bypass zeep car paramètre PHP <code>?array</code>. Port identique v1.1/v2.1. Retourne XML brut.</td></tr>
     <tr><td><code>get_seuils_vigilance()</code></td><td>SOAP <code>publierSeuilHydro</code> → parse 6 seuils actifs</td><td>Filtre NatureSeuil=22, absence DtDesactivation. Port identique v1.1/v2.1.</td></tr>
-    <tr><td><code>parse_series_xml()</code></td><td>Parse XML PHyC → <code>dict{code: [(dt, m³/s)]}</code></td><td>Divise par 1000 (L/s → m³/s)</td></tr>
+    <tr><td><code>parse_series_xml()</code></td><td>Parse XML PHyC → <code>dict{code: [(dt, m³/s)]}</code></td><td>Détecte automatiquement le format : v2.1 (<code>SeriesObsHydro/GrdSerieObsHydro</code>) ou v1.1 (<code>Series/GrdSerie</code>). Divise par 1000 (L/s → m³/s).</td></tr>
     <tr><td><code>_INDICE_TO_KEY</code></td><td>Mapping indice gravité → clé seuil</td><td>24=zt_jaune, 26=jaune, 49=zt_orange, 51=orange, 74=zt_rouge, 76=rouge</td></tr>
   </table>
 
