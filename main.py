@@ -2948,64 +2948,30 @@ class App(tk.Tk):
         # Plages de dates des évènements déjà dans le .prj (pour détection chevauchement)
         plages_existantes = lire_plages_evenements(prj_path, prj_info) if prj_info else []
 
-        # ── Scan des dossiers source ─────────────────────────────────────────
-        pluies_dir = self.var_plath_pluies_dir.get().strip()
-        debits_dir = self.var_plath_debits_dir.get().strip()
-        grandeur = self.config_data.get("extraction", {}).get("grandeur", "Q")
-        _, hu_dir, _, _ = self._get_out_dirs()
-
-        # Préfixes GRD reconnus
+        # ── Utiliser directement la liste déjà construite par l'onglet Visualisation ──
+        _, _, pluies_dir, _ = self._get_out_dirs()
         _GRD_PREFIXES = ("Pluie-Ep_", "AntJ1-Ep_", "Pant-Ep_")
-
-        eps = {}   # ep_key → {"q_path", "grd_dir", "hu_path", "dt"}
-
-        # Scan dossier pluies (récursif : cherche dans tous les sous-dossiers)
-        if pluies_dir and os.path.isdir(pluies_dir):
-            for root_w, dirs, _ in os.walk(pluies_dir):
-                for name in dirs:
-                    for pfx in _GRD_PREFIXES:
-                        if name.startswith(pfx):
-                            key = name[len(pfx):]
-                            d = eps.setdefault(key, {"q_path": None, "grd_dir": None,
-                                                      "hu_path": None, "dt": None})
-                            if d["grd_dir"] is None:
-                                d["grd_dir"] = os.path.join(root_w, name)
-                            break
-                # Ne pas descendre dans les dossiers épisode eux-mêmes
-                dirs[:] = [dn for dn in dirs
-                           if not any(dn.startswith(p) for p in _GRD_PREFIXES)]
-
-        # Scan dossier débits (récursif)
-        if debits_dir and os.path.isdir(debits_dir):
-            for root_w, _, files in os.walk(debits_dir):
-                for fname in files:
-                    if fname.startswith(f"{grandeur}-Ep_") and fname.endswith(".txt"):
-                        key = fname[len(f"{grandeur}-Ep_"):-4]
-                        d = eps.setdefault(key, {"q_path": None, "grd_dir": None,
-                                                  "hu_path": None, "dt": None})
-                        if d["q_path"] is None:
-                            d["q_path"] = os.path.join(root_w, fname)
-
-        # Compléter HU depuis le dossier HU outil (si disponible)
-        for key in eps:
-            hu_path = os.path.join(hu_dir, f"HU-Ep_{key}.csv")
-            if os.path.isfile(hu_path):
-                eps[key]["hu_path"] = hu_path
-
-        # Dates pour tri
-        for key, d in eps.items():
-            d["dt"] = self._parse_ep_key_date(key) or datetime.min
-
-        # Tri par date croissante
-        sorted_keys = sorted(eps.keys(), key=lambda k: eps[k]["dt"])
 
         # ── Construire la liste complète (_plath_ep_rows) ────────────────────
         self._plath_ep_vars.clear()
         self._plath_ep_data.clear()
         self._plath_ep_rows = []
 
-        for ep_key in sorted_keys:
-            d = eps[ep_key]
+        for vep in sorted(self._visu_episodes, key=lambda e: e["_dt"]):
+            ep_key = vep.get("_key", "")
+            # Chercher le dossier GRD correspondant
+            grd_dir = None
+            for pfx in _GRD_PREFIXES:
+                candidate = os.path.join(pluies_dir, f"{pfx}{ep_key}")
+                if os.path.isdir(candidate):
+                    grd_dir = candidate
+                    break
+            d = {
+                "q_path":  vep.get("q_path"),
+                "grd_dir": grd_dir,
+                "hu_path": vep.get("hu_path"),
+                "dt":      vep["_dt"],
+            }
             dt = d["dt"]
 
             # Vig. max. depuis le fichier Q (si dispo)
