@@ -2701,7 +2701,11 @@ class App(tk.Tk):
                   bg="#0E6655", fg="white", activebackground="#0A5244", activeforeground="white",
                   relief="flat", bd=0, padx=5, pady=2, cursor="hand2",
                   command=lambda: self._plath_browse_dir(self.var_plath_debits_dir)
-                  ).pack(side=tk.LEFT, padx=(4, 0))
+                  ).pack(side=tk.LEFT, padx=(4, 4))
+        tk.Button(r, text="↺",
+                  bg="#D6EAF8", fg="#1A5276", relief="groove", bd=1, padx=6, pady=2,
+                  cursor="hand2",
+                  command=self._plath_refresh).pack(side=tk.LEFT)
 
         # Ligne 2 : installation Plathynes
         r2 = self._row(inn_d, bg_d)
