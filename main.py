@@ -2959,29 +2959,32 @@ class App(tk.Tk):
 
         eps = {}   # ep_key → {"q_path", "grd_dir", "hu_path", "dt"}
 
-        # Scan dossier pluies
+        # Scan dossier pluies (récursif : cherche dans tous les sous-dossiers)
         if pluies_dir and os.path.isdir(pluies_dir):
-            for name in os.listdir(pluies_dir):
-                full = os.path.join(pluies_dir, name)
-                if not os.path.isdir(full):
-                    continue
-                for pfx in _GRD_PREFIXES:
-                    if name.startswith(pfx):
-                        key = name[len(pfx):]
+            for root_w, dirs, _ in os.walk(pluies_dir):
+                for name in dirs:
+                    for pfx in _GRD_PREFIXES:
+                        if name.startswith(pfx):
+                            key = name[len(pfx):]
+                            d = eps.setdefault(key, {"q_path": None, "grd_dir": None,
+                                                      "hu_path": None, "dt": None})
+                            if d["grd_dir"] is None:
+                                d["grd_dir"] = os.path.join(root_w, name)
+                            break
+                # Ne pas descendre dans les dossiers épisode eux-mêmes
+                dirs[:] = [dn for dn in dirs
+                           if not any(dn.startswith(p) for p in _GRD_PREFIXES)]
+
+        # Scan dossier débits (récursif)
+        if debits_dir and os.path.isdir(debits_dir):
+            for root_w, _, files in os.walk(debits_dir):
+                for fname in files:
+                    if fname.startswith(f"{grandeur}-Ep_") and fname.endswith(".txt"):
+                        key = fname[len(f"{grandeur}-Ep_"):-4]
                         d = eps.setdefault(key, {"q_path": None, "grd_dir": None,
                                                   "hu_path": None, "dt": None})
-                        if d["grd_dir"] is None:
-                            d["grd_dir"] = full
-                        break
-
-        # Scan dossier débits
-        if debits_dir and os.path.isdir(debits_dir):
-            for fname in os.listdir(debits_dir):
-                if fname.startswith(f"{grandeur}-Ep_") and fname.endswith(".txt"):
-                    key = fname[len(f"{grandeur}-Ep_"):-4]
-                    d = eps.setdefault(key, {"q_path": None, "grd_dir": None,
-                                              "hu_path": None, "dt": None})
-                    d["q_path"] = os.path.join(debits_dir, fname)
+                        if d["q_path"] is None:
+                            d["q_path"] = os.path.join(root_w, fname)
 
         # Compléter HU depuis le dossier HU outil (si disponible)
         for key in eps:
