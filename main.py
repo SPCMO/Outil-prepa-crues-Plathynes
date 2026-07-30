@@ -29,6 +29,7 @@ try:
     import matplotlib.dates as mdates
     import matplotlib.colors as mcolors
     from matplotlib.patches import Rectangle as _MplRectangle
+    import matplotlib.patches as mpatches
     HAS_MPL = True
 except ImportError:
     HAS_MPL = False
@@ -2222,8 +2223,6 @@ class App(tk.Tk):
     def _draw_antpan_stats_panel(self, ax, p_dates, p_vals,
                                   pant_dates, pant_vals, c_ant, c_pant, seuil=0.0):
         """Dessine l'encart compact de comparaison Ant/Pan en bas-droite."""
-        import matplotlib.patches as mpatches
-
         s = self._calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals, seuil)
         if s is None:
             return
@@ -3688,7 +3687,6 @@ class App(tk.Tk):
 
         # Couleur : intensité max pluie
         try:
-            import matplotlib.colors as mcolors
             import matplotlib as mpl
             cmap  = mpl.colormaps["YlOrRd"]
             vmax  = max(p_int_vals) if p_int_vals and max(p_int_vals) > 0 else 1
@@ -3769,7 +3767,6 @@ class App(tk.Tk):
         cb = None
         if norm is not None and p_int_vals and max(p_int_vals) > 0:
             try:
-                import matplotlib.colors as mcolors
                 import matplotlib as mpl
                 sm = mpl.cm.ScalarMappable(cmap=mpl.colormaps["YlOrRd"], norm=norm)
                 sm.set_array([])
