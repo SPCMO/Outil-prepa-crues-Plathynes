@@ -187,6 +187,14 @@ class App(tk.Tk):
         self._build_tab_plathynes()
         self._build_tab_parametrage()
         self._place_logo()
+        self._notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed)
+
+    def _on_tab_changed(self, _event=None):
+        """Déclenche un refresh automatique quand on bascule sur l'onglet Import Plathynes."""
+        selected = self._notebook.select()
+        if selected == str(self.tab_plathynes):
+            self._refresh_visu_list()
+            self._plath_refresh()
 
     def _place_logo(self):
         logo_path = os.path.join(os.path.dirname(__file__), "Doc BDImage", "logo_Plathynes.png")
