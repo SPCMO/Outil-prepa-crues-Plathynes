@@ -205,6 +205,28 @@ class App(tk.Tk):
         f.pack(fill=tk.X, pady=3)
         return f
 
+    def _make_scrollable_tab(self, tab_frame):
+        """Enveloppe le contenu d'un onglet dans un Canvas + Scrollbar vertical.
+        Retourne un inner Frame dans lequel pack le contenu de l'onglet."""
+        canvas = tk.Canvas(tab_frame, highlightthickness=0)
+        vsb = ttk.Scrollbar(tab_frame, orient=tk.VERTICAL, command=canvas.yview)
+        canvas.configure(yscrollcommand=vsb.set)
+        vsb.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        inner = tk.Frame(canvas)
+        win_id = canvas.create_window((0, 0), window=inner, anchor="nw")
+
+        inner.bind("<Configure>", lambda e: canvas.configure(
+            scrollregion=canvas.bbox("all")))
+        canvas.bind("<Configure>", lambda e: canvas.itemconfig(
+            win_id, width=e.width))
+
+        def _scroll(e):
+            canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+        canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", _scroll))
+        canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
+        return inner
+
     def _lbl(self, parent, text, bg, w=22):
         tk.Label(parent, text=text, bg=bg, width=w, anchor="w",
                  font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
@@ -212,7 +234,7 @@ class App(tk.Tk):
     # ── Onglet Configuration ─────────────────────────────────────────────────
 
     def _build_tab_config(self):
-        frm = self.tab_config
+        frm = self._make_scrollable_tab(self.tab_config)
 
         # Section 1 — Station
         inn, bg = self._make_section(frm, "Station hydrologique", "rouge")
@@ -403,7 +425,7 @@ class App(tk.Tk):
     # ── Onglet Episodes ──────────────────────────────────────────────────────
 
     def _build_tab_episodes(self):
-        frm = self.tab_episodes
+        frm = self._make_scrollable_tab(self.tab_episodes)
 
         # Section — Chargement CSV
         inn, bg = self._make_section(frm, "Chargement d'un catalogue de crues (OCTAVE par ex.)", "bleu")
@@ -535,7 +557,7 @@ class App(tk.Tk):
     # ── Onglet Extraction ────────────────────────────────────────────────────
 
     def _build_tab_extraction(self):
-        frm = self.tab_extraction
+        frm = self._make_scrollable_tab(self.tab_extraction)
 
         # Section Pluies
         inn, bg = self._make_section(frm, "Pluies spatialisées — BDImage", "teal")
@@ -2624,7 +2646,7 @@ class App(tk.Tk):
     # ── Onglet Import Plathynes ──────────────────────────────────────────────
 
     def _build_tab_plathynes(self):
-        frm = self.tab_plathynes
+        frm = self._make_scrollable_tab(self.tab_plathynes)
 
         # ── Section projet Plathynes ─────────────────────────────────────────
         inn, bg = self._make_section(frm, "Projet Plathynes cible (.prj)", "bleu")
@@ -3336,7 +3358,7 @@ class App(tk.Tk):
     # ── Onglet Paramétrage ───────────────────────────────────────────────────
 
     def _build_tab_parametrage(self):
-        frm = self.tab_parametrage
+        frm = self._make_scrollable_tab(self.tab_parametrage)
         BG  = "#1B2631"
         BG2 = "#212F3D"
         FG  = "#D6EAF8"
@@ -3501,7 +3523,7 @@ class App(tk.Tk):
     # ── Onglet Analyse ───────────────────────────────────────────────────────
 
     def _build_tab_analyse(self):
-        frm = self.tab_analyse
+        frm = self._make_scrollable_tab(self.tab_analyse)
 
         _VIG_LABELS_A         = ["Vert", "ZT Jaune", "Jaune", "ZT Orange", "Orange", "ZT Rouge", "Rouge"]
         self._analyse_vig_chk = {v: tk.BooleanVar(value=True) for v in _VIG_LABELS_A}
@@ -4213,8 +4235,7 @@ class App(tk.Tk):
                 getattr(self, attr).set(val)
         self._var_plath_seuils.set(plath.get("importer_seuils", True))
         self._var_plath_ouvrir.set(plath.get("ouvrir_apres_import", True))
-        if prj:
-            self._plath_refresh()
+        self._plath_refresh()
 
     def _browse_masque_asc(self):
         from tkinter import filedialog
