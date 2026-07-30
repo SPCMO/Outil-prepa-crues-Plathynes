@@ -167,8 +167,9 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
                 log_fn=log_fn,
             )
             dates_grd = _dates_from_grd_dir(out_pluies)
-            lacunes = _check_lacunes(dates_grd, pdt_p)
-            synthese["Antilope"] = {"ok": True, "n": len(dates_grd), "lacunes": lacunes,
+            lacunes, lacunes_total = _check_lacunes(dates_grd, pdt_p)
+            synthese["Antilope"] = {"ok": True, "n": len(dates_grd),
+                                    "lacunes": lacunes, "lacunes_total": lacunes_total,
                                     "pdt": pdt_p, "unite": "pas de temps (.grd)"}
             # Calcul pluie moyenne BV
             os.makedirs(bv_dir, exist_ok=True)
@@ -194,8 +195,9 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
                 log_fn=log_fn,
             )
             dates_grd_p = _dates_from_grd_dir(out_panth)
-            lacunes_p = _check_lacunes(dates_grd_p, 60)
-            synthese["Panthère"] = {"ok": True, "n": len(dates_grd_p), "lacunes": lacunes_p,
+            lacunes_p, lacunes_p_total = _check_lacunes(dates_grd_p, 60)
+            synthese["Panthère"] = {"ok": True, "n": len(dates_grd_p),
+                                    "lacunes": lacunes_p, "lacunes_total": lacunes_p_total,
                                     "pdt": 60, "unite": "pas de temps (.grd)"}
             # Calcul pluie moyenne BV
             os.makedirs(bv_dir, exist_ok=True)
@@ -230,9 +232,10 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
             )
             dates_hu = _dates_from_csv(out_hu_file, has_header=True)
             pdt_verif = 1440 if mode_journalier else 60
-            lacunes = _check_lacunes(dates_hu, pdt_verif)
-            synthese["HU"] = {"ok": True, "n": len(dates_hu), "lacunes": lacunes,
-                               "pdt": pdt_verif, "unite": "pas de temps"}
+            lacunes, lacunes_total = _check_lacunes(dates_hu, pdt_verif)
+            synthese["HU"] = {"ok": True, "n": len(dates_hu),
+                              "lacunes": lacunes, "lacunes_total": lacunes_total,
+                              "pdt": pdt_verif, "unite": "pas de temps"}
         except Exception as e:
             log_fn(f"  [HU] ERREUR : {e}")
             errs.append(f"HU : {e}")
@@ -258,9 +261,10 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
                 log_fn=log_fn,
             )
             dates_q = _dates_from_csv(filename, has_header=False)
-            lacunes = _check_lacunes(dates_q, pdt_q)
-            synthese[grandeur] = {"ok": True, "n": len(dates_q), "lacunes": lacunes,
-                                   "pdt": pdt_q, "unite": "valeurs"}
+            lacunes, lacunes_total = _check_lacunes(dates_q, pdt_q)
+            synthese[grandeur] = {"ok": True, "n": len(dates_q),
+                                  "lacunes": lacunes, "lacunes_total": lacunes_total,
+                                  "pdt": pdt_q, "unite": "valeurs"}
         except Exception as e:
             log_fn(f"  [Debits] ERREUR : {e}")
             errs.append(f"Debits : {e}")
@@ -283,17 +287,18 @@ def _log_synthese(log_fn, synthese):
         if not info.get("ok"):
             log_fn(f"  ✗ {dtype:<10} ERREUR : {info.get('erreur', '?')}")
             continue
-        n       = info["n"]
-        lacunes = info["lacunes"]
-        pdt     = info["pdt"]
-        unite   = info["unite"]
-        if lacunes:
-            log_fn(f"  ✗ {dtype:<10} {n} {unite} — {len(lacunes)} lacune(s) détectée(s) :")
-            # Afficher max 5 lacunes pour ne pas noyer le journal
+        n             = info["n"]
+        lacunes       = info["lacunes"]
+        lacunes_total = info.get("lacunes_total", len(lacunes))
+        pdt           = info["pdt"]
+        unite         = info["unite"]
+        if lacunes_total:
+            log_fn(f"  ✗ {dtype:<10} {n} {unite} — {lacunes_total} lacune(s) détectée(s)"
+                   + (" (>100, liste tronquée)" if lacunes_total > _MAX_LACUNES else "") + " :")
             for lac in lacunes[:5]:
                 log_fn(f"             • {lac.strftime('%d/%m/%Y %H:%M')} (manquant)")
-            if len(lacunes) > 5:
-                log_fn(f"             ... et {len(lacunes) - 5} autre(s)")
+            if lacunes_total > 5:
+                log_fn(f"             ... et {lacunes_total - 5} autre(s)")
         else:
             log_fn(f"  ✓ {dtype:<10} {n} {unite} — série continue (pdt={pdt}mn), aucune lacune")
 
@@ -345,18 +350,24 @@ def _snap_to_grid(dt, pdt_minutes):
     return midnight + timedelta(minutes=snapped_min)
 
 
+_MAX_LACUNES = 100
+
+
 def _check_lacunes(datetimes_sorted, pdt_minutes):
-    """Retourne la liste des pas de temps manquants dans une série ordonnée."""
+    """Retourne (sample, total) : liste des pas manquants (max 100) et leur total réel."""
     if len(datetimes_sorted) < 2:
-        return []
+        return [], 0
     step = timedelta(minutes=pdt_minutes)
-    lacunes = []
+    sample = []
+    total = 0
     for i in range(len(datetimes_sorted) - 1):
         expected = datetimes_sorted[i] + step
         while expected < datetimes_sorted[i + 1]:
-            lacunes.append(expected)
+            total += 1
+            if len(sample) < _MAX_LACUNES:
+                sample.append(expected)
             expected += step
-    return lacunes
+    return sample, total
 
 
 def _dates_from_csv(filepath, fmt="%d/%m/%Y %H:%M", has_header=True):
@@ -405,16 +416,18 @@ def _build_synthese_text(syntheses, duree_s=0):
             if not info.get("ok"):
                 lines.append(f"  ✗  {dtype:<12} ERREUR : {info.get('erreur', '?')}")
                 continue
-            n       = info["n"]
-            lacunes = info["lacunes"]
-            pdt     = info["pdt"]
-            if lacunes:
+            n             = info["n"]
+            lacunes       = info["lacunes"]
+            lacunes_total = info.get("lacunes_total", len(lacunes))
+            pdt           = info["pdt"]
+            if lacunes_total:
+                trunc = " (>100)" if lacunes_total > _MAX_LACUNES else ""
                 lines.append(f"  ✗  {dtype:<12} {n} pts (pdt={pdt}mn) — "
-                             f"{len(lacunes)} lacune(s)")
+                             f"{lacunes_total} lacune(s){trunc}")
                 for lac in lacunes[:3]:
                     lines.append(f"       • {lac.strftime('%d/%m/%Y %H:%M')}")
-                if len(lacunes) > 3:
-                    lines.append(f"       ... +{len(lacunes)-3} autre(s)")
+                if lacunes_total > 3:
+                    lines.append(f"       ... +{lacunes_total - 3} autre(s)")
             else:
                 lines.append(f"  ✓  {dtype:<12} {n} pts (pdt={pdt}mn) — serie complete")
     lines.append("")

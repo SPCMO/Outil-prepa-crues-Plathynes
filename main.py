@@ -7,7 +7,7 @@ import sys
 import threading
 import tkinter as tk
 import webbrowser
-from datetime import datetime
+from datetime import datetime, timedelta
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -25,10 +25,19 @@ from modules.plathynes_importer import (
 try:
     from matplotlib.figure import Figure
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+    from matplotlib.gridspec import GridSpec
     import matplotlib.dates as mdates
+    import matplotlib.colors as mcolors
+    from matplotlib.patches import Rectangle as _MplRectangle
     HAS_MPL = True
 except ImportError:
     HAS_MPL = False
+
+try:
+    import numpy as np
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
 
 
 TITRE = "OP₂ALE — Outil pour Plathynes de Préparation et d'Analyse pour le caLage d'Épisodes"
@@ -36,7 +45,7 @@ PDT_PLUIES_OPTIONS = {"15 minutes": 15, "30 minutes": 30, "1 heure": 60}
 PDT_DEBITS_OPTIONS = {"15 minutes": 15, "30 minutes": 30, "1 heure": 60}
 # PDT_HU est proposé directement dans _build_tab_extraction sous forme de liste
 
-# Palette couleurs — (fg, bg)
+# Palette couleurs sections UI — (fg, bg)
 _C = {
     "bleu":   ("#1A5276", "#D6EAF8"),
     "vert":   ("#1D6A39", "#D5F5E3"),
@@ -46,6 +55,13 @@ _C = {
     "rouge":  ("#7B241C", "#FADBD8"),
     "gris":   ("#2C3E50", "#EAECEE"),
 }
+
+# Couleurs produits hydro — communes à _plot_episode, _visu_update_legende,
+# _visu_ouvrir_cumuls_spatiaux et _refresh_pluies_tab
+_C_ANT      = "#1F618D"   # bleu foncé Antilope ≤ seuil
+_C_ANT_OVER = "#7D3C98"   # violet Antilope > seuil hyétogramme
+_C_PANT     = "#CC5500"   # orange foncé Panthère
+_C_HU       = "#C0392B"   # rouge HU
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -94,6 +110,7 @@ class App(tk.Tk):
         except Exception:
             pass  # Thème "clam" non disponible sur certaines installations minimales
 
+        self._init_styles()
         self._build_ui()
         self._load_config()
 
@@ -186,14 +203,19 @@ class App(tk.Tk):
 
     # ── Helpers sections colorées ────────────────────────────────────────────
 
+    def _init_styles(self):
+        """Configure les styles TTK colorés une seule fois au démarrage."""
+        sty = ttk.Style()
+        for color_key, (fg, bg) in _C.items():
+            tag = f"Sec{color_key.capitalize()}"
+            sty.configure(f"{tag}.TLabelframe",       background=bg, borderwidth=2)
+            sty.configure(f"{tag}.TLabelframe.Label", foreground=fg,
+                          font=("TkDefaultFont", 9, "bold"), background=bg)
+
     def _make_section(self, parent, title, color_key, fill=tk.X, expand=False):
         """Crée un LabelFrame coloré avec un inner tk.Frame assorti."""
         fg, bg = _C[color_key]
         tag = f"Sec{color_key.capitalize()}"
-        sty = ttk.Style()
-        sty.configure(f"{tag}.TLabelframe",       background=bg, borderwidth=2)
-        sty.configure(f"{tag}.TLabelframe.Label", foreground=fg,
-                      font=("TkDefaultFont", 9, "bold"), background=bg)
         lf = ttk.LabelFrame(parent, text=f"  {title}", style=f"{tag}.TLabelframe")
         lf.pack(fill=fill, expand=expand, padx=12, pady=(8, 3))
         inner = tk.Frame(lf, bg=bg)
@@ -735,7 +757,6 @@ class App(tk.Tk):
             lambda *_: self.after(200, self._on_seuil_change))
 
         if HAS_MPL:
-            from matplotlib.gridspec import GridSpec
             self._visu_fig = Figure(figsize=(8, 7), dpi=96)
             self._visu_fig.patch.set_facecolor("#F8F9FA")
             gs = GridSpec(2, 1, figure=self._visu_fig,
@@ -789,10 +810,9 @@ class App(tk.Tk):
     def _vig_from_file(self, q_path):
         """Lit le Q max d'un fichier extrait et retourne le label de vigilance."""
         try:
-            import csv as _csv
             q_vals = []
             with open(q_path, encoding="utf-8") as fh:
-                for row in _csv.reader(fh, delimiter=";"):
+                for row in csv.reader(fh, delimiter=";"):
                     if row and len(row) >= 2:
                         try:
                             q_vals.append(float(row[1]))
@@ -1134,10 +1154,10 @@ class App(tk.Tk):
         self._visu_bar_info       = []
         self._visu_tooltip_artist = None
 
-        C_Q  = "#1A5276"
-        C_HU = "#C0392B"
-        C_P  = "#1F618D"   # bleu foncé Antilope
-        C_P_EXCESS = "#7D3C98"  # violet : Antilope dépasse le seuil hyétogramme
+        C_Q        = "#1A5276"
+        C_HU       = _C_HU
+        C_P        = _C_ANT
+        C_P_EXCESS = _C_ANT_OVER
 
         def _read_csv(path, has_header=True):
             pairs = []
@@ -1175,9 +1195,7 @@ class App(tk.Tk):
             seuil = 40.0
 
         # ── Graphique haut : hyétogramme inversé (barres vers le bas) + HU ────────
-        C_PANT = "#CC5500"  # orange foncé Panthère
-
-        from datetime import timedelta as _td
+        C_PANT = _C_PANT
 
         # Calcul de l'échelle Y globale (max Antilope + Panthère)
         all_p_max = max((max(p_vals) if p_vals else 0),
@@ -1187,7 +1205,7 @@ class App(tk.Tk):
         # ── Panthère en premier (arrière-plan, zorder bas)
         pant_handles, pant_labels = [], []
         if pant_dates:
-            bar_w_pant = (pant_dates[1] - pant_dates[0]) * 0.85 if len(pant_dates) >= 2 else _td(hours=1)
+            bar_w_pant = (pant_dates[1] - pant_dates[0]) * 0.85 if len(pant_dates) >= 2 else timedelta(hours=1)
             bp = self._visu_ax_p.bar(pant_dates, pant_vals, width=bar_w_pant,
                                       color=C_PANT, alpha=0.25, align="center",
                                       edgecolor=C_PANT, linewidth=1.4,
@@ -1203,7 +1221,7 @@ class App(tk.Tk):
         # ── Antilope par-dessus (zorder élevé, alpha légèrement augmenté)
         ant_handles, ant_labels = [], []
         if p_dates:
-            bar_w = (p_dates[1] - p_dates[0]) * 0.8 if len(p_dates) >= 2 else _td(hours=1)
+            bar_w = (p_dates[1] - p_dates[0]) * 0.8 if len(p_dates) >= 2 else timedelta(hours=1)
             base_vals = [min(v, seuil) for v in p_vals]
             b1 = self._visu_ax_p.bar(p_dates, base_vals, width=bar_w,
                                       color=C_P, alpha=0.70, align="center",
@@ -1290,8 +1308,7 @@ class App(tk.Tk):
                     (i for i, d in enumerate(hu_dates) if d.hour >= 6), None)
             else:
                 # Épisode commence >= 6h : chercher le prochain jour à 6h
-                from datetime import timedelta as _td
-                lendemain_6h = (debut_dt + _td(days=1)).replace(
+                lendemain_6h = (debut_dt + timedelta(days=1)).replace(
                     hour=6, minute=0, second=0, microsecond=0)
                 hu_6h_idx = next(
                     (i for i, d in enumerate(hu_dates) if d >= lendemain_6h), None)
@@ -1457,7 +1474,6 @@ class App(tk.Tk):
             [d for d in hu_dates]
         )
         if all_dates:
-            from datetime import timedelta as _td_x
             x_min, x_max = all_dates[0], all_dates[-1]
             span_h = (x_max - x_min).total_seconds() / 3600
             # Choisir le pas de graduations selon la durée totale
@@ -1470,7 +1486,7 @@ class App(tk.Tk):
             else:
                 major_loc = mdates.DayLocator()                           # 1×/jour
             fmt = mdates.DateFormatter("%d/%m\n%H:%M")
-            marge = _td_x(hours=max(1, span_h * 0.02))
+            marge = timedelta(hours=max(1, span_h * 0.02))
             for ax in (self._visu_ax_p, self._visu_ax_q):
                 ax.set_xlim(x_min - marge, x_max + marge)
                 ax.xaxis.set_major_locator(major_loc)
@@ -1543,10 +1559,10 @@ class App(tk.Tk):
 
         BG         = "#FAFAFA"
         HDR_BG     = "#EEF2F7"
-        C_P        = "#1F618D"   # bleu foncé Antilope ≤ seuil
-        C_P_EXCESS = "#7D3C98"   # violet Antilope > seuil
-        C_PANT     = "#CC5500"   # orange foncé Panthère
-        C_HU       = "#C0392B"   # rouge HU
+        C_P        = _C_ANT
+        C_P_EXCESS = _C_ANT_OVER
+        C_PANT     = _C_PANT
+        C_HU       = _C_HU
         frm.config(bg=BG)
 
         # En-têtes
@@ -1608,8 +1624,7 @@ class App(tk.Tk):
 
     def _visu_ouvrir_cumuls_spatiaux(self, ep):
         """Fenêtre unique : cumuls Antilope et Panthère côte à côte, masque BV, colorbar commune."""
-        import numpy as np
-        if not HAS_MPL:
+        if not HAS_MPL or not HAS_NUMPY:
             return
 
         _, _, pluies_dir, bv_dir = self._get_out_dirs()
@@ -1617,8 +1632,8 @@ class App(tk.Tk):
         cumul_dir = os.path.join(bv_dir, "GRD cumuls")
 
         # ── Charger / calculer les deux GRDs ────────────────────────────────
-        C_ANT  = "#1F618D"   # bleu foncé Antilope (cohérent avec légende)
-        C_PANT = "#CC5500"   # orange foncé Panthère
+        C_ANT  = _C_ANT
+        C_PANT = _C_PANT
         COULEURS = {"antilope": C_ANT, "panthere": C_PANT}
 
         PRODUITS = [
@@ -1675,12 +1690,6 @@ class App(tk.Tk):
         if os.path.isfile(_ico):
             try: top.iconbitmap(_ico)
             except Exception: pass
-
-        from matplotlib.figure import Figure
-        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-        from matplotlib.gridspec import GridSpec
-        import matplotlib.colors as mcolors
-        from matplotlib.patches import Rectangle
 
         fig = Figure(figsize=(11.5, 5.8), dpi=96)
         fig.patch.set_facecolor("#F8F9FA")
@@ -1764,7 +1773,7 @@ class App(tk.Tk):
                 ((mx,  my2), mnc * mcs, gy2 - my2),   # haut
             ]:
                 if w > 0 and h > 0:
-                    ax.add_patch(Rectangle(xy, w, h, color=GREY, zorder=2))
+                    ax.add_patch(_MplRectangle(xy, w, h, color=GREY, zorder=2))
 
             # Contour BV
             ax.contour(masque_array, levels=[0.5], colors=["#000000"],
@@ -2014,7 +2023,6 @@ class App(tk.Tk):
         Retourne dict {cv, gini, max_moy} ou None si données manquantes.
         Double cache : masque rechargé seulement si chemin change ;
         résultats indices jamais recalculés pour un (key, produit) déjà traité."""
-        import numpy as np
         key = ep.get("_key", ep.get("label", ""))
         cache_key = (key, produit)
         if not hasattr(self, "_indices_cache"):
@@ -2117,7 +2125,6 @@ class App(tk.Tk):
 
     def _lire_asc_numpy(self, filepath):
         """Lecture rapide d'un fichier ESRI ASCII (.asc/.grd) via numpy.loadtxt."""
-        import numpy as np
         header = {}
         header_keys = {"ncols", "nrows", "xllcorner", "yllcorner",
                        "xllcenter", "yllcenter", "cellsize",
@@ -2149,7 +2156,6 @@ class App(tk.Tk):
 
     def _lire_grd(self, filepath):
         """Lit un fichier GRD/ASC (format ESRI ASCII) → (np.array float32, header dict)."""
-        import numpy as np
         header = {}
         header_keys = {"ncols", "nrows", "xllcorner", "yllcorner",
                        "xllcenter", "yllcenter", "cellsize",
@@ -2181,7 +2187,6 @@ class App(tk.Tk):
 
     def _calculer_cumul_grd(self, grd_dir):
         """Somme tous les .grd du dossier (1/10 mm → mm via ×0.1) → (cumul mm, header)."""
-        import numpy as np
         fichiers = sorted(
             f for f in os.listdir(grd_dir)
             if f.lower().endswith(".grd") or f.lower().endswith(".asc"))
@@ -2202,7 +2207,6 @@ class App(tk.Tk):
 
     def _ecrire_grd(self, filepath, array, header):
         """Écrit un tableau numpy en format ESRI ASCII GRD."""
-        import numpy as np
         with open(filepath, "w") as fh:
             fh.write(f"ncols         {header['ncols']}\n")
             fh.write(f"nrows         {header['nrows']}\n")
@@ -2383,8 +2387,8 @@ class App(tk.Tk):
         for child in frm.winfo_children():
             child.destroy()
 
-        C_ANT = "#1F618D"
-        C_PAN = "#CC5500"
+        C_ANT = _C_ANT
+        C_PAN = _C_PANT
         C_NEU = "#888888"
         COL_W = [230, 100, 155, 155, 100, 110, 95, 105]
 
@@ -4010,10 +4014,9 @@ class App(tk.Tk):
             return "—", ""
 
         try:
-            import csv as _csv
             q_vals = []
             with open(q_file, encoding="utf-8") as fh:
-                for row in _csv.reader(fh, delimiter=";"):
+                for row in csv.reader(fh, delimiter=";"):
                     if row and len(row) >= 2:
                         try:
                             q_vals.append(float(row[1]))
