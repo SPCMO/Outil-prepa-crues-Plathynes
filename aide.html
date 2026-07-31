@@ -761,7 +761,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <div class="fn-arrow">&nbsp;+&nbsp;</div>
     <div class="flow-node fn-ext">BDImage SOAP<br>→ HU CSV</div>
     <div class="fn-arrow">&nbsp;+&nbsp;</div>
-    <div class="flow-node fn-ext">PHyC SOAP<br>→ Q ou H TXT<br><small>(code site 8 car. si Q ; code station 10 car. si H)</small></div>
+    <div class="flow-node fn-ext">PHyC SOAP<br>→ Q ou H TXT<br><small>(code station 10 car. — Q et H)</small></div>
     <div class="fn-arrow">&nbsp;+&nbsp;</div>
     <div class="flow-node fn-mod">calculer_pluie_bv_csv()<br>→ PluieBV CSV</div>
   </div>
@@ -849,7 +849,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <tr><td><code>_build_tab_config()</code></td><td>Construction onglet Config (5 sections)</td><td>Labels préfixe "Y" et "MO" liés à des <code>StringVar</code> (<code>_var_pfx_station_lbl</code>, <code>_var_pfx_bnbv_lbl</code>) mis à jour lors de la sauvegarde du Paramétrage.</td></tr>
     <tr><td><code>_save_config()</code></td><td>Lit tous les champs UI → JSON via <code>save_config()</code></td><td>Dérive <code>code_station</code> (10 car.) et <code>code_site</code> (8 car.) depuis les 9 chiffres saisis. Sauve les seuils dans <code>seuils_q</code> ou <code>seuils_h</code> selon la grandeur sélectionnée.</td></tr>
     <tr><td><code>_refresh_config_ui()</code></td><td>Repopule les champs UI depuis <code>config_data</code></td><td>Charge <code>code_station</code> (fallback sur <code>code_site</code> pour les anciens JSON). Recharge les seuils du jeu actif (Q ou H).</td></tr>
-    <tr><td><code>_recup_seuils_phyc()</code></td><td>Thread : appelle <code>PhycClient.get_seuils_vigilance()</code></td><td>Utilise le code site (8 car.) pour Q, le code station (10 car.) pour H. Nécessite connexion PHyC active.</td></tr>
+    <tr><td><code>_recup_seuils_phyc()</code></td><td>Thread : appelle <code>PhycClient.get_seuils_vigilance()</code></td><td>Utilise le code station (10 car.) pour Q et H. Nécessite connexion PHyC active.</td></tr>
     <tr><td><code>_appliquer_seuils()</code></td><td>Sauve seuils dans <code>config_data</code>, rafraîchit graphique et table épisodes</td><td>Sauve dans <code>seuils_q</code> ou <code>seuils_h</code> selon <code>var_seuils_grandeur</code>.</td></tr>
     <tr><td><code>_on_seuils_grandeur_change()</code></td><td>Bascule les libellés d'unité (m³/s ↔ m) et recharge les valeurs du jeu JSON correspondant</td><td>Déclenché par le Combobox Q/H dans la section Seuils.</td></tr>
     <tr><td><code>_build_tab_episodes()</code></td><td>Treeview avec colonnes #, dates, durée, Vig. max. + bandeau de filtres permanent</td><td>Tags couleur pour les 7 niveaux : <code>vig_vert</code>, <code>vig_zt_jaune</code> … <code>vig_rouge</code>. Filtres date début/fin (StringVar) + 7 cases à cocher Vig. max. (BooleanVar).</td></tr>
@@ -901,7 +901,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <tr><td><code>get_libelle_station()</code></td><td>Retourne uniquement le libellé (appelle <code>get_libelle_et_bnbv</code>)</td><td>Conservé pour compatibilité.</td></tr>
     <tr><td><code>get_debits()</code></td><td>SOAP brut <code>publierObservationsHydroPasDeTemps</code></td><td>Bypass zeep car paramètre PHP <code>?array</code>. Port identique v1.1/v2.1. Retourne XML brut.</td></tr>
     <tr><td><code>get_seuils_vigilance()</code></td><td>SOAP <code>publierSeuilHydro</code> → parse 6 seuils actifs</td><td>Filtre NatureSeuil=22, absence DtDesactivation. Port identique v1.1/v2.1.</td></tr>
-    <tr><td><code>parse_series_xml()</code></td><td>Parse XML PHyC → <code>dict{code: [(dt, m³/s)]}</code></td><td>Détecte automatiquement le format : v2.1 (<code>SeriesObsHydro/GrdSerieObsHydro</code>) ou v1.1 (<code>Series/GrdSerie</code>). Divise par 1000 (L/s → m³/s).</td></tr>
+    <tr><td><code>parse_series_xml()</code></td><td>Parse XML PHyC → <code>dict{code: [(dt, m³/s)]}</code></td><td>Détecte automatiquement le format v2.1/v1.1. Accepte <code>CdSiteHydro</code> et <code>CdStationHydro</code> (PHyC peut retourner l'un ou l'autre selon le code envoyé). Divise par 1000 (L/s → m³/s).</td></tr>
     <tr><td><code>_INDICE_TO_KEY</code></td><td>Mapping indice gravité → clé seuil</td><td>24=zt_jaune, 26=jaune, 49=zt_orange, 51=orange, 74=zt_rouge, 76=rouge</td></tr>
   </table>
 
@@ -919,7 +919,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <h2>modules/extractor.py</h2>
   <table>
     <tr><th>Fonction</th><th>Rôle</th><th>Notes</th></tr>
-    <tr><td><code>run_extraction()</code></td><td>Boucle sur les épisodes, gère login/logout PHyC, retourne <code>(errors, synthese_text)</code></td><td>Détermine <code>code_phyc</code> = code station (10 car.) si grandeur=H, code site (8 car.) si Q. En cas d'erreur : relance automatique 1×.</td></tr>
+    <tr><td><code>run_extraction()</code></td><td>Boucle sur les épisodes, gère login/logout PHyC, retourne <code>(errors, synthese_text)</code></td><td>Utilise toujours le code station (10 car.) pour Q et H. En cas d'erreur : relance automatique 1×.</td></tr>
     <tr><td><code>_process_episode()</code></td><td>Extrait pluies, HU et Q/H pour un épisode</td><td>Reçoit <code>code_phyc</code> déjà résolu selon la grandeur. Remplit <code>synthese_out</code> dict par type de données.</td></tr>
     <tr><td><code>_check_lacunes()</code></td><td>Détecte les pas de temps manquants dans une série</td><td>Retourne liste de datetimes manquants</td></tr>
     <tr><td><code>_snap_to_grid()</code></td><td>Arrondit un datetime au multiple de pdt_minutes</td><td>Assure des horodatages "heures rondes"</td></tr>
@@ -1694,6 +1694,12 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <span class="change-tag ct-fix">Correction</span>
     <strong>Liste Visualisation vide quand seules les pluies sont extraites</strong>
     <p>Quand la case Q n'est pas cochée, le scan du dossier <code>Pluies/</code> permet désormais de découvrir les épisodes via les dossiers <code>AntJ1-Ep_*</code> et <code>Pant-Ep_*</code>, même en l'absence de fichiers <code>Q-Ep_*.txt</code>.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Requêtes PHyC Q désormais en code station (10 car.) au lieu du code site (8 car.)</strong>
+    <p>L'extraction des débits Q utilisait jusqu'ici le code site à 8 caractères pour interroger PHyC, tandis que les hauteurs H utilisaient déjà le code station complet (10 car.). Les deux grandeurs utilisent maintenant systématiquement le code station. Le parsing de la réponse XML accepte indifféremment <code>CdSiteHydro</code> et <code>CdStationHydro</code>, PHyC pouvant retourner l'un ou l'autre selon le code envoyé.</p>
   </div>
 </div>
 

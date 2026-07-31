@@ -50,8 +50,8 @@ def run_extraction(config, episodes, options, log_fn, progress_fn=None):
     code_phyc = None
     if options.get("debits"):
         grandeur_opt = options.get("grandeur", "Q")
-        # Pour H on requête sur le code station complet ; pour Q sur le code site
-        code_phyc = code_station if grandeur_opt == "H" else code_site
+        # Toujours utiliser le code station complet (10 car.) — fonctionne pour Q et H.
+        code_phyc = code_station
         if not code_phyc:
             raise ExtractionError(
                 "Code station non renseigne. "
@@ -319,7 +319,9 @@ def _extraire_debits(phyc, code_site, date_debut, date_fin, pdt, grandeur, filen
     )
 
     series = PhycClient.parse_series_xml(xml_str, grandeur=grandeur)
-    points = series.get(code_site, [])
+    # PHyC peut retourner les données sous le code site ou le code station selon
+    # la réponse — on prend le premier résultat disponible.
+    points = series.get(code_site) or (list(series.values())[0] if series else [])
 
     if not points:
         log_fn(f"  Aucune donnee PHyC pour la station {code_site} sur la periode demandee.")

@@ -362,14 +362,20 @@ class PhycClient:
                 return {}
             tag_grd = "GrdSerie"
 
-        tag_code = "CdSiteHydro" if grandeur == "Q" else "CdStationHydro"
+        # PHyC peut retourner le code sous CdSiteHydro ou CdStationHydro selon
+        # le type de code envoyé dans la requête — on accepte les deux.
+        _CODE_TAGS = ("CdSiteHydro", "CdStationHydro")
 
         result = {}
         for serie in series_el:
             grd = serie.findtext(tag_grd, "")
             if grd != grandeur:
                 continue
-            code = serie.findtext(tag_code)
+            code = None
+            for tag_code in _CODE_TAGS:
+                code = serie.findtext(tag_code)
+                if code:
+                    break
             if code is None:
                 continue
 
