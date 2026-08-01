@@ -91,19 +91,26 @@ def build_episode_list(debits_dir, hu_dir, pluies_dir, bv_dir):
         if key not in eps:
             dt, label = _parse_key(key)
             eps[key] = {"label": label, "_dt": dt, "_key": key,
-                        "q_path": None, "hu_path": None,
+                        "q_path": None, "hu_path": None, "grandeur": "Q",
                         "p_path": None, "p_liq_path": None, "pant_path": None}
         return eps[key]
 
-    # Scan Debits/
+    # Scan Debits/ — fichiers Q (m³/s) ou H (m)
     if os.path.isdir(debits_dir):
         for fname in os.listdir(debits_dir):
-            if not (fname.startswith("Q-Ep_") and fname.endswith(".txt")):
+            if not fname.endswith(".txt"):
                 continue
-            key = fname[5:-4]
+            if fname.startswith("Q-Ep_"):
+                prefix, grandeur = "Q-Ep_", "Q"
+            elif fname.startswith("H-Ep_"):
+                prefix, grandeur = "H-Ep_", "H"
+            else:
+                continue
+            key = fname[len(prefix):-4]
             ep  = _get_ep(key)
-            ep["q_path"] = os.path.join(debits_dir, fname)
-            hu_fname = fname.replace("Q-Ep_", "HU-Ep_").replace(".txt", ".csv")
+            ep["q_path"]   = os.path.join(debits_dir, fname)
+            ep["grandeur"] = grandeur
+            hu_fname = fname.replace(f"{grandeur}-Ep_", "HU-Ep_").replace(".txt", ".csv")
             hu_path  = os.path.join(hu_dir, hu_fname)
             ep["hu_path"] = hu_path if os.path.exists(hu_path) else None
 

@@ -74,7 +74,7 @@ _C_HU       = "#C0392B"   # rouge HU
 #
 # Architecture générale :
 #   • 7 onglets : Configuration, Épisodes, Extraction, Visualisation,
-#     Analyse pluies, Caractérisation crues, Paramétrage
+#     Analyse pluies, Caractérisation crues, Import Plathynes
 #   • Extraction dans un thread séparé (self._extraction_thread) pour ne pas
 #     bloquer l'UI ; les callbacks UI passent par self.after()
 #   • Visualisation matplotlib via FigureCanvasTkAgg (HAS_MPL requis)
@@ -108,6 +108,7 @@ class App(tk.Tk):
         self.config_data = {}
         self.episodes = []
         self._extraction_thread = None
+        self._stop_event = threading.Event()
         self._visu_episodes = []
 
         try:
@@ -2515,11 +2516,12 @@ class App(tk.Tk):
         inn3, bg3 = self._make_section(frm, "Lancer l'import", "violet")
 
         r = self._row(inn3, bg3)
-        tk.Button(r, text="▶  Importer dans Plathynes",
+        self._btn_plath_import = tk.Button(r, text="▶  Importer dans Plathynes",
                   bg="#4A235A", fg="white", activebackground="#3B1A47", activeforeground="white",
                   relief="flat", bd=0, padx=10, pady=4,
                   font=("TkDefaultFont", 9, "bold"), cursor="hand2",
-                  command=self._plath_run_import).pack(side=tk.LEFT, padx=(0, 12))
+                  command=self._plath_run_import)
+        self._btn_plath_import.pack(side=tk.LEFT, padx=(0, 12))
         self._var_plath_seuils = tk.BooleanVar(value=True)
         tk.Checkbutton(r, text="Importer les seuils de vigilance dans Plathynes",
                        variable=self._var_plath_seuils, bg=bg3,
@@ -2542,6 +2544,8 @@ class App(tk.Tk):
         self._plath_log.tag_config("erreur", foreground="#C0392B",
                                     font=("Consolas", 9, "bold"))
         self._plath_log.tag_config("ok", foreground="#1D6A39",
+                                   font=("Consolas", 9, "bold"))
+        self._plath_log.tag_config("avert", foreground="#B7770D",
                                    font=("Consolas", 9, "bold"))
         tk.Button(inn4, text="Effacer le journal", bg=bg4, relief="groove",
                   cursor="hand2",
@@ -2831,40 +2835,55 @@ class App(tk.Tk):
         self._plath_log_msg(f"Projet : {prj_path}")
         self._plath_log_msg("=" * 60)
 
-        nb_ok = 0
-        nb_err = 0
-        for ep_key in selectionnees:
-            data = self._plath_ep_data[ep_key]
-            nom_evt = data["nom_evt"]
-            self._plath_log_msg(f"\n→ {nom_evt}")
-            try:
-                importer_evenement(
-                    nom_evt=nom_evt,
-                    ep_key=data["ep_key"],
-                    grd_src_dir=data["grd_dir"],
-                    q_src=data["q_path"],
-                    hu_src=data["hu_path"],
-                    projet_root=projet_root,
-                    prj_path=prj_path,
-                    nom_station=nom_station,
-                    x=x, y=y,
-                    log_fn=self._plath_log_msg,
-                    pdt_forcage=self.var_plath_pdt_forcage.get(),
-                    pdt_calcul=self.var_plath_pdt_calcul.get(),
-                    pdt_sorties=self.var_plath_pdt_sorties.get(),
-                    pdt_bilans=self.var_plath_pdt_bilans.get(),
-                )
-                self._plath_log_msg(f"  [OK] {nom_evt} importé avec succès.", "ok")
-                nb_ok += 1
-            except Exception as e:
-                self._plath_log_msg(f"  [ERREUR] {nom_evt} : {e}", "erreur")
-                nb_err += 1
+        self._btn_plath_import.config(state=tk.DISABLED)
 
-        self._plath_log_msg(
-            f"\nTerminé : {nb_ok} importé(s), {nb_err} erreur(s).", "ok" if nb_err == 0 else None)
+        pdt_forcage = self.var_plath_pdt_forcage.get()
+        pdt_calcul  = self.var_plath_pdt_calcul.get()
+        pdt_sorties = self.var_plath_pdt_sorties.get()
+        pdt_bilans  = self.var_plath_pdt_bilans.get()
 
-        # Actualiser la liste (statuts mis à jour)
-        self._plath_refresh()
+        def _log_safe(msg, tag=None):
+            self.after(0, lambda m=msg, t=tag: self._plath_log_msg(m, t))
+
+        def _worker():
+            nb_ok = 0
+            nb_err = 0
+            for ep_key in selectionnees:
+                data = self._plath_ep_data[ep_key]
+                nom_evt = data["nom_evt"]
+                _log_safe(f"\n→ {nom_evt}")
+                try:
+                    importer_evenement(
+                        nom_evt=nom_evt,
+                        ep_key=data["ep_key"],
+                        grd_src_dir=data["grd_dir"],
+                        q_src=data["q_path"],
+                        hu_src=data["hu_path"],
+                        projet_root=projet_root,
+                        prj_path=prj_path,
+                        nom_station=nom_station,
+                        x=x, y=y,
+                        log_fn=_log_safe,
+                        pdt_forcage=pdt_forcage,
+                        pdt_calcul=pdt_calcul,
+                        pdt_sorties=pdt_sorties,
+                        pdt_bilans=pdt_bilans,
+                    )
+                    _log_safe(f"  [OK] {nom_evt} importé avec succès.", "ok")
+                    nb_ok += 1
+                except Exception as e:
+                    _log_safe(f"  [ERREUR] {nom_evt} : {e}", "erreur")
+                    nb_err += 1
+
+            def _done():
+                self._plath_log_msg(
+                    f"\nTerminé : {nb_ok} importé(s), {nb_err} erreur(s).",
+                    "ok" if nb_err == 0 else None)
+                self._btn_plath_import.config(state=tk.NORMAL)
+                self._plath_refresh()
+            self.after(0, _done)
+
+        threading.Thread(target=_worker, daemon=True).start()
 
         # Importer les seuils de vigilance si demandé
         if self._var_plath_seuils.get():
@@ -3955,6 +3974,8 @@ class App(tk.Tk):
             self.var_seuil_status.set("Code station invalide (10 car. : 1 lettre + 9 chiffres).")
             return
         use_h = self.var_seuils_grandeur.get() == "H (m)"
+        # PHyC attend le code station complet (10 car.) pour les seuils H (grandeur mesurée à la station),
+        # mais le code site (8 car.) pour les seuils Q (grandeur calculée sur le tronçon).
         code_entite = code_station if use_h else code_station[:8]
         phyc_cfg = self.config_data.get("phyc", {})
         unite = "m" if use_h else "m³/s"
@@ -4103,7 +4124,7 @@ class App(tk.Tk):
             "lr": self.var_lr.get().strip(),
         }
 
-        self._stop_flag = False
+        self._stop_event.clear()
         self.btn_run.config(state=tk.DISABLED)
         self.btn_stop.config(state=tk.NORMAL)
         self.progress["value"] = 0
@@ -4121,6 +4142,7 @@ class App(tk.Tk):
                     options=options,
                     log_fn=self._log,
                     progress_fn=self._update_progress,
+                    stop_fn=self._stop_event.is_set,
                 )
             except ExtractionError as e:
                 self._log(f"\nErreur fatale : {e}")
@@ -4136,7 +4158,7 @@ class App(tk.Tk):
         self._extraction_thread.start()
 
     def _stop_extraction(self):
-        self._stop_flag = True
+        self._stop_event.set()
         self._log("\nArrêt demandé...")
 
     def _extraction_done(self, errors=None, synthese_text=""):

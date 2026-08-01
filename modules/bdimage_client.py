@@ -74,7 +74,8 @@ class BdimageClient:
     # ------------------------------------------------------------------
 
     def extraire_pluies(self, date_debut, date_fin, ul, lr, pdt_minutes=60,
-                        output_dir=".", log_fn=None, bande="rr"):
+                        output_dir=".", log_fn=None, bande="rr",
+                        bande_info_out=None):
         """Extrait les pluies spatialisées Antilope sur une bbox.
 
         Arguments:
@@ -102,13 +103,22 @@ class BdimageClient:
 
         # Vérification disponibilité des bandes liquide/solide
         bande_effective = bande
+        fallback_raison = None
         if bande in ("liquide", "solide", "qualite"):
             cutoff = (_ANTILOPE_LIQUIDE_FIRST_15MN if effective_pdt <= 15
                       else _ANTILOPE_LIQUIDE_FIRST_60MN)
-            if sous_type in ("j1", "temps-reel") or date_debut < cutoff:
-                log(f"  ⚠ Bande '{bande}' non disponible sur {type_img}/{sous_type} "
-                    f"avant le {cutoff:%d/%m/%Y} — repli sur 'rr'")
+            if sous_type in ("j1", "temps-reel"):
+                fallback_raison = f"produit {sous_type} (bande liquide non disponible)"
                 bande_effective = "rr"
+                log(f"  ⚠ Bande '{bande}' non disponible sur {type_img}/{sous_type} — repli sur 'rr'")
+            elif date_debut < cutoff:
+                fallback_raison = f"date avant {cutoff:%d/%m/%Y} (disponible depuis cette date)"
+                bande_effective = "rr"
+                log(f"  ⚠ Bande '{bande}' non disponible avant le {cutoff:%d/%m/%Y} — repli sur 'rr'")
+        if bande_info_out is not None:
+            bande_info_out["bande_demandee"]  = bande
+            bande_info_out["bande_effective"] = bande_effective
+            bande_info_out["fallback_raison"] = fallback_raison
 
         return self._extraire_bbox(
             type_img=type_img, sous_type=sous_type,

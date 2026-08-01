@@ -14,7 +14,7 @@ class ExtractionError(Exception):
     pass
 
 
-def run_extraction(config, episodes, options, log_fn, progress_fn=None):
+def run_extraction(config, episodes, options, log_fn, progress_fn=None, stop_fn=None):
     """Lance l'extraction complete pour une liste d'episodes.
 
     Retourne (errors, synthese_text) :
@@ -126,6 +126,10 @@ def run_extraction(config, episodes, options, log_fn, progress_fn=None):
             if progress_fn:
                 progress_fn(idx, total)
 
+            if stop_fn and stop_fn():
+                log_fn(f"\nExtraction interrompue apres l'episode {idx}/{total}.")
+                break
+
     finally:
         if phyc:
             phyc.logout()
@@ -170,7 +174,8 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
             lacunes, lacunes_total = _check_lacunes(dates_grd, pdt_p)
             synthese["Antilope"] = {"ok": True, "n": len(dates_grd),
                                     "lacunes": lacunes, "lacunes_total": lacunes_total,
-                                    "pdt": pdt_p, "unite": "pas de temps (.grd)"}
+                                    "pdt": pdt_p, "unite": "pas de temps (.grd)",
+                                    "bande_mode": "totale"}
             # Calcul pluie moyenne BV
             os.makedirs(bv_dir, exist_ok=True)
             out_pluie_bv = os.path.join(bv_dir, f"AntJ1_BV-Ep_{date_tag}_{nom_station}.csv")
@@ -189,6 +194,7 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
         out_liq = os.path.join(base_out, nom_station, "Pluies", f"AntJ1-Liq-Ep_{date_tag}_{nom_station}")
         log_fn(f"\n[Antilope liquide] pdt={pdt_p}mn -> {out_liq}")
         try:
+            ant_bande_info = {}
             bdi.extraire_pluies(
                 date_debut=date_debut, date_fin=date_fin,
                 ul=ul, lr=lr,
@@ -196,7 +202,20 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
                 output_dir=out_liq,
                 log_fn=log_fn,
                 bande="liquide",
+                bande_info_out=ant_bande_info,
             )
+            dates_grd_liq = _dates_from_grd_dir(out_liq)
+            lacunes_liq, lacunes_liq_total = _check_lacunes(dates_grd_liq, pdt_p)
+            if ant_bande_info.get("bande_effective") == "rr":
+                bande_mode = f"liquide→totale ({ant_bande_info.get('fallback_raison', '?')})"
+            else:
+                bande_mode = "liquide"
+            synthese["Antilope liquide"] = {
+                "ok": True, "n": len(dates_grd_liq),
+                "lacunes": lacunes_liq, "lacunes_total": lacunes_liq_total,
+                "pdt": pdt_p, "unite": "pas de temps (.grd)",
+                "bande_mode": bande_mode,
+            }
             # Calcul pluie moyenne BV liquide
             os.makedirs(bv_dir, exist_ok=True)
             out_liq_bv = os.path.join(bv_dir, f"AntJ1-Liq_BV-Ep_{date_tag}_{nom_station}.csv")
@@ -207,6 +226,7 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
         except Exception as e:
             log_fn(f"  [Antilope liquide] ERREUR : {e}")
             errs.append(f"Antilope liquide : {e}")
+            synthese["Antilope liquide"] = {"ok": False, "erreur": str(e)}
 
     # ── Pluies Panthère ───────────────────────────────────────────────────────
     if options.get("pluies_panthere"):
@@ -447,16 +467,18 @@ def _build_synthese_text(syntheses, duree_s=0):
             lacunes       = info["lacunes"]
             lacunes_total = info.get("lacunes_total", len(lacunes))
             pdt           = info["pdt"]
+            bande_mode = info.get("bande_mode")
+            bande_tag = f" [{bande_mode}]" if bande_mode else ""
             if lacunes_total:
                 trunc = " (>100)" if lacunes_total > _MAX_LACUNES else ""
-                lines.append(f"  ✗  {dtype:<12} {n} pts (pdt={pdt}mn) — "
+                lines.append(f"  ✗  {dtype:<12}{bande_tag} {n} pts (pdt={pdt}mn) — "
                              f"{lacunes_total} lacune(s){trunc}")
                 for lac in lacunes[:3]:
                     lines.append(f"       • {lac.strftime('%d/%m/%Y %H:%M')}")
                 if lacunes_total > 3:
                     lines.append(f"       ... +{lacunes_total - 3} autre(s)")
             else:
-                lines.append(f"  ✓  {dtype:<12} {n} pts (pdt={pdt}mn) — serie complete")
+                lines.append(f"  ✓  {dtype:<12}{bande_tag} {n} pts (pdt={pdt}mn) — serie complete")
     lines.append("")
     return "\n".join(lines)
 
