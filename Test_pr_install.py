@@ -101,7 +101,7 @@ def check_project_files():
         os.path.join("modules", "config_manager.py"),
         os.path.join("modules", "csv_loader.py"),
         os.path.join("config", "bbox_bnbv.json"),
-        "aide.html",
+        "aide_v2.html",
     ]
     manquants = []
     for f in attendus:

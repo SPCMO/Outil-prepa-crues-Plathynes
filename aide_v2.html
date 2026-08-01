@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aide — OPALE v2</title>
+<style>
+  :root {
+    --blue-dark: #1A5276; --blue-med: #2E86C1; --blue-light: #D6EAF8;
+    --green-dark: #1D6A39; --green-light: #D5F5E3;
+    --red-dark: #7B241C; --red-light: #FADBD8;
+    --orange: #CA6F1E; --yellow: #D4AC0D;
+    --grey-light: #F4F6F8; --grey-border: #D5D8DC; --text: #212529;
+    --font: 'Segoe UI', Calibri, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); color: var(--text); background: #fff; font-size: 14px; line-height: 1.6; }
+
+  /* ── ONGLETS ── */
+  .tab-bar { display: flex; background: var(--blue-dark); padding: 0 12px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 12px 20px; color: #BDC3C7; cursor: pointer; border: none; background: none;
+    font-size: 13px; font-family: var(--font); border-bottom: 3px solid transparent;
+    transition: color .2s, border-color .2s;
+  }
+  .tab-btn:hover { color: #fff; }
+  .tab-btn.active { color: #fff; border-bottom-color: #F39C12; font-weight: 600; }
+
+  .tab-panel { display: none; padding: 28px 32px; max-width: 960px; margin: 0 auto; }
+  .tab-panel.active { display: block; }
+
+  /* ── TYPOGRAPHIE ── */
+  h1 { font-size: 22px; color: var(--blue-dark); margin-bottom: 8px; }
+  h2 { font-size: 17px; color: var(--blue-dark); margin: 24px 0 8px; border-left: 4px solid var(--blue-med); padding-left: 10px; }
+  h3 { font-size: 14px; color: var(--blue-dark); margin: 16px 0 6px; font-weight: 700; }
+  p { margin-bottom: 10px; }
+  ul, ol { margin: 8px 0 12px 22px; }
+  li { margin-bottom: 4px; }
+  code { font-family: Consolas, monospace; background: #EEF2F7; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+  hr { border: none; border-top: 1px solid var(--grey-border); margin: 20px 0; }
+
+  /* ── CARTES ÉTAPES ── */
+  .step { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 18px; padding: 14px 16px; background: var(--grey-light); border-radius: 8px; border-left: 4px solid var(--blue-med); }
+  .step-num { font-size: 22px; font-weight: 800; color: var(--blue-dark); min-width: 32px; line-height: 1; }
+  .step-content h3 { margin-top: 0; }
+
+  /* ── BADGES ONGLETS APP ── */
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .5px; vertical-align: middle;
+  }
+  .badge-config  { background: #1A5276; color: #fff; }
+  .badge-episode { background: #1D6A39; color: #fff; }
+  .badge-extract { background: #784212; color: #fff; }
+  .badge-visu    { background: #2874A6; color: #fff; }
+  .badge-pluies  { background: #117A65; color: #fff; }
+  .badge-analyse { background: #6C3483; color: #fff; }
+  .badge-plath   { background: #4A235A; color: #fff; }
+
+  /* ── ARCHITECTURE ── */
+  .arch-box {
+    border: 2px solid var(--grey-border); border-radius: 8px; padding: 12px 16px;
+    margin-bottom: 12px; background: #fff;
+  }
+  .arch-box.main-  { border-color: var(--blue-dark); }
+  .arch-box.module { border-color: var(--green-dark); }
+  .arch-box.tool   { border-color: var(--orange); }
+  .arch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .arrow { text-align: center; font-size: 20px; color: #888; margin: 4px 0; }
+  .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .flow-node {
+    padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .fn-ui     { background: var(--blue-light); color: var(--blue-dark); border: 1px solid var(--blue-med); }
+  .fn-mod    { background: var(--green-light); color: var(--green-dark); border: 1px solid var(--green-dark); }
+  .fn-ext    { background: #FDEBD0; color: var(--orange); border: 1px solid var(--orange); }
+  .fn-file   { background: #F9F9F9; color: #555; border: 1px solid #bbb; }
+  .fn-arrow  { font-size: 16px; color: #999; }
+
+  /* ── CHANGELOG ── */
+  .change-entry { margin-bottom: 18px; }
+  .change-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px;
+    font-weight: 700; margin-right: 6px; vertical-align: middle;
+  }
+  .ct-feat { background: #D5F5E3; color: #1D6A39; }
+  .ct-fix  { background: #FADBD8; color: #7B241C; }
+  .ct-ux   { background: #EBF5FB; color: #2E86C1; }
+  .ct-data { background: #FEF9E7; color: #9A7D0A; }
+
+  /* ── DETAIL TABLE ── */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+  th { background: var(--blue-dark); color: #fff; padding: 7px 10px; text-align: left; }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--grey-border); vertical-align: top; }
+  tr:nth-child(even) { background: var(--grey-light); }
+
+  /* ── ALERT ── */
+  .note { padding: 10px 14px; border-radius: 6px; margin: 12px 0; font-size: 13px; }
+  .note-info  { background: var(--blue-light);  border-left: 4px solid var(--blue-med); }
+  .note-warn  { background: #FDEBD0; border-left: 4px solid var(--orange); }
+  .note-ok    { background: var(--green-light); border-left: 4px solid var(--green-dark); }
+
+  /* ── WORKFLOW PLATHYNES ── */
+  .wf-wrap { display:flex; flex-direction:column; align-items:center; gap:0; }
+  .wf-arrow-c { text-align:center; color:#2E86C1; font-size:22px; margin:3px 0; line-height:1; }
+  .wf-arrow-lbl { text-align:center; font-size:10px; color:#888; margin-bottom:2px; }
+  .wf-box-ext { border-radius:8px; padding:11px 18px; min-width:240px; text-align:center; }
+  .wf-box-ext strong { display:block; margin-bottom:5px; font-size:13px; }
+  .wf-box-ext ul { text-align:left; margin:0 0 0 16px; padding:0; font-size:12px; }
+  .wf-box-ext li { margin-bottom:2px; }
+  .wf-plath-create { background:#EBF5FB; border:2px solid #2E86C1; }
+  .wf-plath-calage { background:#EBF5FB; border:2px solid #2E86C1; }
+  .wf-fort         { background:var(--green-light); border:2px solid var(--green-dark); }
+  .wf-opale-outer  { border:3px solid #00B4D8; border-radius:14px; padding:22px 18px 18px; background:#F0FBFF; position:relative; width:100%; max-width:820px; }
+  .wf-opale-lbl    { position:absolute; top:-14px; left:16px; background:#00B4D8; color:#fff; font-weight:700; font-size:12px; padding:2px 14px; border-radius:10px; letter-spacing:1px; }
+  .wf-input-row    { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .wf-input-b      { background:#FDEBD0; border:1.5px solid #E59866; border-radius:6px; padding:7px 12px; font-size:12px; }
+  .wf-input-b strong { display:block; font-size:12px; margin-bottom:2px; }
+  .wf-inner-grid   { display:grid; grid-template-columns:1fr 24px 1fr 24px 1fr; gap:8px; align-items:start; }
+  .wf-col          { display:flex; flex-direction:column; gap:8px; }
+  .wf-mid-arrow    { display:flex; align-items:flex-start; justify-content:center; padding-top:18px; color:#aaa; font-size:18px; }
+  .wf-ib           { border-radius:6px; padding:9px 12px; font-size:12px; }
+  .wf-ib strong    { display:block; margin-bottom:4px; font-size:13px; }
+  .wf-ib em        { font-size:11px; color:#666; display:block; margin-top:3px; }
+  .wf-octave       { background:#FEF9E7; border:1.5px solid #E59866; }
+  .wf-qgis         { background:#EBF5FB; border:1.5px solid #2E86C1; }
+  .wf-bdimg        { background:#E9F7EF; border:1.5px solid #27AE60; }
+  .wf-xsel         { background:#FDE8F0; border:2px dashed #C0392B; }
+  .wf-xisb         { background:#FDE8F0; border:2px solid #C0392B; }
+  .wf-plath-import { background:#F5EEF8; border:2px solid #4A235A; }
+  .wf-loop-note    { display:flex; align-items:center; gap:8px; font-size:11px; color:#888; margin:4px 0; }
+  .wf-loop-arrow   { font-size:20px; color:#2E86C1; }
+</style>
+</head>
+<body>
+
+<div class="tab-bar">
+  <button class="tab-btn" onclick="showTab('install')">⚙️ Installation</button>
+  <button class="tab-btn" onclick="showTab('workflow')">🔄 Workflow calage</button>
+  <button class="tab-btn active" onclick="showTab('tuto')">🎓 Tutoriel utilisateur</button>
+  <button class="tab-btn" onclick="showTab('archi')">🏗️ Architecture</button>
+  <button class="tab-btn" onclick="showTab('archi-visual')">🗺️ Architecture visuelle</button>
+  <button class="tab-btn" onclick="showTab('detail')">🔬 Détail technique</button>
+  <button class="tab-btn" onclick="showTab('changelog')">📋 Historique des évolutions</button>
+  <button class="tab-btn" onclick="showTab('territoire')">🗺️ Bounding box pour un autre territoire</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ INSTALLATION -->
+<div id="tab-install" class="tab-panel">
+  <h1>Installation d'OP<sub>2</sub>ALE</h1>
+  <p>Suivez les étapes ci-dessous pour installer OP<sub>2</sub>ALE sur votre poste.</p>
+
+  <h2>Étape 1 — Copier le dossier OP<sub>2</sub>ALE en local</h2>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h3>Récupérer le dossier <code>Stand alone - OPALE</code></h3>
+      <p><strong>Pour les agents du SPCMO</strong> — depuis le partage réseau interne :</p>
+      <pre style="background:#EEF2F7;padding:10px;border-radius:6px;font-size:12px;font-family:Consolas,monospace">\\10.11.208.239\suivi\Pole_prevision\40_Modèles Opérationnels\20_Modeles_Plathynes\Stand alone - OPALE\</pre>
+      <p><strong>Pour les autres SPC</strong> — depuis le dépôt GitHub public :<br>
+      <a href="https://github.com/SPCMO/Outil-prepa-crues-Plathynes" target="_blank" style="color:#2E86C1">https://github.com/SPCMO/Outil-prepa-crues-Plathynes</a><br>
+      Cliquez sur <strong>Code → Download ZIP</strong>, puis décompressez l'archive à l'emplacement souhaité.</p>
+      <p>Dans les deux cas, copiez l'intégralité du dossier à un emplacement local de votre choix (ex. <code>C:\OPALE\</code> ou <code>D:\Outils\OPALE\</code>). Travaillez toujours depuis cette copie locale — ne lancez pas l'outil directement depuis le réseau.</p>
+    </div>
+  </div>
+
+  <h2>Étape 2 — Lancer le vérificateur d'environnement</h2>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h3>Double-cliquez sur <code>Test_pr_install.bat</code></h3>
+      <p>Une fenêtre de commande s'ouvre et le script enchaîne automatiquement quatre vérifications :</p>
+      <ol>
+        <li><strong>Version Python</strong> — vérifie que Python 3.9 à 3.13 est installé et accessible dans le PATH. Les versions antérieures sont bloquées ; les versions supérieures à 3.13 déclenchent un avertissement (non testées) mais ne bloquent pas.</li>
+        <li><strong>Packages requis</strong> — contrôle la présence et la version minimale de chaque dépendance :
+          <table style="margin-top:8px">
+            <tr><th>Package</th><th>Version min.</th><th>Rôle</th></tr>
+            <tr><td><code>tkinter</code></td><td>stdlib</td><td>Interface graphique</td></tr>
+            <tr><td><code>requests</code></td><td>2.28</td><td>Appels HTTP vers PHyC et BDImage</td></tr>
+            <tr><td><code>lxml</code></td><td>4.9</td><td>Construction des enveloppes SOAP brutes</td></tr>
+            <tr><td><code>zeep</code></td><td>4.2</td><td>Client SOAP (parsing WSDL, authentification)</td></tr>
+            <tr><td><code>matplotlib</code></td><td>3.6</td><td>Graphiques (utilise l'API <code>colormaps[]</code> dispo depuis 3.5)</td></tr>
+          </table>
+        </li>
+        <li><strong>Package optionnel</strong> — <code>geopandas</code> (≥ 0.13) : utilisé uniquement par le script <code>tools/gen_bbox_bnbv.py</code> pour générer les bounding boxes sur un nouveau territoire. <strong>Non nécessaire pour l'utilisation courante.</strong></li>
+        <li><strong>Fichiers du projet</strong> — vérifie la présence de tous les fichiers indispensables :
+          <code>main.py</code>, <code>aide_v2.html</code>, les modules, <code>config/bbox_bnbv.json</code> et le dossier <code>sorties/</code> (créé automatiquement s'il est absent).</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h3>Installation automatique des packages manquants</h3>
+      <p>Si des packages <strong>requis</strong> sont absents, le script propose de les installer automatiquement via <code>pip</code> :</p>
+      <pre style="background:#EEF2F7;padding:10px;border-radius:6px;font-size:12px;font-family:Consolas,monospace">  Voulez-vous installer les packages REQUIS manquants maintenant ? [O/n] :</pre>
+      <p>Répondez <strong>O</strong> (ou Entrée) pour lancer l'installation. Le script relance ensuite une vérification finale et affiche un bilan.</p>
+      <p>Si seuls des packages <strong>optionnels</strong> manquent (ex. <code>geopandas</code>), aucune installation n'est proposée — l'outil fonctionne sans.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h3>Bilan affiché en fin de script</h3>
+      <p>Le script se conclut par un bilan :</p>
+      <ul>
+        <li><strong>[OK] Tout est en ordre</strong> → l'outil peut être lancé via <code>Lancer_OPALE.bat</code>.</li>
+        <li><strong>[!!] Des problèmes ont été détectés</strong> → consultez les lignes <code>[ERR]</code> pour identifier ce qui manque.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note note-warn">
+    <strong>⚠️ Si pip ne parvient pas à télécharger les packages (erreur réseau / timeout)</strong><br><br>
+    Le réseau <strong>RIE</strong> filtre les accès à Internet et bloque PyPI (le dépôt de packages Python). Pour installer les dépendances, vous devez <strong>sortir du RIE</strong> le temps de l'installation :
+    <ol style="margin-top:10px">
+      <li>Branchez la <strong>clé 5G</strong> sur votre PC.</li>
+      <li><strong>Débranchez le câble réseau RJ45</strong> du PC (ou désactivez la carte réseau filaire dans les paramètres Windows).</li>
+      <li>Relancez <code>Test_pr_install.bat</code> et répondez <strong>O</strong> à la proposition d'installation — pip passera alors par la connexion 5G pour accéder à PyPI.</li>
+      <li>Une fois les packages installés, rebranchez le câble RJ45 et débranchez la clé 5G.</li>
+    </ol>
+    <p style="margin-top:8px">⚠️ Ne laissez pas votre PC connecté simultanément au RIE et à Internet sans autorisation — respectez la politique de sécurité de votre entité.</p>
+  </div>
+
+  <h2>Étape 5 — Lancer OP<sub>2</sub>ALE</h2>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <h3>Double-cliquez sur <code>Lancer_OPALE.bat</code></h3>
+      <p>L'interface graphique s'ouvre. Configurez ensuite votre station dans l'onglet <span class="badge badge-config">Configuration</span> (voir le <strong>Tutoriel utilisateur</strong>).</p>
+      <p>En cas d'erreur au démarrage, le bat affiche un message vous invitant à relancer <code>Test_pr_install.bat</code> pour diagnostiquer.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════ WORKFLOW CALAGE -->
+<div id="tab-workflow" class="tab-panel">
+  <h1>Workflow — Calage sous Plathynes</h1>
+  <p>Vue d'ensemble du processus de calage hydrologique. OP<sub>2</sub>ALE intervient dans la <strong>phase de préparation des données</strong> (encadré bleu/cyan). Les étapes en <span style="display:inline-block;width:26px;height:10px;border:2px dashed #C0392B;background:#FFF0F5;border-radius:3px;vertical-align:middle"></span> rose tiretés sont répétées autant de fois qu'il y a de crues de calage.</p>
+
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 675" style="width:100%;max-width:900px;display:block;margin:0 auto;font-family:'Segoe UI',Arial,sans-serif">
+    <defs>
+      <marker id="wf-arr" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto">
+        <polygon points="0 0, 9 3.5, 0 7" fill="#777"/>
+      </marker>
+      <marker id="wf-arr-b" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto">
+        <polygon points="0 0, 9 3.5, 0 7" fill="#2E86C1"/>
+      </marker>
+    </defs>
+
+    <!-- ══ ENCADRÉ OPALE — remonté, libellé bien visible ══ -->
+    <rect x="205" y="22" width="406" height="436" rx="8"
+          fill="rgba(0,180,216,0.05)" stroke="#00B4D8" stroke-width="2.5"/>
+    <rect x="210" y="8" width="64" height="22" rx="11" fill="#00B4D8"/>
+    <text x="242" y="24" text-anchor="middle" fill="white" font-size="12" font-weight="700">OPALE</text>
+
+    <!-- ══ ROSE/TIRETÉS B2 — OCTAVE : 8 px de marge autour du bloc ══ -->
+    <!-- B2 sera en y=40,h=95 → pink y=32,h=111 -->
+    <rect x="212" y="32" width="178" height="111" rx="7"
+          fill="rgba(253,232,240,0.45)" stroke="#C0392B" stroke-width="2" stroke-dasharray="7,4"/>
+    <rect x="278" y="26" width="96" height="13" rx="6" fill="#C0392B"/>
+    <text x="326" y="36.5" text-anchor="middle" fill="white" font-size="9" font-weight="700">× nb crues de calage</text>
+
+    <!-- ══ ROSE/TIRETÉS B4 — ASPIMAGE : 8 px de marge autour du bloc ══ -->
+    <!-- B4 sera en y=156,h=75 → pink y=148,h=91 -->
+    <rect x="408" y="148" width="188" height="91" rx="7"
+          fill="rgba(253,232,240,0.45)" stroke="#C0392B" stroke-width="2" stroke-dasharray="7,4"/>
+    <rect x="454" y="142" width="96" height="13" rx="6" fill="#C0392B"/>
+    <text x="502" y="152.5" text-anchor="middle" fill="white" font-size="9" font-weight="700">× nb crues de calage</text>
+
+    <!-- ══ ROSE/TIRETÉS B6 — PLATHYNES Ajout evt : 8 px de marge autour du bloc ══ -->
+    <!-- B6 sera en y=298,h=120 → pink y=290,h=136 -->
+    <rect x="212" y="290" width="390" height="136" rx="7"
+          fill="rgba(253,232,240,0.45)" stroke="#C0392B" stroke-width="2" stroke-dasharray="7,4"/>
+    <rect x="358" y="284" width="96" height="13" rx="6" fill="#C0392B"/>
+    <text x="406" y="294.5" text-anchor="middle" fill="white" font-size="9" font-weight="700">× nb crues de calage</text>
+
+    <!-- ══ B1 — Sélection des crues (hors OPALE) ══ -->
+    <rect x="10" y="42" width="178" height="80" rx="6" fill="#FDEBD0" stroke="#E59866" stroke-width="1.5"/>
+    <text x="99" y="62" text-anchor="middle" font-size="11" font-weight="700" fill="#7D4B00">Sélection des crues</text>
+    <line x1="17" y1="68" x2="181" y2="68" stroke="#E59866" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="19" y="83" text-anchor="start" font-size="10" fill="#7D4B00">→ Sélection épisodes de crues</text>
+    <text x="19" y="98" text-anchor="start" font-size="10" fill="#9A5B00">→ Catalogue *.csv</text>
+    <!-- Flèche B1 → B2 -->
+    <line x1="188" y1="83" x2="213" y2="83" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+
+    <!-- ══ B2 — OCTAVE y=40 (dans pink y=32) ══ -->
+    <rect x="220" y="40" width="162" height="95" rx="5" fill="#FEF9E7" stroke="#E59866" stroke-width="1.5"/>
+    <text x="301" y="60" text-anchor="middle" font-size="11" font-weight="700" fill="#7D4B00">OCTAVE</text>
+    <line x1="228" y1="66" x2="374" y2="66" stroke="#E59866" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="301" y="81" text-anchor="middle" font-size="10" fill="#555">Extraction Q + ctrl lacunes</text>
+    <text x="301" y="95" text-anchor="middle" font-size="10" fill="#555">Visualisation HU</text>
+    <text x="301" y="109" text-anchor="middle" font-size="10" fill="#888">(OCTAVE ou SN)</text>
+
+    <!-- "+" B2/B3 sur fond blanc -->
+    <circle cx="301" cy="143" r="11" fill="white" stroke="#ccc" stroke-width="1"/>
+    <text x="301" y="149" text-anchor="middle" font-size="17" font-weight="700" fill="#777">+</text>
+
+    <!-- ══ B3 — QGIS y=156 (pas de pink, une seule fois) ══ -->
+    <rect x="220" y="156" width="162" height="68" rx="5" fill="#EBF5FB" stroke="#2E86C1" stroke-width="1.5"/>
+    <text x="301" y="176" text-anchor="middle" font-size="11" font-weight="700" fill="#1A5276">QGIS</text>
+    <line x1="228" y1="182" x2="374" y2="182" stroke="#2E86C1" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="301" y="197" text-anchor="middle" font-size="10" fill="#555">Définition Bounding Box BV</text>
+    <text x="301" y="212" text-anchor="middle" font-size="10" fill="#888">(emprise BV + marge)</text>
+    <!-- Flèches B2+B3 → B4 en Y : branche B2 descend jusqu'au niveau B3, puis merge → B4 -->
+    <path d="M 382,87 L 402,87 L 402,190 L 414,190"
+          stroke="#777" stroke-width="1.5" fill="none" marker-end="url(#wf-arr)"/>
+    <line x1="382" y1="190" x2="402" y2="190" stroke="#777" stroke-width="1.5"/>
+
+    <!-- ══ B4 — ASPIMAGE y=156 (dans pink y=148) ══ -->
+    <rect x="416" y="156" width="172" height="75" rx="5" fill="#E9F7EF" stroke="#27AE60" stroke-width="1.5"/>
+    <text x="502" y="176" text-anchor="middle" font-size="11" font-weight="700" fill="#1D6A39">ASPIMAGE</text>
+    <line x1="424" y1="182" x2="580" y2="182" stroke="#27AE60" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="502" y="197" text-anchor="middle" font-size="10" fill="#555">Extraction pluies spatialisées</text>
+    <text x="502" y="212" text-anchor="middle" font-size="10" fill="#555">+ contrôle lacunes</text>
+    <!-- Flèche B4 → B5 (sort d'OPALE) -->
+    <line x1="588" y1="193" x2="619" y2="193" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+
+    <!-- ══ B5 — PLATHYNES Création modèle y=156 (hors OPALE) ══ -->
+    <rect x="622" y="156" width="242" height="108" rx="5" fill="#F5EEF8" stroke="#4A235A" stroke-width="1.5"/>
+    <text x="743" y="176" text-anchor="middle" font-size="11" font-weight="700" fill="#4A235A">PLATHYNES</text>
+    <text x="743" y="191" text-anchor="middle" font-size="10.5" fill="#4A235A">Création d'un nouveau modèle</text>
+    <line x1="630" y1="197" x2="856" y2="197" stroke="#C8A9D8" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="633" y="213" text-anchor="start" font-size="10" fill="#555">→ Création du modèle</text>
+    <text x="633" y="229" text-anchor="start" font-size="10" fill="#555">→ Ajout MNT</text>
+    <text x="633" y="245" text-anchor="start" font-size="10" fill="#555">→ Ajout masque</text>
+    <!-- Flèche B5 → B6 : bas B5 → mi-hauteur droite B6 -->
+    <path d="M 743,264 L 743,358 L 602,358"
+          stroke="#777" stroke-width="1.5" fill="none"
+          marker-end="url(#wf-arr)"/>
+
+    <!-- ══ B6 — PLATHYNES Ajout evt y=298 (dans pink y=290) ══ -->
+    <rect x="220" y="298" width="378" height="120" rx="5" fill="#F5EEF8" stroke="#4A235A" stroke-width="1.5"/>
+    <text x="409" y="318" text-anchor="middle" font-size="11" font-weight="700" fill="#4A235A">PLATHYNES — Ajout par évènement</text>
+    <line x1="228" y1="324" x2="590" y2="324" stroke="#C8A9D8" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="230" y="340" text-anchor="start" font-size="9.5" fill="#555">→ Pluies, ajout manuel + pas de temps + création *.mrr</text>
+    <text x="230" y="355" text-anchor="start" font-size="9.5" fill="#555">→ Q + définition format colonnes</text>
+    <text x="230" y="370" text-anchor="start" font-size="9.5" fill="#555">→ Paramétrages des différents pas de temps (calcul, sorties, bilans)</text>
+    <text x="230" y="385" text-anchor="start" font-size="9.5" fill="#555">→ Définition du HU comme paramètre évènementiel + saisie HU initial</text>
+
+    <!-- Flèche B6 bas → B7 haut -->
+    <line x1="409" y1="420" x2="409" y2="488" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+
+    <!-- ══ B7 — PLATHYNES Calage des paramètres (hors OPALE) ══ -->
+    <rect x="253" y="490" width="312" height="73" rx="6" fill="#EBF5FB" stroke="#2E86C1" stroke-width="1.5"/>
+    <text x="409" y="512" text-anchor="middle" font-size="11" font-weight="700" fill="#1A5276">PLATHYNES</text>
+    <text x="409" y="528" text-anchor="middle" font-size="10.5" fill="#1A5276">Calage des paramètres</text>
+    <text x="409" y="544" text-anchor="middle" font-size="10" fill="#555">(fonctions de régression…)</text>
+    <!-- Flèche B7 → B8 -->
+    <line x1="409" y1="563" x2="409" y2="593" stroke="#777" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+
+    <!-- ══ B8 — POM (hors OPALE) ══ -->
+    <rect x="295" y="595" width="228" height="58" rx="6" fill="#D5F5E3" stroke="#1D6A39" stroke-width="1.5"/>
+    <text x="409" y="619" text-anchor="middle" font-size="11" font-weight="700" fill="#1D6A39">POM</text>
+    <text x="409" y="635" text-anchor="middle" font-size="10.5" fill="#1D6A39">Mise en POM du modèle calé</text>
+
+    <!-- ══ LÉGENDE ══ -->
+    <text x="10" y="668" font-size="10" fill="#888" font-style="italic">Légende :</text>
+    <rect x="68" y="659" width="14" height="10" rx="2" fill="rgba(0,180,216,0.08)" stroke="#00B4D8" stroke-width="1.5"/>
+    <text x="86" y="668" font-size="10" fill="#555">Étapes prises en charge par OP₂ALE</text>
+    <rect x="298" y="659" width="14" height="10" rx="2" fill="rgba(253,232,240,0.5)" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <text x="316" y="668" font-size="10" fill="#555">Répété × nb crues de calage</text>
+  </svg>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ TUTORIEL -->
+<div id="tab-tuto" class="tab-panel active">
+  <h1>Guide d'utilisation — OP<sub>2</sub>ALE <small style="font-size:0.5em;font-weight:400;color:#555">Outil pour Plathynes de Préparation et d'Analyse pour le caLage d'Épisodes</small></h1>
+  <p>Ce guide vous accompagne pas à pas dans l'utilisation d'OP<sub>2</sub>ALE, de la configuration initiale jusqu'à l'import des épisodes de crue dans Plathynes.</p>
+
+  <h2>Avant de commencer</h2>
+  <p>OP<sub>2</sub>ALE nécessite :</p>
+  <ul>
+    <li>Un accès au réseau <strong>RIE</strong> (réseau interne SPC / SCV)</li>
+    <li>Un compte <strong>PHyC</strong> (identifiant + mot de passe)</li>
+    <li>Le <strong>code station hydrométrie</strong> de votre site (format <code>Yxxxxxxxxx</code>, 10 caractères — ex. <code>Y027401001</code> pour Le Boulou). Le code site à 8 caractères est dérivé automatiquement des 7 premiers chiffres. Le préfixe (<code>Y</code> par défaut) et la longueur du suffixe sont configurables dans l'onglet ⚙ Paramétrage.</li>
+    <li>Le <strong>code BNBV</strong> du bassin versant pour les pluies/HU (format <code>MOxxxxxx</code>). Le préfixe (<code>MO</code> par défaut) est configurable dans l'onglet ⚙ Paramétrage. <em>En PHyC v2.1, le code BNBV est récupéré automatiquement lors du test de connexion</em> (bouton "Récup info PHyC") — il n'est plus nécessaire de le saisir manuellement.</li>
+  </ul>
+  <div class="note note-ok">
+    <strong>La bounding box est précalculée — aucune saisie requise.</strong><br>
+    Le fichier <code>config/bbox_bnbv.json</code> contient déjà les coordonnées d'extraction (Lambert 93, marge de 5 km) pour l'ensemble des bassins versants du territoire <strong>SPCMO</strong>. Lorsque vous saisissez un code BNBV, la bounding box est chargée automatiquement. La marge de 5 km autour de chaque bassin garantit que les pixels de bordure BDImage sont inclus.
+  </div>
+  <div class="note note-info">
+    <strong>Modifier la marge de la bounding box :</strong> La marge par défaut est de <strong>5 000 m (5 km)</strong>. Pour l'ajuster, modifiez la constante <code>MARGE_M</code> dans <code>tools/gen_bbox_bnbv.py</code> (ex. <code>MARGE_M = 3000</code> pour 3 km), puis relancez le script pour régénérer <code>config/bbox_bnbv.json</code>.
+  </div>
+
+  <h2>Étape 1 — Configuration initiale</h2>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h3>Onglet <span class="badge badge-config">Configuration</span></h3>
+      <p><strong>Section Station hydrologique :</strong> saisissez le <strong>code station hydrométrie</strong> complet sans le préfixe (<code>Y</code> par défaut, voir onglet ⚙ Paramétrage) — 9 chiffres (ex. <code>027401001</code> pour Le Boulou, soit <code>Y027401001</code>). Le <em>code site</em> à 8 caractères (<code>Y0274010</code>) est dérivé automatiquement des 7 premiers chiffres et utilisé pour les requêtes débit Q. Saisissez également le code BNBV sans le préfixe (<code>MO</code> par défaut), et le nom de la station. La bounding box est chargée automatiquement à partir du code BNBV.</p>
+      <p><strong>Section PHyC :</strong> l'URL WSDL est pré-remplie avec la version 2.1 (<code>bdtrv21.wsdl</code>). Saisissez votre identifiant et mot de passe. Cliquez <em>"Récup info PHyC"</em> pour valider la connexion : le libellé de la station <strong>et le code BNBV</strong> sont récupérés automatiquement depuis PHyC v2.1 et pré-remplis (le BNBV n'est écrasé que s'il est vide). Si vous avez un ancien <code>config.json</code> avec l'URL <code>bdtr.wsdl</code> (v1.1 obsolète), elle est migrée automatiquement au démarrage.</p>
+      <p><strong>Section Seuils de vigilance :</strong> choisissez d'abord la <strong>grandeur</strong> (Q en m³/s ou H en m). Saisissez les 6 seuils (Jaune, Orange, Rouge et leurs zones de transition ZT) dans l'unité correspondante. Pour Q, la requête PHyC utilise le code site (8 car.) ; pour H, elle utilise le code station complet (10 car.). Récupérez-les automatiquement via <em>"Récupérer depuis PHyC"</em>, puis cliquez <em>"Appliquer"</em>. Les deux jeux de seuils (Q et H) sont stockés indépendamment dans la configuration.</p>
+      <p>Cliquez <strong>"Enregistrer la configuration"</strong> pour sauvegarder.</p>
+    </div>
+  </div>
+
+  <h2>Étape 2 — Définir les épisodes à traiter</h2>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h3>Onglet <span class="badge badge-episode">Épisodes</span></h3>
+      <p><strong>Option A — Chargement depuis un catalogue :</strong> cliquez <em>"Charger CSV épisodes..."</em> pour importer un catalogue issu d'OCTAVE ou tout CSV avec colonnes date début / date fin. Les épisodes s'affichent dans le tableau.</p>
+      <p><strong>Option B — Ajout manuel :</strong> saisissez une date de début et une date de fin (format <code>JJ/MM/AAAA HH:MM</code>), la durée se calcule automatiquement. Cliquez <em>"+ Ajouter"</em>.</p>
+      <p>Sélectionnez les épisodes à extraire (Ctrl+clic ou <em>"Tout sélectionner"</em>).</p>
+      <p>La colonne <strong>Vig. max.</strong> indique le niveau de vigilance maximal atteint pour chaque épisode parmi les 7 niveaux possibles : <strong>Vert</strong> (sous tous les seuils), ZT Jaune, Jaune, ZT Orange, Orange, ZT Rouge, Rouge. La ligne est colorée en conséquence (vert / tons jaunes / tons oranges / tons rouges).</p>
+      <p>Cliquez <em>"↻ Rafraîchir"</em> pour mettre à jour la colonne Vig. max. après une extraction ou un changement de seuils.</p>
+      <p><strong>Filtrer les épisodes :</strong> le bandeau bleu sous le titre propose des filtres permanents (toujours visibles) :</p>
+      <ul>
+        <li><strong>Date début / Date fin</strong> — saisissez une date partielle (ex. <code>2020</code>) pour ne garder que les épisodes dont la date de début ou fin contient cette chaîne.</li>
+        <li><strong>Vig. max.</strong> — cases à cocher pour chacun des 7 niveaux ; décochez un ou plusieurs niveaux pour masquer les épisodes correspondants. Le filtre s'applique instantanément.</li>
+        <li>Cliquez <em>"Réinitialiser"</em> pour remettre tous les filtres à zéro.</li>
+      </ul>
+      <p><strong>Trier les colonnes :</strong> cliquez sur un en-tête de colonne (#, Date début, Date fin, Durée, Vig. max.) pour trier les épisodes dans l'ordre croissant, puis décroissant (▲ / ▼). Un nouveau clic sur le même en-tête inverse l'ordre.</p>
+    </div>
+  </div>
+
+  <h2>Étape 3 — Lancer l'extraction</h2>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h3>Onglet <span class="badge badge-extract">Extraction</span></h3>
+      <p>Cochez les types de données à télécharger :</p>
+      <ul>
+        <li><strong>Antilope</strong> (case à cocher, pas de temps configurable) — pluies spatialisées temps-différé. Génère des fichiers <code>.grd</code> (ESRI ASCII Grid) dans <code>{station}/Pluies/AntJ1-Ep_{date}/</code> et un CSV de pluie moyenne BV dans <code>Pluies temps moy BV pour graph/AntJ1_BV-Ep_{date}.csv</code>. <em>Produit BDImage : <code>antilope/j1</code> (60 mn) avant le 12/10/2020 ; <code>antilope/france-td-60mn</code> ou <code>france-td-15mn</code> après.</em> Les fichiers <code>.grd</code> sont écrits avec les <strong>valeurs natives BDImage en 1/10 mm</strong> (entiers) pour que Plathynes, qui divise par 10 à la lecture, obtienne des millimètres. La conversion en mm pour l'affichage (hyétogrammes, cumuls, visu spatialisée) est effectuée par l'outil (÷ 10).
+          <br><br><strong>Bande Antilope</strong> (radio mutuellement exclusif, sous la case Antilope) :
+          <ul>
+            <li><em>Pluie totale</em> (défaut) — bande <code>rr</code> BDImage, disponible sur toute la chronique.</li>
+            <li><em>Pluie totale + pluie liquide</em> — extrait <strong>en plus</strong> la bande <code>liquide</code> (issue du produit Hydre Météo-France) vers <code>{station}/Pluies/AntJ1-Liq-Ep_{date}/</code> et un CSV <code>AntJ1-Liq_BV-Ep_{date}.csv</code>. Disponible <strong>depuis le 08/01/2025</strong> sur les produits 60 mn, et depuis le 14/09/2024 sur 15 mn. Si la période d'extraction est antérieure à cette date, l'outil replie automatiquement sur la bande <code>rr</code> et le journal indique l'avertissement.</li>
+          </ul>
+        </li>
+        <li><strong>Panthère</strong> (case à cocher, pas de temps fixé à 1 heure — seul produit disponible sur BDImage : <code>panthere/france</code>) — pluies radar temps-différé. Génère des <code>.grd</code> dans <code>{station}/Pluies/Pant-Ep_{date}/</code> et un CSV dans <code>Pluies temps moy BV pour graph/Pant_BV-Ep_{date}.csv</code>. Même convention 1/10 mm que pour Antilope.</li>
+        <li><strong>HU moyen BV</strong> (humidité des sols) — fichier CSV dans <code>{station}/HU/</code>, pas de temps : 1 heure (défaut) ou 1 jour à 06:00.</li>
+        <li><strong>Débits / Hauteurs PHyC</strong> (Q ou H, pas de temps configurable) — fichier TXT dans <code>{station}/Debits/</code>.</li>
+      </ul>
+      <p>Les préférences d'extraction (cases cochées, pas de temps) sont <strong>mémorisées automatiquement</strong> dans <code>config.json</code> à chaque lancement.</p>
+      <p>La barre de boutons propose à gauche <strong>"Lancer l'extraction"</strong> et <strong>"Arrêter"</strong>, et à droite <strong>"Enregistrer la configuration"</strong> et <strong>"ℹ Aide"</strong> (identiques à ceux de l'onglet Configuration). Le journal affiche la progression en temps réel. À la fin, une fenêtre de synthèse récapitule les téléchargements épisode par épisode et indique la <strong>durée totale de l'extraction</strong> (ex. : <em>Chargés en 12 min 34 s</em>).</p>
+      <div class="note note-info">La liste Visualisation s'actualise dès qu'un fichier débit, Antilope ou Panthère est présent — il n'est pas nécessaire d'avoir extrait les 3 types de données pour visualiser un épisode.</div>
+    </div>
+  </div>
+
+  <h2>Étape 4 — Visualiser un épisode</h2>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h3>Onglet <span class="badge badge-visu">Visualisation</span></h3>
+      <p>La liste de gauche affiche les épisodes disponibles, <strong>triés du plus récent au plus ancien</strong>. Chaque ligne débute par une <strong>pastille colorée (●)</strong> dont la couleur indique le niveau de vigilance maximal atteint. Un indicateur entre crochets précise les données disponibles : <code>[Q]</code> débit, <code>[HU]</code> humidité des sols, <code>[Ant]</code> pluie Antilope, <code>[Pan]</code> pluie Panthère. Un épisode peut apparaître dès qu'une seule de ces données est présente. Cliquez sur un épisode pour afficher :</p>
+      <ul>
+        <li><strong>Graphique haut</strong> — Hyétogramme inversé (barres vers le bas) + courbe HU en pointillé rouge.
+          <ul>
+            <li>Si Antilope est disponible : barres <span style="color:#1F618D;font-weight:600">bleues</span> (valeur ≤ seuil) et <span style="color:#7D3C98;font-weight:600">violettes</span> (valeur &gt; seuil), au premier plan (zorder élevé). Si la pluie liquide a été extraite en même temps (option "Pluie totale + pluie liquide"), l'hyétogramme affiche des barres <strong>empilées</strong> : la portion <span style="color:#1F618D;font-weight:600">bleue foncée</span> représente la <strong>pluie liquide</strong> (bande <code>liquide</code>) et la portion <span style="color:#85C1E9;font-weight:600">bleue claire</span> empilée au-dessus représente la <strong>phase solide par différence</strong> (graupel + neige = total − liquide). Le seuil hyétogramme s'applique à la partie liquide.</li>
+            <li>Si Panthère est disponible : barres <span style="color:#CC5500;font-weight:600">orange</span> semi-transparentes en arrière-plan, bordures en pointillés.</li>
+            <li>La <strong>légende</strong> : le <strong>cumul AJ1</strong> est intégré directement dans le label "Antilope BV ≤ seuil mm" sur la même ligne. Le <strong>cumul Pan.</strong> est intégré dans le label "Panthère BV (mm)" avec un tiret de séparation.</li>
+            <li>Les annotations <em>HU début</em> et <em>HU 6h</em> indiquent les humidités clés.</li>
+          </ul>
+        </li>
+        <li><strong>Graphique bas</strong> — Courbe de débit Q avec zones de vigilance colorées. Les annotations <em>Q début</em> et <em>Q max</em> sont affichées avec horodatage.</li>
+      </ul>
+      <p>Le graphique de débit affiche les lignes des <strong>6 seuils de vigilance</strong> (ZT Jaune, Jaune, ZT Orange, Orange, ZT Rouge, Rouge) avec leur valeur en étiquette. Les seuils ZT sont tracés en pointillé/pastel, les seuils principaux en trait plein. <strong>Les étiquettes dont la valeur dépasse la plage visible du graphique sont masquées automatiquement</strong> pour ne pas déborder hors zone.</p>
+      <p>Le champ <strong>"Seuil hyétogramme *"</strong> (défaut 10 mm/pas) détermine la limite entre la coloration bleue et violette d'Antilope, <strong>et recalcule à la volée</strong> l'indicateur de fortes intensités dans l'encart de comparaison (voir ci-dessous).</p>
+      <p><strong>Encart "Antilope vs Panthère"</strong> (bas-droite du graphique haut, visible si les deux produits sont présents) — 4 indicateurs comparatifs, chacun avec la valeur en mm et le pourcentage relatif par rapport à la valeur Antilope au même pas de temps :</p>
+      <ul>
+        <li><em>Écart max 1h</em> — pas de temps où l'écart |Pan.−Ant.| est le plus grand, avec horodatage.</li>
+        <li><em>Cumul 1h max Ant.</em> — écart au pas de temps où Antilope est au pic, avec horodatage.</li>
+        <li><em>3h consécutives max</em> — fenêtre de 3 heures où Antilope est maximale, écart Pan.−Ant. sur cette fenêtre.</li>
+        <li><em>Forte int. (&gt;X mm)</em> — écart moyen de Pan. vs Ant. sur les seuls pas de temps où Antilope dépasse le seuil hyétogramme (recalculé si le seuil est modifié).</li>
+      </ul>
+      <p>Les barres sont colorées en <span style="color:#1F618D;font-weight:600">bleu</span> si Antilope &gt; Panthère, en <span style="color:#CC5500;font-weight:600">orange</span> si Panthère &gt; Antilope. Leur longueur est proportionnelle au maximum observé sur l'ensemble des épisodes (référence globale propre à chaque indicateur). En pied d'encart : <em>"Panthère sous/sur-estime X % des pas de temps (nb : N) soit Y % du cumul global"</em>.</p>
+      <p><strong>Note sur l'astérisque (*) :</strong> ces hyétogrammes sont une <em>reconstitution</em> de la pluie moyenne de bassin versant calculée à partir des pluies spatialisées téléchargées (fichiers <code>.grd</code>). La moyenne est effectuée sur l'ensemble des pixels de la grille (y compris la marge de 5 km de la bounding box). Il ne s'agit pas d'une mesure directe mais d'une estimation spatiale — valable pour Antilope comme pour Panthère.</p>
+      <p>Les deux graphiques partagent la même échelle temporelle (x identique).</p>
+
+      <h3>Cumuls spatialisés (fenêtre dédiée)</h3>
+      <p>Un clic sur le cumul Antilope ou Panthère dans la <strong>légende du graphique</strong> (en haut à droite), ou sur les valeurs d'indices dans l'onglet <strong>Analyse pluies</strong>, ouvre une fenêtre affichant les cumuls spatialisés Antilope et Panthère côte à côte :</p>
+      <ul>
+        <li>Chaque carte affiche le cumul de pluie cumulée sur le bassin versant, masqué hors de l'emprise BV.</li>
+        <li>Le contour du bassin versant est tracé en noir.</li>
+        <li>Le titre de chaque carte mentionne le cumul moyen BV en mm.</li>
+        <li>Une <strong>colorbar commune</strong> (à droite) utilise la <strong>palette « Hydro » du Superviseur national</strong> avec les classes suivantes :</li>
+      </ul>
+      <table>
+        <tr><th>Classe</th><th>Couleur</th></tr>
+        <tr><td>0–2 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#FFFFFF;border:1px solid #ccc;vertical-align:middle"></span> Blanc (pas de pluie significative)</td></tr>
+        <tr><td>2–5 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#55007F;vertical-align:middle"></span> Violet</td></tr>
+        <tr><td>5–10 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#003DB9;vertical-align:middle"></span> Bleu marine</td></tr>
+        <tr><td>10–17 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#2385F5;vertical-align:middle"></span> Bleu</td></tr>
+        <tr><td>17–25 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#77FFF4;vertical-align:middle"></span> Cyan clair</td></tr>
+        <tr><td>25–35 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#00E100;vertical-align:middle"></span> Vert vif</td></tr>
+        <tr><td>35–45 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#458530;vertical-align:middle"></span> Vert foncé</td></tr>
+        <tr><td>45–55 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#F7E44C;vertical-align:middle"></span> Jaune-vert</td></tr>
+        <tr><td>55–70 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#FFBF1D;vertical-align:middle"></span> Jaune-orange</td></tr>
+        <tr><td>70–100 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#FF8202;vertical-align:middle"></span> Orange</td></tr>
+        <tr><td>100–150 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#FF0000;vertical-align:middle"></span> Rouge</td></tr>
+        <tr><td>150–200 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#942503;vertical-align:middle"></span> Brun rouge foncé</td></tr>
+        <tr><td>200–300 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#FF55FF;vertical-align:middle"></span> Magenta</td></tr>
+        <tr><td>&gt; 300 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#FFAAFF;vertical-align:middle"></span> Rose clair</td></tr>
+      </table>
+      <p>Sous la colorbar, une mention indique : <em>Palette « Hydro » / Superviseur national</em>.</p>
+      <p>En bas de la fenêtre, un bandeau affiche les <strong>indices de variabilité spatiale</strong> calculés sur les pixels du bassin versant (voir ci-dessous, onglet Analyse pluies).</p>
+    </div>
+  </div>
+
+  <h2>Étape 5 — Analyser les pluies sur tous les épisodes</h2>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <h3>Onglet <span class="badge badge-pluies">Analyse pluies</span></h3>
+      <p>Cet onglet se remplit automatiquement dès que des épisodes sont disponibles dans le dossier de sorties. Il présente un <strong>tableau récapitulatif de tous les épisodes</strong> détectés :</p>
+      <table>
+        <tr><th>Colonne</th><th>Description</th><th>Couleur / interaction</th></tr>
+        <tr><td>Date épisode</td><td>Label de l'épisode</td><td>Fond coloré par niveau de vigilance max (même palette que la listbox)</td></tr>
+        <tr><td>Q max (m³/s)</td><td>Débit maximum de l'épisode, lu depuis le fichier extrait</td><td>Idem Vig. max.</td></tr>
+        <tr><td>Cumul Antilope (mm)</td><td>Somme des valeurs du CSV <code>AntJ1_BV-Ep_*.csv</code></td><td>Texte toujours <span style="color:#1F618D;font-weight:600">bleu</span></td></tr>
+        <tr><td>Cumul Panthère (mm)</td><td>Somme des valeurs du CSV <code>Pant_BV-Ep_*.csv</code></td><td>Texte toujours <span style="color:#CC5500;font-weight:600">orange</span></td></tr>
+        <tr><td>Écart (%)</td><td>(∑Pan − ∑Ant) / ∑Ant × 100, signe + si Panthère &gt; Antilope</td><td>Bleu si Ant &gt; Pan, orange si Pan &gt; Ant</td></tr>
+        <tr><td>Coeff. Var. (Ant./Pant.) ⓘ</td><td>Coefficient de variation σ/μ sur les pixels BV (Antilope / Panthère)</td><td>Fond coloré selon homogénéité ; <strong>clic</strong> → cumuls spatialisés</td></tr>
+        <tr><td>Gini (Ant./Pant.)</td><td>Coefficient de Gini mesurant la dispersion spatiale (0 = parfait uniforme)</td><td>Fond coloré selon homogénéité ; <strong>clic</strong> → cumuls spatialisés</td></tr>
+        <tr><td>Max/Moy (Ant./Pant.)</td><td>Rapport entre le pixel maximal et la moyenne BV</td><td>Fond coloré selon homogénéité ; <strong>clic</strong> → cumuls spatialisés</td></tr>
+      </table>
+      <p>Les colonnes Cumul et les trois indices affichent <code>—</code> si le fichier ou le masque BV correspondant est absent. En-têtes figés, scrollbar verticale + molette souris. Le tableau est rechargé automatiquement à chaque actualisation de la liste des épisodes.</p>
+
+      <h3>Indices de variabilité spatiale</h3>
+      <p>Les trois colonnes d'indices (soulignées, cliquables) quantifient <strong>l'homogénéité spatiale des cumuls</strong> sur le bassin versant. Chaque cellule affiche la valeur Antilope / la valeur Panthère, avec un fond coloré selon la pire des deux :</p>
+      <table>
+        <tr><th>Gradient</th><th>Coeff. Var.</th><th>Gini</th><th>Max/Moy</th></tr>
+        <tr><td><span style="background:#C8E6C9;color:#2E7D32;padding:1px 6px;border-radius:3px">Très homogène</span></td><td>&lt; 0,10</td><td>&lt; 0,10</td><td>&lt; 1,30</td></tr>
+        <tr><td><span style="background:#E8F5E9;color:#1B5E20;padding:1px 6px;border-radius:3px">Homogène</span></td><td>0,10 – 0,25</td><td>0,10 – 0,20</td><td>1,30 – 1,60</td></tr>
+        <tr><td><span style="background:#FFF9C4;color:#F57F17;padding:1px 6px;border-radius:3px">Modérément hétérogène</span></td><td>0,25 – 0,40</td><td>0,20 – 0,35</td><td>1,60 – 2,00</td></tr>
+        <tr><td><span style="background:#FFE0B2;color:#E65100;padding:1px 6px;border-radius:3px">Hétérogène</span></td><td>0,40 – 0,60</td><td>0,35 – 0,50</td><td>2,00 – 3,00</td></tr>
+        <tr><td><span style="background:#FFCDD2;color:#B71C1C;padding:1px 6px;border-radius:3px">Très hétérogène</span></td><td>&gt; 0,60</td><td>&gt; 0,50</td><td>&gt; 3,00</td></tr>
+      </table>
+      <p>Un clic sur l'une de ces cellules ouvre la <strong>fenêtre des cumuls spatialisés</strong> (Antilope et Panthère côte à côte) avec le bandeau d'indices en bas. Le bouton <strong>ⓘ</strong> dans l'en-tête "Coeff. Var." ouvre une fenêtre d'aide rappelant les formules et les seuils de chaque indice.</p>
+
+      <p><strong>Frise chronologique</strong> (sous le tableau) — diagramme à barres divergentes sur l'ensemble de l'historique :</p>
+      <ul>
+        <li>Axe X = chronologie des épisodes (barres à espacement uniforme, étiquettes de dates)</li>
+        <li>Barres <span style="color:#1F618D;font-weight:600">bleues vers le haut</span> — Antilope &gt; Panthère, hauteur = |écart %|</li>
+        <li>Barres <span style="color:#CC5500;font-weight:600">oranges vers le bas</span> — Panthère &gt; Antilope, hauteur = |écart %|</li>
+        <li>Petite marque grise verticale sur l'axe — épisode sans les deux produits disponibles</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Étape 6 — Caractériser les crues comparativement</h2>
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <h3>Onglet <span class="badge badge-analyse">Caractérisation crues</span></h3>
+      <p>Cliquez <em>"Calculer / Rafraîchir"</em>. Le graphique à bulles affiche tous les épisodes disponibles :</p>
+      <ul>
+        <li><strong>Axe X</strong> — HU de début (humidité du sol avant la crue)</li>
+        <li><strong>Axe Y</strong> — Q max atteint</li>
+        <li><strong>Taille de la bulle</strong> — cumul pluviométrique</li>
+        <li><strong>Couleur</strong> — intensité maximale de pluie</li>
+      </ul>
+      <p>Les lignes médianes délimitent 4 quadrants (sol sec/humide × Q faible/fort). Chaque bulle est étiquetée avec la date et le niveau de vigilance atteint.</p>
+      <p><strong>Filtrer par Vig. max. :</strong> le bandeau supérieur propose des cases à cocher pour les 7 niveaux de vigilance (Vert, ZT Jaune, Jaune, ZT Orange, Orange, ZT Rouge, Rouge), positionnées entre le titre et le bouton Calculer. Décochez un ou plusieurs niveaux pour ne tracer que les épisodes souhaités ; le graphique se met à jour immédiatement.</p>
+    </div>
+  </div>
+
+  <h2>Étape 7 — Importer des crues dans Plathynes</h2>
+  <div class="step">
+    <div class="step-num">7</div>
+    <div class="step-content">
+      <h3>Onglet <span class="badge badge-plath">Import Plathynes</span></h3>
+      <p>Cet onglet permet de générer automatiquement les fichiers nécessaires à Plathynes (`.evt`, `.mrr`, `.mqo`) à partir des données extraites, et de les importer directement dans un projet Plathynes existant.</p>
+
+      <h3>Section "Projet Plathynes cible"</h3>
+      <p>Sélectionnez le fichier <code>.prj</code> du projet Plathynes dans lequel importer les épisodes. Une fois sélectionné, l'outil affiche automatiquement :</p>
+      <ul>
+        <li>Le nom du bassin (<code>Bassin:</code> lu dans le .prj)</li>
+        <li>Le nombre et les noms des épisodes déjà présents dans le projet</li>
+      </ul>
+      <p>Le bouton <strong>↺</strong> (section Dossiers) déclenche le même scan que <em>↻ Rafraîchir la liste</em> de l'onglet Visualisation (<code>_refresh_visu_list</code>), puis met à jour la liste Import Plathynes. La liste Import Plathynes réutilise directement <code>_visu_episodes</code> — aucun scan indépendant.</p>
+
+      <h3>Section "Dossiers"</h3>
+      <p>Deux sous-sections dans un même bandeau :</p>
+      <ul>
+        <li><strong>Sources :</strong> dossier contenant les fichiers <strong>Pluies</strong> extraits (ex. <code>sorties/Sals/Pluies/</code>) et dossier contenant les fichiers <strong>Débits</strong> extraits (ex. <code>sorties/Sals/Debits/</code> et <code>sorties/Sals/HU/</code>). Ces champs sont pré-remplis depuis le dossier de sortie local si la configuration est renseignée.</li>
+        <li><strong>Antilope (pluies à exporter) :</strong> radio mutuellement exclusif — <em>Pluie totale</em> (défaut, dossiers <code>AntJ1-Ep_*</code>) ou <em>Pluie liquide</em> (dossiers <code>AntJ1-Liq-Ep_*</code>, disponibles si l'extraction a été lancée avec l'option "Pluie totale + pluie liquide"). Ce choix détermine quelle série de fichiers <code>.grd</code> sera copiée dans le projet Plathynes lors de l'import.</li>
+        <li><strong>Plathynes :</strong> répertoire d'installation de Plathynes (ex. <code>C:\plathynes_v1.10.2</code>). Utilisé pour trouver <code>plathynes.bat</code> et pour accéder à l'aide en ligne.</li>
+      </ul>
+
+      <h3>Section "Pas de temps de l'évènement (.evt)"</h3>
+      <p>Quatre comboboxes pour configurer les pas de temps (valeurs possibles : 00:15, 00:30, 01:00) :</p>
+      <ul>
+        <li><strong>Forçage</strong> — pas de temps des données de pluie</li>
+        <li><strong>Calcul</strong> — pas de temps interne du modèle</li>
+        <li><strong>Sorties</strong> — pas de temps des résultats exportés</li>
+        <li><strong>Bilans</strong> — pas de temps des bilans hydrologiques</li>
+      </ul>
+      <p>Le bouton <strong>ℹ Aide Plathynes</strong> ouvre <code>TOC_PLATHYNES_new.html</code> dans le navigateur par défaut (si le répertoire Plathynes est renseigné). Ces valeurs sont mémorisées dans <code>config.json</code>.</p>
+
+      <h3>Section "Crues extraites disponibles"</h3>
+      <p>Liste des épisodes détectés dans les dossiers sources. Pour chaque épisode :</p>
+      <ul>
+        <li><strong>Case à cocher</strong> (décochée par défaut) — sélectionner les épisodes à importer</li>
+        <li><strong>Couleur de fond</strong> — même palette que l'onglet Épisodes (vert / jaune / orange / rouge)</li>
+        <li><strong>Grisé et barré</strong> — épisode dont la plage de dates chevauche un épisode déjà présent dans le .prj (non importable sans conflit)</li>
+        <li><strong>Label "déjà importé"</strong> — épisode déjà présent dans le projet (également grisé/barré)</li>
+      </ul>
+      <p>La <strong>molette souris</strong> fonctionne sur la liste lorsque le curseur est dessus. Un <strong>bandeau de filtres</strong> (Vert / ZT Jaune / Jaune / ZT Orange / Orange / ZT Rouge / Rouge + bouton ✕ Reset) permet de filtrer les épisodes ; les épisodes masqués par le filtre sont automatiquement décochés.</p>
+
+      <h3>Import et ouverture</h3>
+      <p>Cliquez <strong>"▶ Importer dans Plathynes"</strong> pour générer les fichiers de chaque épisode coché :</p>
+      <ol>
+        <li><strong>.evt</strong> — fichier de définition de l'évènement avec les dates, les 4 pas de temps configurés, et la valeur d'humidité initiale <strong>HU</strong> (lue depuis la première ligne du fichier <code>HU-Ep_*.csv</code>). Si le fichier HU est absent pour un épisode, ce paramètre est omis mais un <strong>avertissement</strong> est affiché dans le journal en nommant l'épisode concerné.</li>
+        <li><strong>.mrr</strong> — liste des fichiers GRD de pluies observées</li>
+        <li><strong>.mqo</strong> — fichier de débits observés (format Plathynes)</li>
+      </ol>
+      <p>Le projet <code>.prj</code> est mis à jour (nombre d'événements + ligne <code>Evenement:</code>).</p>
+
+      <p>Deux options sont disponibles à droite du bouton d'import (cochées par défaut, mémorisées dans <code>config.json</code>) :</p>
+      <ul>
+        <li><strong>Importer les seuils de vigilance dans Plathynes</strong> — écrit les 6 seuils de vigilance (ZT Jaune, Jaune, ZT Orange, Orange, ZT Rouge, Rouge) à la fin de la ligne <code>Station hydro:</code> du fichier <code>.prj</code>. Les valeurs sont lues depuis la configuration (onglet <span class="badge badge-config">Configuration</span>, section Seuils). Si une ou plusieurs valeurs sont manquantes, un <strong>avertissement</strong> est affiché dans le journal sans bloquer l'import des épisodes.</li>
+        <li><strong>Ouvrir Plathynes avec le projet après l'import</strong> — lance automatiquement Plathynes via <code>plathynes.bat</code> avec le chemin absolu du <code>.prj</code> une fois l'import terminé.</li>
+      </ul>
+
+      <div class="note note-info">
+        <strong>Nommage des épisodes :</strong> le nom de l'évènement intègre la date et le niveau de vigilance maximal. Ex. : <code>10_04_2009_ZT_Jn</code> (ZT Jaune), <code>29_11_2014_ZT_Or</code> (ZT Orange), <code>15_10_2018_ZT_R</code> (ZT Rouge).
+      </div>
+      <div class="note note-warn">
+        <strong>Chevauchements :</strong> les épisodes dont les dates chevauchent des évènements déjà présents dans le .prj sont affichés en grisé/barré. Il est déconseillé de les importer, car Plathynes ne peut pas gérer deux évènements qui se superposent temporellement.
+      </div>
+    </div>
+  </div>
+
+  <h2>Étape 8 — Adapter les préfixes (optionnel)</h2>
+  <div class="step">
+    <div class="step-num">8</div>
+    <div class="step-content">
+      <h3>Onglet <span class="badge" style="background:#154360;color:#fff">⚙ Paramétrage</span></h3>
+      <p>Cet onglet (fond sombre, visuellement séparé) permet d'adapter l'outil à un autre territoire sans modifier le code source :</p>
+      <ul>
+        <li><strong>Préfixe du code station hydrométrie</strong> — lettre ou chaîne précédant les chiffres du code station (ex. <code>Y</code> pour les stations du SPCMO).</li>
+        <li><strong>Nombre de chiffres</strong> — longueur du suffixe numérique (9 par défaut). Le code site est automatiquement déduit : préfixe + (n-2) premiers chiffres.</li>
+        <li><strong>Préfixe du code BNBV</strong> — préfixe des bassins versants (ex. <code>MO</code> pour SPCMO).</li>
+      </ul>
+      <p>Cliquez <em>"Enregistrer le paramétrage"</em>. Les labels de l'onglet Configuration se mettent à jour immédiatement. Vérifiez ensuite que les codes station et BNBV saisis sont cohérents avec les nouveaux préfixes.</p>
+    </div>
+  </div>
+
+  <h2>Conseils pratiques</h2>
+  <ul>
+    <li>Pour les stations sans seuils PHyC, saisissez les valeurs manuellement dans Configuration puis cliquez "Appliquer".</li>
+    <li>Si des .grd sont déjà présents, la pluie de bassin (PluieBV-Ep_*.csv) peut être régénérée sans re-télécharger en sélectionnant l'épisode dans Visualisation (auto-génération si manquant).</li>
+    <li>Les fichiers de débit PHyC contiennent des valeurs en m³/s arrondies au pas de temps grille configuré.</li>
+    <li>Utilisez <em>"Tout désélectionner"</em> puis sélectionnez uniquement les épisodes manquants pour une extraction partielle.</li>
+  </ul>
+</div>
+
+<!-- ══════════════════════════════════════════════════ AUTRE TERRITOIRE -->
+<div id="tab-territoire" class="tab-panel">
+  <h1>Bounding box pour un autre territoire</h1>
+  <p>L'outil est pré-configuré pour le territoire du <strong>SPCMO</strong>. Les préfixes de codes station et BNBV se configurent directement depuis l'onglet <strong>⚙ Paramétrage</strong> de l'application, sans modifier le code source. Cette page couvre uniquement la régénération de la bounding box des bassins versants pour un autre territoire.</p>
+
+  <div class="note note-info">
+    <strong>Préfixes et longueurs de codes :</strong> pour adapter le préfixe du code station hydrométrie (ex. <code>Y</code>), le nombre de chiffres, ou le préfixe BNBV (ex. <code>MO</code>), utilisez l'onglet <strong>⚙ Paramétrage</strong> de l'application — aucune modification de code nécessaire.
+  </div>
+
+  <h2>1. Régénérer la bounding box des bassins versants</h2>
+  <p>Le fichier <code>config/bbox_bnbv.json</code> associe chaque code BNBV à ses coordonnées d'extraction (Lambert 93, marge 5 km). Pour un autre territoire :</p>
+  <ol>
+    <li>Procurez-vous le shapefile des BNBV de votre territoire (<code>.shp</code> + <code>.dbf</code>, projection Lambert 93 EPSG:2154, champ <code>IDENTIF</code> contenant les codes BNBV).</li>
+    <li>Placez-le dans un dossier <code>BNBV_MonSPC/</code> à la racine du projet.</li>
+    <li>Éditez <code>tools/gen_bbox_bnbv.py</code> et modifiez les trois variables en tête de fichier :</li>
+  </ol>
+  <pre style="background:#EEF2F7;padding:12px;border-radius:6px;font-size:12px;font-family:Consolas,monospace;overflow-x:auto">SHP     = "../BNBV_MonSPC/BNBV_Bassins_MonSPC.shp"
+DBF     = "../BNBV_MonSPC/BNBV_Bassins_MonSPC.dbf"
+MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)</pre>
+  <ol start="4">
+    <li>Lancez : <code>python tools/gen_bbox_bnbv.py</code> — génère <code>config/bbox_bnbv.json</code>.</li>
+    <li>Redémarrez l'outil : les nouveaux codes BNBV sont automatiquement reconnus.</li>
+  </ol>
+  <div class="note note-warn">Le script lit le shapefile en <strong>natif</strong> (sans geopandas) via les formats binaires .shp/.dbf. Aucune dépendance SIG n'est requise pour cette étape.</div>
+
+  <h3>Fonctionnement interne du script</h3>
+  <p>Pour chaque entité du shapefile :</p>
+  <ol>
+    <li>Lecture du <code>.dbf</code> → codes <code>IDENTIF</code> dans l'ordre des enregistrements.</li>
+    <li>Lecture du <code>.shp</code> → bounding box géométrique brute (Xmin, Ymin, Xmax, Ymax) lue depuis les octets 4–35 de chaque record (doubles big-endian, format ESRI).</li>
+    <li>Extension de <code>MARGE_M</code> mètres dans les 4 directions.</li>
+    <li>Formatage : <code>UL = "Xmin−M,Ymax+M"</code> et <code>LR = "Xmax+M,Ymin−M"</code>.</li>
+  </ol>
+  <div class="note note-info">Pour modifier la marge sur un territoire existant, changez uniquement <code>MARGE_M</code> et relancez le script. Une marge plus petite réduit la zone téléchargée (plus rapide) ; une marge plus grande capture davantage de pixels de bordure.</div>
+
+  <h2>Récapitulatif</h2>
+  <table>
+    <tr><th>Adaptation</th><th>Où le faire</th><th>Ce qu'on change</th></tr>
+    <tr><td>Préfixe code station / nb chiffres / préfixe BNBV</td><td>Onglet <strong>⚙ Paramétrage</strong> de l'application</td><td>Champs visuels — aucun fichier à modifier</td></tr>
+    <tr><td>Bounding box / nouveau territoire</td><td><code>tools/gen_bbox_bnbv.py</code></td><td><code>SHP</code>, <code>DBF</code>, <code>MARGE_M</code></td></tr>
+    <tr><td>Marge bbox uniquement</td><td><code>tools/gen_bbox_bnbv.py</code></td><td><code>MARGE_M = 5000</code> → valeur souhaitée en mètres</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ ARCHITECTURE -->
+<div id="tab-archi" class="tab-panel">
+  <h1>Architecture du code</h1>
+  <p>L'outil est une application Python/tkinter organisée en un point d'entrée (<code>main.py</code>) et plusieurs modules spécialisés.</p>
+
+  <h2>Vue d'ensemble</h2>
+  <div class="flow">
+    <div class="flow-node fn-ui">main.py<br><small>GUI tkinter</small></div>
+    <div class="fn-arrow">→</div>
+    <div class="flow-node fn-mod">extractor.py<br><small>Orchestration</small></div>
+    <div class="fn-arrow">→</div>
+    <div class="flow-node fn-mod">phyc_client.py<br><small>SOAP PHyC</small></div>
+    <div class="fn-arrow">+</div>
+    <div class="flow-node fn-mod">bdimage_client.py<br><small>BDImage</small></div>
+    <div class="fn-arrow">→</div>
+    <div class="flow-node fn-file">Fichiers sorties<br><small>.grd / .csv / .txt</small></div>
+  </div>
+  <div class="flow">
+    <div class="flow-node fn-ui">main.py</div>
+    <div class="fn-arrow">←</div>
+    <div class="flow-node fn-mod">config_manager.py<br><small>JSON config</small></div>
+    <div class="fn-arrow">&nbsp;</div>
+    <div class="flow-node fn-mod">csv_loader.py<br><small>Import catalogue</small></div>
+  </div>
+
+  <h2>Structure des dossiers</h2>
+  <div class="arch-grid">
+    <div class="arch-box main-">
+      <strong>📄 main.py</strong><br>
+      Interface graphique tkinter. 8 onglets : Configuration, Épisodes, Extraction, Visualisation, Analyse pluies, Caractérisation crues, Import Plathynes, Paramétrage. Gère les threads pour les appels réseau.
+    </div>
+    <div class="arch-box module">
+      <strong>📁 modules/</strong><br>
+      <code>phyc_client.py</code> — client SOAP PHyC (débits, seuils)<br>
+      <code>bdimage_client.py</code> — client BDImage (pluies, HU)<br>
+      <code>extractor.py</code> — orchestration extraction + synthèse<br>
+      <code>config_manager.py</code> — lecture/écriture JSON<br>
+      <code>csv_loader.py</code> — import catalogue épisodes<br>
+      <code>phyc_diag.py</code> — diagnostic connexion PHyC<br>
+      <code>plathynes_importer.py</code> — génération .evt/.mrr/.mqo + mise à jour .prj
+    </div>
+    <div class="arch-box tool">
+      <strong>📁 config/</strong><br>
+      <code>config.json</code> — configuration persistante<br>
+      <code>bbox_bnbv.json</code> — table bounding-box par BNBV
+    </div>
+    <div class="arch-box tool">
+      <strong>📁 sorties/{station}/</strong> (généré)<br>
+      <code>Pluies/AntJ1-Ep_*/</code> — .grd Antilope<br>
+      <code>Pluies/Pant-Ep_*/</code> — .grd Panthère<br>
+      <code>Pluies temps moy BV pour graph/</code><br>
+      &nbsp;&nbsp;<code>AntJ1_BV-Ep_*.csv</code> — pluie moy. BV Antilope<br>
+      &nbsp;&nbsp;<code>Pant_BV-Ep_*.csv</code> — pluie moy. BV Panthère<br>
+      <code>HU/HU-Ep_*.csv</code> — humidité sols<br>
+      <code>Debits/Q-Ep_*.txt</code> — débits
+    </div>
+  </div>
+
+  <h2>Flux de données — Extraction</h2>
+  <div class="flow">
+    <div class="flow-node fn-ui">Épisode sélectionné</div>
+    <div class="fn-arrow">→</div>
+    <div class="flow-node fn-mod">run_extraction()</div>
+    <div class="fn-arrow">→</div>
+    <div class="flow-node fn-mod">_process_episode()</div>
+  </div>
+  <div class="flow" style="margin-left:60px">
+    <div class="flow-node fn-ext">BDImage SOAP<br>→ .grd pluies</div>
+    <div class="fn-arrow">&nbsp;+&nbsp;</div>
+    <div class="flow-node fn-ext">BDImage SOAP<br>→ HU CSV</div>
+    <div class="fn-arrow">&nbsp;+&nbsp;</div>
+    <div class="flow-node fn-ext">PHyC SOAP<br>→ Q ou H TXT<br><small>(code station 10 car. — Q et H)</small></div>
+    <div class="fn-arrow">&nbsp;+&nbsp;</div>
+    <div class="flow-node fn-mod">calculer_pluie_bv_csv()<br>→ PluieBV CSV</div>
+  </div>
+
+  <h2>Flux de données — Visualisation</h2>
+  <div class="flow">
+    <div class="flow-node fn-file">Debits/Q-Ep_*.txt<br>HU/HU-Ep_*.csv<br>AntJ1_BV-Ep_*.csv<br>Pant_BV-Ep_*.csv</div>
+    <div class="fn-arrow">→</div>
+    <div class="flow-node fn-ui">_plot_episode()</div>
+    <div class="fn-arrow">→</div>
+    <div class="flow-node fn-ui">matplotlib<br>GridSpec 2 sous-graphiques</div>
+  </div>
+
+  <h2>Services externes</h2>
+  <table>
+    <tr><th>Service</th><th>Protocole</th><th>Données</th><th>Port WSDL</th></tr>
+    <tr><td>PHyC</td><td>SOAP/XML (zeep + raw lxml)</td><td>Débits, Seuils vigilance, Libellé station, Code BNBV</td><td>ObservationsHydroPublicationPort, SeuilHydroPublicationPort, SiteHydroPublicationPort</td></tr>
+    <tr><td>BDImage</td><td>SOAP/XML</td><td>Pluies Antilope et Panthère temps-différé (.grd), HU SIM</td><td>getObsByZonesAsync, getObsStatsByZonesAsync</td></tr>
+  </table>
+
+  <h2>Packages Python utilisés</h2>
+  <table>
+    <tr><th>Package</th><th>Version min.</th><th>Rôle dans l'outil</th><th>Installé via</th></tr>
+    <tr>
+      <td><code>tkinter</code></td><td>stdlib</td>
+      <td>Interface graphique complète : fenêtres, onglets, boutons, listes, ScrolledText, Combobox</td>
+      <td>Inclus avec Python</td>
+    </tr>
+    <tr>
+      <td><code>matplotlib</code></td><td>3.6</td>
+      <td>Graphiques dans l'interface : hyétogramme (GridSpec, barres, fill_between), courbe HU (twinx), courbe Q (axhspan, axhline, annotations mathtext), bubble chart Analyse</td>
+      <td><code>pip install matplotlib</code></td>
+    </tr>
+    <tr>
+      <td><code>zeep</code></td><td>4.2</td>
+      <td>Client SOAP pour PHyC (WSDL parsing, authentification, discovery des ports et endpoints). Le transport est étendu (<code>_RieTransport</code>) pour embarquer les schémas W3C inaccessibles depuis le RIE.</td>
+      <td><code>pip install zeep</code></td>
+    </tr>
+    <tr>
+      <td><code>lxml</code></td><td>4.9</td>
+      <td>Construction des enveloppes SOAP brutes (bypass zeep) pour <code>publierObservationsHydroPasDeTemps</code> et <code>publierSeuilHydro</code>, qui utilisent des paramètres PHP <code>?array</code> non supportés par zeep.</td>
+      <td><code>pip install lxml</code></td>
+    </tr>
+    <tr>
+      <td><code>requests</code></td><td>2.28</td>
+      <td>Envoi des requêtes HTTP POST SOAP vers PHyC et BDImage, polling des résultats async BDImage.</td>
+      <td><code>pip install requests</code></td>
+    </tr>
+    <tr>
+      <td><code>xml.etree.ElementTree</code></td><td>stdlib</td>
+      <td>Parsing des réponses XML PHyC (séries de débits, seuils de vigilance) et BDImage (pluies, HU stats).</td>
+      <td>Inclus avec Python</td>
+    </tr>
+    <tr>
+      <td><code>gzip</code> / <code>io</code></td><td>stdlib</td>
+      <td>Compression des requêtes zones BDImage (<code>getObsStatsByZonesAsync</code> exige un fichier zones gzippé en multipart).</td>
+      <td>Inclus avec Python</td>
+    </tr>
+    <tr>
+      <td><code>csv</code> / <code>json</code> / <code>os</code> / <code>threading</code></td><td>stdlib</td>
+      <td>Lecture/écriture CSV (débits, HU, pluie BV), persistance JSON (configuration), gestion des chemins, appels réseau non-bloquants (thread worker extraction).</td>
+      <td>Inclus avec Python</td>
+    </tr>
+    <tr>
+      <td><code>Pillow</code> <em>(optionnel)</em></td><td>9.0</td>
+      <td>Chargement et redimensionnement de <code>logo_OPALE.ico</code> pour l'affichage dans l'onglet Configuration (<code>Image.open</code> + <code>ImageTk.PhotoImage</code>). Si absent, le logo est simplement omis sans erreur.</td>
+      <td><code>pip install pillow</code></td>
+    </tr>
+    <tr>
+      <td><code>geopandas</code> <em>(optionnel)</em></td><td>0.13</td>
+      <td>Non requis pour le fonctionnement principal. Utilisable pour des traitements SIG avancés sur les shapefiles BNBV si besoin (le script <code>gen_bbox_bnbv.py</code> lit les .shp en natif sans geopandas).</td>
+      <td><code>pip install geopandas</code></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ DETAIL TECHNIQUE -->
+<div id="tab-detail" class="tab-panel">
+  <h1>Détail technique</h1>
+
+  <h2>main.py — Interface graphique</h2>
+  <table>
+    <tr><th>Méthode</th><th>Rôle</th><th>Conditions / Dépendances</th></tr>
+    <tr><td><code>_pfx_station</code> / <code>_nb_digits</code> / <code>_pfx_bnbv</code></td><td>Propriétés lisant <code>config_data["parametrage"]</code></td><td>Valeurs par défaut : <code>"Y"</code> / <code>9</code> / <code>"MO"</code>. Utilisées partout à la place des constantes codées en dur.</td></tr>
+    <tr><td><code>_build_tab_config()</code></td><td>Construction onglet Config (5 sections)</td><td>Labels préfixe "Y" et "MO" liés à des <code>StringVar</code> (<code>_var_pfx_station_lbl</code>, <code>_var_pfx_bnbv_lbl</code>) mis à jour lors de la sauvegarde du Paramétrage.</td></tr>
+    <tr><td><code>_save_config()</code></td><td>Lit tous les champs UI → JSON via <code>save_config()</code></td><td>Dérive <code>code_station</code> (10 car.) et <code>code_site</code> (8 car.) depuis les 9 chiffres saisis. Sauve les seuils dans <code>seuils_q</code> ou <code>seuils_h</code> selon la grandeur sélectionnée.</td></tr>
+    <tr><td><code>_refresh_config_ui()</code></td><td>Repopule les champs UI depuis <code>config_data</code></td><td>Charge <code>code_station</code> (fallback sur <code>code_site</code> pour les anciens JSON). Recharge les seuils du jeu actif (Q ou H).</td></tr>
+    <tr><td><code>_recup_seuils_phyc()</code></td><td>Thread : appelle <code>PhycClient.get_seuils_vigilance()</code></td><td>Utilise le code station (10 car.) pour Q et H. Nécessite connexion PHyC active.</td></tr>
+    <tr><td><code>_appliquer_seuils()</code></td><td>Sauve seuils dans <code>config_data</code>, rafraîchit graphique et table épisodes</td><td>Sauve dans <code>seuils_q</code> ou <code>seuils_h</code> selon <code>var_seuils_grandeur</code>.</td></tr>
+    <tr><td><code>_on_seuils_grandeur_change()</code></td><td>Bascule les libellés d'unité (m³/s ↔ m) et recharge les valeurs du jeu JSON correspondant</td><td>Déclenché par le Combobox Q/H dans la section Seuils.</td></tr>
+    <tr><td><code>_build_tab_episodes()</code></td><td>Treeview avec colonnes #, dates, durée, Vig. max. + bandeau de filtres permanent</td><td>Tags couleur pour les 7 niveaux : <code>vig_vert</code>, <code>vig_zt_jaune</code> … <code>vig_rouge</code>. Filtres date début/fin (StringVar) + 7 cases à cocher Vig. max. (BooleanVar).</td></tr>
+    <tr><td><code>_episodes_view()</code></td><td>Applique les filtres date + vig. max. sur la liste brute d'épisodes</td><td>Retourne la liste filtrée ; appelée par <code>_refresh_episodes_table()</code>.</td></tr>
+    <tr><td><code>_sort_by(col)</code></td><td>Trie les épisodes selon la colonne cliquée, inverse l'ordre au 2ᵉ clic</td><td>Met à jour les flèches ▲/▼ dans les en-têtes. Utilise <code>_VIG_ORDER</code> pour le tri de la colonne Vig. max.</td></tr>
+    <tr><td><code>_reset_filtres()</code></td><td>Réinitialise tous les filtres et le tri</td><td>Remet les BooleanVar à True, vide les StringVar, supprime les flèches d'en-tête.</td></tr>
+    <tr><td><code>_vig_max_episode(ep)</code></td><td>Lit le CSV Q ou H, calcule le max, compare aux 6 seuils → (label, tag)</td><td>Utilise <code>seuils_h</code> si grandeur=H, sinon <code>seuils_q</code>. Retourne <code>("Vert", "vig_vert")</code> si sous tous les seuils, <code>("—", "")</code> si fichier absent.</td></tr>
+    <tr><td><code>_vig_label_from_val(val)</code></td><td>Calcule le label de vigilance depuis une valeur numérique</td><td>Utilisé par <code>_collect_analyse_data()</code> pour pré-calculer <code>ep["vig"]</code>. Même logique que <code>_vig_max_episode</code> mais sans lecture de fichier.</td></tr>
+    <tr><td><code>_VIG_ORDER</code></td><td>Dict de tri : "Vert"=0 … "Rouge"=6, "—"=-1</td><td>Attribut de classe, utilisé par <code>_sort_by("Vig. max.")</code>.</td></tr>
+    <tr><td><code>_refresh_episodes_table()</code></td><td>Reconstruit le treeview après filtrage et tri</td><td>Appelle <code>_episodes_view()</code> puis applique le tri actif.</td></tr>
+    <tr><td><code>_build_tab_extraction()</code></td><td>Options, journal ScrolledText, barre de progression</td><td>—</td></tr>
+    <tr><td><code>_lancer_extraction()</code></td><td>Lance <code>run_extraction</code> dans un thread, gère progress + popup synthèse</td><td>Thread worker ; UI mise à jour via <code>after()</code></td></tr>
+    <tr><td><code>_plot_episode(ep)</code></td><td>Trace les 2 sous-graphiques matplotlib pour un épisode</td><td>Marges définies dans <code>GridSpec</code> pour maximiser la zone utile. Panthère tracée en premier (zorder=1, bordures pointillées, alpha 25 %), Antilope par-dessus (zorder=3, bleu <code>#1F618D</code>, alpha 70 %) — l'ordre est impératif pour éviter le mélange alpha gris. Cumuls AJ1 et Pan. intégrés directement dans les labels de la légende (pas de handles fantômes). Appelle <code>_draw_antpan_stats_panel()</code> si les deux produits pluie sont présents.</td></tr>
+    <tr><td><code>_calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals, seuil)</code></td><td>Calcule les 4 indicateurs Antilope vs Panthère pour un épisode</td><td>Aligne sur les timestamps communs. Retourne : écart max 1h, écart au pic Ant., écart sur 3h consécutives max, écart sur fortes intensités (Ant &gt; seuil). Chaque écart accompagné de son % relatif par rapport à la valeur Antilope. Méthode statique.</td></tr>
+    <tr><td><code>_get_global_antpan_max(seuil)</code></td><td>Calcule les maxima globaux des 4 indicateurs sur tous les épisodes</td><td>Résultat mis en cache dans <code>self._antpan_global_max</code>. Cache invalidé si le seuil change (clé <code>_seuil_key</code>) ou si la liste d'épisodes est rechargée. Chaque indicateur possède sa propre référence de normalisation (pas une référence commune).</td></tr>
+    <tr><td><code>_draw_antpan_stats_panel(ax, …, seuil)</code></td><td>Dessine l'encart comparatif Ant./Pan. en bas-droite du graphique haut</td><td>4 lignes de données (label | barre proportionnelle | valeur mm + % | horodatage). Couleur : bleu si Ant &gt; Pan, orange si Pan &gt; Ant. Bouton "Synthèse BV ▶" en haut à droite de l'en-tête (Text matplotlib, détection clic via <code>button_press_event</code> + <code>get_window_extent</code>). Pied d'encart : tendance sur une ligne (% des pas de temps, nb, % cumul global). Coordonnées <code>transAxes</code>, <code>matplotlib.patches</code>.</td></tr>
+    <tr><td><code>_build_tab_pluies()</code></td><td>Initialise l'onglet Analyse pluies et déclenche un premier remplissage</td><td>Appelle immédiatement <code>_refresh_pluies_tab()</code>. Onglet permanent dans le notebook, pas de fenêtre popup.</td></tr>
+    <tr><td><code>_refresh_pluies_tab()</code></td><td>Reconstruit le contenu de l'onglet Analyse pluies (tableau + frise)</td><td>Détruit les widgets existants, relit <code>_visu_episodes</code> et reconstruite le tableau et la frise. Appelé automatiquement à la fin de chaque <code>_refresh_visu_list()</code>.</td></tr>
+    <tr><td><code>_open_synthese_bv_window()</code></td><td>Ouvre la fenêtre modale Toplevel avec tableau + frise chronologique</td><td>Collecte les données en une seule passe (q_max, cumul Ant., cumul Pan.) pour alimenter à la fois le tableau et la frise. En-tête figé dans un Frame séparé hors canvas. Canvas scrollable pour les données. Frise : barres divergentes matplotlib, bleu↑ (Ant&gt;Pan) ou orange↓ (Pan&gt;Ant), largeur proportionnelle à l'intervalle médian entre épisodes.</td></tr>
+    <tr><td><code>_refresh_extraction_ui()</code></td><td>Restaure les préférences d'extraction depuis <code>config.json</code></td><td>Relit les clés <code>config_data["extraction"]</code> pour remettre les cases à cocher et pas de temps à leur dernière valeur sauvegardée.</td></tr>
+    <tr><td><code>_vig_from_file(q_path)</code></td><td>Lit le Q max d'un fichier extrait et retourne le label de vigilance</td><td>Utilisé par <code>_refresh_visu_list()</code> pour colorier chaque item de la listbox.</td></tr>
+    <tr><td><code>_VIG_ITEM_COLORS</code></td><td>Dict label → (bg, fg) pour colorier les items de la listbox Visualisation</td><td>Attribut de classe ; 7 niveaux du vert au rouge foncé.</td></tr>
+    <tr><td><code>_refresh_visu_list()</code></td><td>Scanne le dossier de sortie, trie par date décroissante (date parsée DD/MM/YYYY), colorise chaque item via <code>itemconfig</code></td><td>Préfixe <code>●</code> + couleurs bg/fg selon <code>_vig_from_file()</code>. Génère PluieBV manquants à la volée.</td></tr>
+    <tr><td><code>_collect_analyse_data()</code></td><td>Lit tous les CSV Q/HU/P, extrait métriques clés + pré-calcule <code>ep["vig"]</code></td><td>Le champ <code>vig</code> est calculé par <code>_vig_label_from_val(q_max)</code> et utilisé par le filtre Vig. max. de l'onglet Analyse.</td></tr>
+    <tr><td><code>_plot_analyse(episodes)</code></td><td>Bubble chart avec placement greedy anti-superposition des étiquettes</td><td>Utilise <code>fig.clear()</code> + <code>fig.add_subplot()</code> (et non <code>ax.cla()</code>) pour éviter la duplication de la colorbar entre deux appels. Filtre par <code>ep["vig"]</code> selon les cases Vig. max. cochées. Colorbar intensité (<code>shrink=0.42</code>, ancrée en haut). Légende taille des bulles ("Cumul pluie *") alignée à gauche de la colorbar : position lue via <code>cb.ax.get_window_extent()</code> <em>après</em> un premier <code>draw()</code> (coordonnées pixels → coordonnées figure), placée avec <code>loc="upper left"</code>. Note explicative (25 %, 50 %, 100 % du cumul max) positionnée via <code>leg.get_window_extent().y0</code> après un deuxième <code>draw()</code>. Trois appels <code>draw()</code> au total pour garantir des positions stabilisées.</td></tr>
+    <tr><td><code>_build_tab_parametrage()</code></td><td>Construction de l'onglet Paramétrage (fond sombre <code>#1B2631</code>)</td><td>3 champs : préfixe station, nb chiffres, préfixe BNBV. Note d'information. Bouton "Enregistrer".</td></tr>
+    <tr><td><code>_refresh_parametrage_ui()</code></td><td>Repopule les champs depuis <code>config_data["parametrage"]</code></td><td>Appelée au chargement de la config.</td></tr>
+    <tr><td><code>_save_parametrage()</code></td><td>Valide et persiste le paramétrage, met à jour les labels dynamiques de l'onglet Configuration</td><td>Écrit dans <code>config_data["parametrage"]</code>, appelle <code>save_config()</code>, rafraîchit <code>_var_pfx_station_lbl</code>, <code>_var_pfx_bnbv_lbl</code> et le texte d'aide.</td></tr>
+  </table>
+
+  <h2>modules/plathynes_importer.py</h2>
+  <table>
+    <tr><th>Fonction</th><th>Rôle</th><th>Notes</th></tr>
+    <tr><td><code>lire_info_projet(prj_path)</code></td><td>Lit le fichier <code>.prj</code> : bassin, nombre d'évènements, liste des noms</td><td>Retourne un dict <code>{"bassin", "evenements": [...]}</code>. Utilisé pour détecter les épisodes déjà importés et construire les chemins cibles.</td></tr>
+    <tr><td><code>lire_plages_evenements(prj_path, prj_info)</code></td><td>Lit les dates début/fin de tous les <code>.evt</code> du projet</td><td>Retourne une liste de tuples <code>(datetime, datetime)</code>. Parse les lignes <code>Date de debut:</code> et <code>Date de fin:</code> dans chaque <code>.evt</code>.</td></tr>
+    <tr><td><code>_dates_se_chevauchent(deb1, fin1, plages)</code></td><td>Détecte si l'intervalle [deb1, fin1] chevauche l'une des plages existantes</td><td>Condition : <code>deb1 ≤ fin2 AND fin1 ≥ deb2</code>.</td></tr>
+    <tr><td><code>_lire_dates_q(q_src)</code></td><td>Retourne (date_debut, date_fin) depuis un fichier <code>Q-Ep_*.txt</code></td><td>Format attendu : <code>DD/MM/YYYY HH:MM;val</code>. Première et dernière ligne de données.</td></tr>
+    <tr><td><code>_lire_hu_debut(hu_src)</code></td><td>Retourne la première valeur <code>HU_moy</code> du fichier <code>HU-Ep_*.csv</code></td><td>Retourne <code>None</code> si le fichier est absent ou vide. Cette valeur alimente le paramètre évènementiel HU dans le <code>.evt</code>.</td></tr>
+    <tr><td><code>_generer_evt(...)</code></td><td>Génère le fichier <code>.evt</code> complet pour un évènement</td><td>Paramètres : nom, dates, chemins <code>.mrr</code>/<code>.mqo</code>, 4 pas de temps, valeur HU. Si HU disponible : ajoute la section <code># Parameters</code> avec <code>Parametre evenementiel: U &lt;val&gt; HU</code>. Sinon : avertissement via <code>log_fn(..., "avert")</code>. Chemins en slashes Unix.</td></tr>
+    <tr><td><code>importer_evenement(...)</code></td><td>Orchestre l'import complet d'un épisode dans le projet Plathynes</td><td>Étapes : (1) créer le dossier <code>Ev_NOM/</code>, (2) copier les <code>.grd</code>, (3) générer le <code>.mqo</code>, (4) générer le <code>.mrr</code>, (5) générer le <code>.evt</code>, (6) mettre à jour le <code>.prj</code>. Reçoit les 4 pas de temps comme paramètres.</td></tr>
+    <tr><td><code>nom_evt_from_date_vig(date_str, vig)</code></td><td>Construit le nom normalisé de l'évènement</td><td>Format : <code>DD_MM_YYYY_&lt;suffixe_vig&gt;</code>. Mapping vigilance : Rouge→R, ZT Rouge→ZT_R, Orange→Or, ZT Orange→ZT_Or, Jaune→Jn, ZT Jaune→ZT_Jn, Vert→Vt.</td></tr>
+  </table>
+
+  <h2>modules/phyc_client.py</h2>
+  <table>
+    <tr><th>Méthode</th><th>Rôle</th><th>Notes</th></tr>
+    <tr><td><code>login()</code></td><td>Authentification PHyC, récupère <code>idsession</code></td><td>zeep + _RieTransport (schémas W3C embarqués). Compatible v1.1 et v2.1.</td></tr>
+    <tr><td><code>get_libelle_et_bnbv()</code></td><td>Récupère libellé station <strong>et</strong> <code>CdBNBV</code> via <code>publierSiteHydroListe</code></td><td>Nouveau en v2.1. Retourne <code>(libelle, code_bnbv)</code>. Nécessite <code>stations=True</code> pour exposer <code>CdBNBV</code>.</td></tr>
+    <tr><td><code>get_libelle_station()</code></td><td>Retourne uniquement le libellé (appelle <code>get_libelle_et_bnbv</code>)</td><td>Conservé pour compatibilité.</td></tr>
+    <tr><td><code>get_debits()</code></td><td>SOAP brut <code>publierObservationsHydroPasDeTemps</code></td><td>Bypass zeep car paramètre PHP <code>?array</code>. Port identique v1.1/v2.1. Retourne XML brut.</td></tr>
+    <tr><td><code>get_seuils_vigilance()</code></td><td>SOAP <code>publierSeuilHydro</code> → parse 6 seuils actifs</td><td>Filtre NatureSeuil=22, absence DtDesactivation. Port identique v1.1/v2.1.</td></tr>
+    <tr><td><code>parse_series_xml()</code></td><td>Parse XML PHyC → <code>dict{code: [(dt, m³/s)]}</code></td><td>Détecte automatiquement le format v2.1/v1.1. Accepte <code>CdSiteHydro</code> et <code>CdStationHydro</code> (PHyC peut retourner l'un ou l'autre selon le code envoyé). Divise par 1000 (L/s → m³/s).</td></tr>
+    <tr><td><code>_INDICE_TO_KEY</code></td><td>Mapping indice gravité → clé seuil</td><td>24=zt_jaune, 26=jaune, 49=zt_orange, 51=orange, 74=zt_rouge, 76=rouge</td></tr>
+  </table>
+
+  <h2>modules/bdimage_client.py</h2>
+  <table>
+    <tr><th>Méthode / Fonction</th><th>Rôle</th><th>Notes</th></tr>
+    <tr><td><code>extraire_pluies()</code></td><td>Télécharge les images Antilope temps-différé, écrit des .grd entiers</td><td>Produit <code>antilope/j1</code> (60 mn) avant le 12/10/2020 ; <code>antilope/france-td-60mn</code> ou <code>france-td-15mn</code> après. <code>facteur=1.0</code> — valeurs stockées en 1/10 mm natifs BDImage pour compatibilité Plathynes (qui divise par 10 à la lecture). <code>force_integer=True</code>.</td></tr>
+    <tr><td><code>extraire_pluies_panthere()</code></td><td>Télécharge les images Panthère temps-différé, écrit des .grd entiers</td><td>Produit <code>panthere/france</code>, pas de temps fixé à 60 mn — seul sous-type valide sur BDImage SCHAPI (validé par sondage le 24/06/2026). <code>facteur=1.0</code>, même convention 1/10 mm.</td></tr>
+    <tr><td><code>extraire_hu_bv()</code></td><td>Extrait la moyenne spatiale HU via <code>getObsStatsByZonesAsync</code></td><td>Retourne directement la moyenne BV (pas de .grd)</td></tr>
+    <tr><td><code>_xml_to_grds()</code></td><td>Parse XML BDImage → fichiers .grd (ESRI ASCII Grid)</td><td>Applique <code>facteur</code> à chaque pixel (1.0 pour pluies → 1/10 mm natifs ; autre valeur possible pour d'autres produits). Nodata = -1.</td></tr>
+    <tr><td><code>calculer_pluie_bv_csv()</code></td><td>Moyenne spatiale de tous les .grd d'un dossier → CSV en mm</td><td>Appelle <code>_grd_mean()</code> (÷ 10) pour convertir les 1/10 mm en mm. Format date AAAAMMJJhhmm.</td></tr>
+    <tr><td><code>_grd_mean()</code></td><td>Lit un .grd, retourne la moyenne des pixels non-nodata <strong>en mm</strong></td><td>Applique × 0.1 (÷ 10) sur la moyenne brute pour convertir les 1/10 mm stockés en mm affichables. 6 lignes d'en-tête ESRI à sauter.</td></tr>
+  </table>
+
+  <h2>modules/extractor.py</h2>
+  <table>
+    <tr><th>Fonction</th><th>Rôle</th><th>Notes</th></tr>
+    <tr><td><code>run_extraction()</code></td><td>Boucle sur les épisodes, gère login/logout PHyC, retourne <code>(errors, synthese_text)</code></td><td>Utilise toujours le code station (10 car.) pour Q et H. En cas d'erreur : relance automatique 1×.</td></tr>
+    <tr><td><code>_process_episode()</code></td><td>Extrait pluies, HU et Q/H pour un épisode</td><td>Reçoit <code>code_phyc</code> déjà résolu selon la grandeur. Remplit <code>synthese_out</code> dict par type de données.</td></tr>
+    <tr><td><code>_check_lacunes()</code></td><td>Détecte les pas de temps manquants dans une série</td><td>Retourne liste de datetimes manquants</td></tr>
+    <tr><td><code>_snap_to_grid()</code></td><td>Arrondit un datetime au multiple de pdt_minutes</td><td>Assure des horodatages "heures rondes"</td></tr>
+    <tr><td><code>_build_synthese_text(syntheses, duree_s)</code></td><td>Formate le texte de la popup post-extraction</td><td>Affiche en première ligne le nombre d'épisodes et la <strong>durée totale</strong> (ex. <em>Chargés en 12 min 34 s</em>). Signale les lacunes, les erreurs et les relances échouées.</td></tr>
+  </table>
+
+  <h2>Format des fichiers de sortie</h2>
+  <table>
+    <tr><th>Fichier</th><th>Format</th><th>Délimiteur / Entête</th></tr>
+    <tr><td><code>{station}/Pluies/AntJ1-Ep_*/*.grd</code></td><td>ESRI ASCII Grid, valeurs entières</td><td>Antilope. 6 lignes NCOLS/NROWS/XLL/YLL/CELLSIZE/NODATA, puis données</td></tr>
+    <tr><td><code>{station}/Pluies/Pant-Ep_*/*.grd</code></td><td>ESRI ASCII Grid, valeurs entières</td><td>Panthère. Même format que ci-dessus.</td></tr>
+    <tr><td><code>AntJ1_BV-Ep_*.csv</code></td><td>CSV 2 colonnes</td><td>Pluie moy. BV Antilope. Entête <code>date;pluie_mm</code>, format date <code>%d/%m/%Y %H:%M</code></td></tr>
+    <tr><td><code>Pant_BV-Ep_*.csv</code></td><td>CSV 2 colonnes</td><td>Pluie moy. BV Panthère. Même format.</td></tr>
+    <tr><td><code>HU-Ep_*.csv</code></td><td>CSV 2 colonnes</td><td>Entête <code>date;hu</code>, format date <code>%d/%m/%Y %H:%M</code></td></tr>
+    <tr><td><code>Q-Ep_*.txt</code> / <code>H-Ep_*.txt</code></td><td>CSV sans entête</td><td>Format date <code>%d/%m/%Y %H:%M</code>, valeur en m³/s (Q) ou en m (H). Le préfixe du fichier correspond à la grandeur extraite.</td></tr>
+  </table>
+
+  <h2>Seuils de vigilance — structure JSON</h2>
+  <p>Dans <code>config.json</code>, les seuils sont désormais stockés en deux jeux indépendants selon la grandeur :</p>
+  <pre style="background:#EEF2F7; padding:12px; border-radius:6px; font-size:12px; font-family:Consolas,monospace">
+{
+  "station": {
+    "code_station": "Y027401001",
+    "code_site":    "Y0274010",
+    ...
+  },
+  "seuils_q": {
+    "zt_jaune":  120.0,
+    "jaune":     150.0,
+    "zt_orange": 250.0,
+    "orange":    300.0,
+    "zt_rouge":  450.0,
+    "rouge":     500.0
+  },
+  "seuils_h": {
+    "zt_jaune":  1.20,
+    "jaune":     1.50,
+    "zt_orange": 2.50,
+    "orange":    3.00,
+    "zt_rouge":  4.50,
+    "rouge":     5.00
+  }
+}
+  </pre>
+  <p><strong>Compatibilité ascendante :</strong> les anciens JSON avec une clé <code>"seuils"</code> sont lus comme <code>seuils_q</code> au démarrage. Les deux jeux peuvent coexister et sont configurés indépendamment via le sélecteur Q/H dans l'onglet Configuration.</p>
+  <p>Les ZT (Zones de Transition) apparaissent en pointillé/pastel sur le graphique ; les seuils principaux en trait plein/couleur prononcée. L'unité de l'axe Y s'adapte automatiquement (m³/s ou m) selon la grandeur de l'épisode affiché.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════ ARCHITECTURE VISUELLE -->
+<div id="tab-archi-visual" class="tab-panel">
+<h1>Architecture visuelle</h1>
+<p>Trois représentations complémentaires de l'architecture de l'outil, séparées de la documentation textuelle existante. Choisissez celle qui correspond le mieux à votre besoin de lecture.</p>
+
+<hr>
+<h2 style="color:#2E86C1">Synoptique de flux de données</h2>
+<p style="color:#555;font-size:13px">Vue bout-en-bout : de l'action utilisateur jusqu'aux fichiers de sortie et à l'affichage. Lecture de gauche à droite, par couche.</p>
+
+<style>
+/* ── Synoptique Version A ── */
+.syn { font-family:'Segoe UI',Arial,sans-serif; font-size:12px; margin:16px 0; }
+.syn-row { display:flex; align-items:center; gap:0; margin-bottom:6px; }
+.syn-cell {
+  padding:7px 12px; border-radius:6px; text-align:center;
+  font-weight:600; min-width:110px; max-width:170px; flex:1;
+  line-height:1.3; white-space:nowrap;
+}
+.syn-arrow { color:#aaa; font-size:18px; flex:0 0 24px; text-align:center; }
+.sc-user  { background:#EBF5FB; color:#1A5276; border:1.5px solid #2E86C1; }
+.sc-ui    { background:#EAF4FB; color:#154360; border:1.5px solid #2980B9; }
+.sc-mod   { background:#EAFAF1; color:#1D6A39; border:1.5px solid #27AE60; }
+.sc-ext   { background:#FDEBD0; color:#784212; border:1.5px solid #E59866; }
+.sc-file  { background:#F4F6F6; color:#2C3E50; border:1.5px solid #AAB7B8; }
+.sc-disp  { background:#F4ECF7; color:#6C3483; border:1.5px solid #8E44AD; }
+.sc-plath { background:#E8F8F5; color:#0E6655; border:1.5px solid #1A8374; }
+.syn-label { font-size:10px; color:#888; min-width:110px; text-align:right; padding-right:10px; flex:0 0 120px; }
+.syn-section { background:#F8F9FA; border-radius:10px; padding:14px 18px; margin-bottom:18px; border:1px solid #E0E0E0; }
+.syn-legend { display:flex; gap:12px; flex-wrap:wrap; margin:10px 0 4px; }
+.syn-leg-item { display:flex; align-items:center; gap:5px; font-size:11px; }
+.syn-leg-sq { width:14px; height:14px; border-radius:3px; border:1.5px solid; }
+</style>
+
+<div class="syn-legend">
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#EBF5FB;border-color:#2E86C1"></div> Utilisateur</div>
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#EAF4FB;border-color:#2980B9"></div> UI tkinter (main.py)</div>
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#EAFAF1;border-color:#27AE60"></div> Module Python</div>
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#FDEBD0;border-color:#E59866"></div> Service externe (réseau)</div>
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#F4F6F6;border-color:#AAB7B8"></div> Fichier disque</div>
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#F4ECF7;border-color:#8E44AD"></div> Affichage matplotlib</div>
+  <div class="syn-leg-item"><div class="syn-leg-sq" style="background:#E8F8F5;border-color:#1A8374"></div> Application Plathynes</div>
+</div>
+
+<div class="syn-section">
+<strong style="font-size:12px;color:#555">① EXTRACTION</strong>
+<div class="syn" style="margin-top:10px">
+  <div class="syn-row">
+    <div class="syn-cell sc-user">Sélection épisodes<br><small>+ cases à cocher</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_lancer_extraction()<br><small>thread worker</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-mod">extractor.py<br><small>run_extraction()</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ext">PHyC SOAP<br><small>Q ou H</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">Q-Ep_*.txt<br><small>Debits/</small></div>
+  </div>
+  <div class="syn-row">
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+    <div class="syn-arrow"></div>
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-mod">bdimage_client.py<br><small>extraire_pluies()</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ext">BDImage SOAP<br><small>Antilope/Panthère</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">*.grd + BV-Ep_*.csv<br><small>Pluies/</small></div>
+  </div>
+  <div class="syn-row">
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+    <div class="syn-arrow"></div>
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-mod">bdimage_client.py<br><small>extraire_hu_bv()</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ext">BDImage SOAP<br><small>HU SIM</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">HU-Ep_*.csv<br><small>HU/</small></div>
+  </div>
+</div>
+</div>
+
+<div class="syn-section">
+<strong style="font-size:12px;color:#555">② VISUALISATION D'UN ÉPISODE</strong>
+<div class="syn" style="margin-top:10px">
+  <div class="syn-row">
+    <div class="syn-cell sc-user">Clic listbox<br><small>épisode</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_on_visu_select()<br><small>→ _plot_episode()</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">Q-Ep_*.txt<br>HU-Ep_*.csv<br>AntJ1_BV / Pant_BV</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-disp">Hyétogramme<br>+ courbe HU<br>+ courbe Q</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-disp">Encart stats<br>Ant vs Pan</div>
+  </div>
+  <div class="syn-row" style="margin-top:6px">
+    <div class="syn-cell sc-user">Onglet<br>"Analyse pluies"</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_refresh_pluies_tab()<br><small>auto au chargement</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">Tous les épisodes<br>du dossier sorties/</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-disp">Tableau + frise<br>chronologique</div>
+    <div class="syn-arrow" style="color:transparent">→</div>
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+  </div>
+</div>
+</div>
+
+<div class="syn-section">
+<strong style="font-size:12px;color:#555">③ ANALYSE COMPARATIVE</strong>
+<div class="syn" style="margin-top:10px">
+  <div class="syn-row">
+    <div class="syn-cell sc-user">Clic "Calculer"<br><small>+ filtres Vig.</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_collect_analyse_data()</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">Q-Ep_*.txt<br>HU-Ep_*.csv<br>AntJ1_BV_*.csv</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_plot_analyse()</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-disp">Bubble chart<br>Q max / HU début<br>/ cumul pluie</div>
+  </div>
+</div>
+</div>
+
+<div class="syn-section">
+<strong style="font-size:12px;color:#555">④ IMPORT DANS PLATHYNES</strong>
+<div class="syn" style="margin-top:10px">
+  <div class="syn-row">
+    <div class="syn-cell sc-user">Sélection .prj<br><small>+ dossiers sources</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_plath_refresh()<br><small>liste épisodes</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">Q-Ep_*.txt<br>HU-Ep_*.csv<br><small>(dates + HU)</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_plath_apply_filter()<br><small>grisé / barré / coché</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-disp">Liste épisodes<br><small>colorée par Vig.</small></div>
+  </div>
+  <div class="syn-row" style="margin-top:6px">
+    <div class="syn-cell sc-user">Cocher épisodes<br><small>+ clic Importer</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_plath_run_import()</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-mod">plathynes_importer<br><small>importer_evenement()</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">*.grd (R)<br>Q-Ep_*.txt (R)<br>HU-Ep_*.csv (R)</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">.evt + .mrr<br>.mqo + .prj (W)<br><small>projet Plathynes</small></div>
+  </div>
+  <div class="syn-row" style="margin-top:6px">
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+    <div class="syn-arrow"></div>
+    <div class="syn-cell sc-ui">_plath_ouvrir_avec_projet()</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-mod">plathynes.bat<br><small>chemin absolu .prj</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-plath">Plathynes GUI<br><small>projet chargé</small></div>
+    <div class="syn-arrow" style="color:transparent">→</div>
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+  </div>
+</div>
+</div>
+
+<hr>
+<h2 style="color:#2E86C1">Carte des modules et interfaces</h2>
+<p style="color:#555;font-size:13px">Vue fichier par fichier : responsabilités, fonctions publiques, dépendances entrantes et sortantes.</p>
+
+<style>
+.mod-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:18px 0; }
+.mod-card { border-radius:10px; padding:14px; border:2px solid; }
+.mc-main  { border-color:#2980B9; background:#F0F8FF; }
+.mc-mod   { border-color:#27AE60; background:#F0FFF4; }
+.mc-ext   { border-color:#E59866; background:#FFFAF5; }
+.mod-card h4 { margin:0 0 6px; font-size:13px; }
+.mod-card ul { margin:0 0 0 14px; padding:0; font-size:11px; color:#444; line-height:1.7; }
+.dep-in  { font-size:10px; color:#2980B9; margin-top:6px; }
+.dep-out { font-size:10px; color:#27AE60; }
+.dep-ext { font-size:10px; color:#E59866; }
+</style>
+
+<div class="mod-grid">
+  <div class="mod-card mc-main" style="grid-column:1/4">
+    <h4>📄 main.py — Interface graphique (App)</h4>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11px">
+      <div><strong>Configuration :</strong> _save_config, _load_config, _refresh_config_ui, _recup_seuils_phyc</div>
+      <div><strong>Épisodes :</strong> _build_tab_episodes, _episodes_view, _sort_by, _vig_max_episode, _refresh_episodes_table</div>
+      <div><strong>Extraction :</strong> _lancer_extraction, _arreter_extraction, _refresh_extraction_ui</div>
+      <div><strong>Visualisation :</strong> _refresh_visu_list, _plot_episode, _draw_antpan_stats_panel, _calc_ep_antpan_stats, _get_global_antpan_max</div>
+      <div><strong>Analyse pluies :</strong> _build_tab_pluies, _refresh_pluies_tab</div>
+      <div><strong>Caractérisation crues :</strong> _collect_analyse_data, _plot_analyse</div>
+      <div><strong>Import Plathynes :</strong> _build_tab_plathynes, _plath_refresh, _plath_apply_filter, _plath_run_import, _plath_importer_seuils, _on_plath_pref_change, _plath_ouvrir_avec_projet, _plath_aide_pdt</div>
+      <div><strong>Paramétrage :</strong> _build_tab_parametrage, _save_parametrage, _refresh_parametrage_ui</div>
+    </div>
+    <div class="dep-out">↓ appelle : extractor.py, phyc_client.py, bdimage_client.py, config_manager.py, csv_loader.py, phyc_diag.py, plathynes_importer.py</div>
+  </div>
+
+  <div class="mod-card mc-mod">
+    <h4>📦 extractor.py</h4>
+    <ul>
+      <li>run_extraction()</li>
+      <li>_process_episode()</li>
+      <li>_build_synthese_text(duree_s)</li>
+      <li>_check_lacunes()</li>
+      <li>_snap_to_grid()</li>
+    </ul>
+    <div class="dep-in">← appelé par : main.py (_lancer_extraction)</div>
+    <div class="dep-out">↓ appelle : phyc_client, bdimage_client</div>
+  </div>
+
+  <div class="mod-card mc-mod">
+    <h4>📦 bdimage_client.py</h4>
+    <ul>
+      <li>extraire_pluies() — Antilope</li>
+      <li>extraire_pluies_panthere() — Panthère</li>
+      <li>extraire_hu_bv()</li>
+      <li>calculer_pluie_bv_csv()</li>
+      <li>_xml_to_grds()</li>
+      <li>_grd_mean()</li>
+    </ul>
+    <div class="dep-in">← appelé par : extractor.py, main.py (auto-génération BV)</div>
+    <div class="dep-ext">⟶ réseau : BDImage SCHAPI (SOAP, polling async)</div>
+  </div>
+
+  <div class="mod-card mc-mod">
+    <h4>📦 phyc_client.py</h4>
+    <ul>
+      <li>login() / logout()</li>
+      <li>get_debits()</li>
+      <li>get_seuils_vigilance()</li>
+      <li>parse_series_xml()</li>
+    </ul>
+    <div class="dep-in">← appelé par : extractor.py, main.py (_recup_seuils_phyc)</div>
+    <div class="dep-ext">⟶ réseau : PHyC (SOAP/zeep + lxml bypass)</div>
+  </div>
+
+  <div class="mod-card mc-ext">
+    <h4>📦 config_manager.py</h4>
+    <ul><li>load_config(path)</li><li>save_config(path, data)</li></ul>
+    <div class="dep-in">← appelé par : main.py</div>
+    <div class="dep-ext">⟶ fichier : config/config.json</div>
+  </div>
+
+  <div class="mod-card mc-ext">
+    <h4>📦 csv_loader.py</h4>
+    <ul><li>load_episodes(path)</li></ul>
+    <div class="dep-in">← appelé par : main.py (import catalogue OCTAVE)</div>
+    <div class="dep-ext">⟶ fichier : CSV épisodes</div>
+  </div>
+
+  <div class="mod-card mc-ext">
+    <h4>📦 phyc_diag.py</h4>
+    <ul><li>run_diagnostics(config)</li></ul>
+    <div class="dep-in">← appelé par : main.py (bouton Diagnostic)</div>
+    <div class="dep-ext">⟶ réseau : PHyC WSDL</div>
+  </div>
+
+  <div class="mod-card mc-mod" style="grid-column:1/4">
+    <h4>📦 plathynes_importer.py</h4>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11px">
+      <div>
+        <strong>Lecture projet :</strong>
+        <ul><li>lire_info_projet(prj_path)</li><li>lire_plages_evenements(prj_path, prj_info)</li></ul>
+      </div>
+      <div>
+        <strong>Lecture données :</strong>
+        <ul><li>_lire_dates_q(q_src)</li><li>_lire_hu_debut(hu_src)</li><li>_dates_se_chevauchent(deb, fin, plages)</li></ul>
+      </div>
+      <div>
+        <strong>Génération fichiers :</strong>
+        <ul><li>_generer_evt(...) → .evt</li><li>importer_evenement(...) → .mrr + .mqo + .evt + mise à jour .prj</li><li>nom_evt_from_date_vig(date, vig)</li></ul>
+      </div>
+    </div>
+    <div class="dep-in">← appelé par : main.py (_plath_run_import, _plath_refresh)</div>
+    <div class="dep-ext">⟶ fichiers : sorties/{station}/Pluies/, Debits/, HU/ (R) · projet Plathynes/{bassin}/Ev_*/ (W)</div>
+  </div>
+</div>
+
+<hr>
+<h2 style="color:#2E86C1">Swimlane par onglet</h2>
+<p style="color:#555;font-size:13px">Vue parcours utilisateur : chaque colonne = un onglet de l'application. Chaque ligne = une couche d'exécution.</p>
+
+<style>
+.swim { width:100%; border-collapse:collapse; font-size:11px; margin:16px 0; }
+.swim th { background:#2C3E50; color:#fff; padding:8px 10px; text-align:center; border:1px solid #444; }
+.swim td { padding:7px 10px; border:1px solid #D5D8DC; vertical-align:top; line-height:1.5; }
+.swim tr:nth-child(even) td { background:#F8F9FA; }
+.sw-row-lbl { font-weight:700; color:#555; background:#EAECEE!important; text-align:center; width:90px; }
+.sw-user { color:#1A5276; }
+.sw-code { color:#1D6A39; font-family:Consolas,monospace; font-size:10px; }
+.sw-file { color:#784212; font-family:Consolas,monospace; font-size:10px; }
+.sw-net  { color:#922B21; }
+</style>
+
+<table class="swim">
+  <tr>
+    <th style="width:90px">Couche</th>
+    <th>⚙ Configuration</th>
+    <th>📋 Épisodes</th>
+    <th>⬇ Extraction</th>
+    <th>📊 Visualisation</th>
+    <th>🌧 Analyse pluies</th>
+    <th>🔍 Caractérisation crues</th>
+    <th>🟣 Import Plathynes</th>
+  </tr>
+  <tr>
+    <td class="sw-row-lbl">Action utilisateur</td>
+    <td class="sw-user">Saisie codes station/BNBV, seuils PHyC, identifiants</td>
+    <td class="sw-user">Chargement CSV OCTAVE, ajout manuel, sélection multiple, filtres, tri</td>
+    <td class="sw-user">Cocher types de données, pas de temps, lancer / arrêter</td>
+    <td class="sw-user">Sélectionner un épisode, modifier seuil hyétogramme</td>
+    <td class="sw-user">Consultation tableau + frise (auto-rafraîchi)</td>
+    <td class="sw-user">Cliquer "Calculer", filtrer par Vig. max.</td>
+    <td class="sw-user">Sélectionner .prj, dossiers, pas de temps ; cocher épisodes ; lancer import</td>
+  </tr>
+  <tr>
+    <td class="sw-row-lbl">Méthode UI déclenchée</td>
+    <td class="sw-code">_save_config()<br>_recup_seuils_phyc()<br>_recup_info_phyc()</td>
+    <td class="sw-code">_refresh_episodes_table()<br>_sort_by()<br>_vig_max_episode()</td>
+    <td class="sw-code">_lancer_extraction()<br>→ thread worker<br>_build_synthese_text()</td>
+    <td class="sw-code">_plot_episode()<br>_draw_antpan_stats_panel()</td>
+    <td class="sw-code">_refresh_pluies_tab()<br><small>(auto via _refresh_visu_list)</small></td>
+    <td class="sw-code">_collect_analyse_data()<br>_plot_analyse()</td>
+    <td class="sw-code">_plath_refresh()<br>_plath_apply_filter()<br>_plath_run_import()<br>_plath_ouvrir_avec_projet()</td>
+  </tr>
+  <tr>
+    <td class="sw-row-lbl">Module appelé</td>
+    <td class="sw-code">config_manager<br>phyc_client<br>phyc_diag</td>
+    <td class="sw-code">csv_loader</td>
+    <td class="sw-code">extractor<br>→ bdimage_client<br>→ phyc_client</td>
+    <td style="color:#555">— lecture directe fichiers —</td>
+    <td style="color:#555">— lecture directe fichiers —</td>
+    <td style="color:#555">— lecture directe fichiers —</td>
+    <td class="sw-code">plathynes_importer<br>(lire_info_projet,<br>importer_evenement…)</td>
+  </tr>
+  <tr>
+    <td class="sw-row-lbl">Réseau</td>
+    <td class="sw-net">PHyC (seuils, info station)</td>
+    <td style="color:#aaa">—</td>
+    <td class="sw-net">BDImage (pluies, HU)<br>PHyC (débits / hauteurs)</td>
+    <td style="color:#aaa">—</td>
+    <td style="color:#aaa">—</td>
+    <td style="color:#aaa">—</td>
+    <td style="color:#aaa">—</td>
+  </tr>
+  <tr>
+    <td class="sw-row-lbl">Fichiers lus / écrits</td>
+    <td class="sw-file">config/config.json (W)</td>
+    <td class="sw-file">CSV épisodes (R)<br>Q-Ep_*.txt (R — Vig.)</td>
+    <td class="sw-file">*.grd, AntJ1_BV_*.csv<br>Pant_BV_*.csv, HU-Ep_*.csv<br>Q-Ep_*.txt (W)</td>
+    <td class="sw-file">Q-Ep_*.txt, HU-Ep_*.csv<br>AntJ1_BV_*.csv<br>Pant_BV_*.csv (R)</td>
+    <td class="sw-file">Q-Ep_*.txt<br>AntJ1_BV_*.csv<br>Pant_BV_*.csv (R)</td>
+    <td class="sw-file">Q-Ep_*.txt, HU-Ep_*.csv<br>AntJ1_BV_*.csv (R)</td>
+    <td class="sw-file">Q-Ep_*.txt, HU-Ep_*.csv, *.grd (R)<br>→ .evt, .mrr, .mqo, .prj (W)</td>
+  </tr>
+  <tr>
+    <td class="sw-row-lbl">Sortie affichée</td>
+    <td>Champs pré-remplis, labels préfixe mis à jour</td>
+    <td>Treeview coloré par Vig. max., tri ▲/▼</td>
+    <td>Journal temps réel, popup synthèse + durée</td>
+    <td>Hyétogramme + HU + Q + encart stats Antilope vs Panthère</td>
+    <td>Tableau cumulés par épisode + frise chronologique divergente</td>
+    <td>Bubble chart avec colorbar, légende bulles, étiquettes épisodes</td>
+    <td>Liste épisodes colorés/grisés/barrés, journal import, lancement Plathynes</td>
+  </tr>
+</table>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════ HISTORIQUE -->
+<div id="tab-changelog" class="tab-panel">
+  <h1>Historique des évolutions</h1>
+  <p>Résumé chronologique des fonctionnalités développées lors des sessions de travail.</p>
+
+  <h2>Fondations — Interface et extraction de base</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Interface tkinter multi-onglets</strong>
+    <p>Création de l'application avec 5 onglets (Configuration, Épisodes, Extraction, Visualisation, Analyse). Palette de couleurs par type de section (<code>_make_section</code>), ScrolledText pour le journal, barre de progression.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Authentification et extraction PHyC</strong>
+    <p>Client SOAP PHyC via zeep avec transport RIE adapté (schémas XML W3C embarqués localement car inaccessibles depuis le réseau interne). Bypass zeep par enveloppe lxml brute pour <code>publierObservationsHydroPasDeTemps</code>.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Extraction pluies BDImage (.grd) et HU</strong>
+    <p>Client BDImage pour téléchargement Antilope temps-différé (pluies spatialisées) et HU SIM par bassin versant. Écriture ESRI ASCII Grid.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Correction des horodatages débits (heures rondes)</strong>
+    <p>Les débits PHyC étaient retournés avec des timestamps décalés. Ajout de <code>_snap_to_grid()</code> pour arrondir au pas de temps configuré.</p>
+  </div>
+
+  <h2>Visualisation</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Onglet Visualisation avec graphique double</strong>
+    <p>Deux sous-graphiques matplotlib (GridSpec 1:2) : hyétogramme inversé + HU en haut, courbe Q en bas. Sélection d'épisode depuis une liste avec indicateur de données disponibles.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Hyétogramme amélioré</strong>
+    <p>Barres vers le bas (convention hydrologique), colorées en bleu/violet selon un seuil configurable (défaut 10 mm/pas). Auto-scale basé sur la pluie max (minimum 5 mm).</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Annotations HU début / HU 6h</strong>
+    <p>Points annotés sur la courbe HU : début d'épisode au-dessus, premier relevé à 6h00 en-dessous (ou 6h du lendemain si l'épisode commence après 6h).</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Annotations Q début / Q max</strong>
+    <p>Point de début et point max du débit annotés avec valeur en m³/s (exposant mathtext) et horodatage pour Q max.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Synchronisation et finesse de l'axe X</strong>
+    <p>Les deux graphiques partagent désormais exactement la même plage temporelle. Graduation adaptative : 3h (≤24h), 6h (≤72h), 12h (≤7j), 24h (au-delà). Correction du bug "01/01" causé par un xlim non défini après <code>cla()</code>.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>HU autoscale avec marge ×1.5</strong>
+    <p>L'échelle de l'axe HU s'adapte à chaque épisode (min–max avec marge 50 %), au lieu d'un axe fixe 0–100 %.</p>
+  </div>
+
+  <h2>Seuils de vigilance</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Récupération automatique des seuils PHyC</strong>
+    <p>Ajout de <code>publierSeuilHydro</code> dans le client PHyC. Parse les 6 niveaux (ZT Jaune/Jaune/ZT Orange/Orange/ZT Rouge/Rouge) filtrés sur NatureSeuil=22, actifs uniquement.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Zones de vigilance sur le graphique Q</strong>
+    <p>Seuils ZT en pointillé/pastel, seuils principaux en trait plein/couleur prononcée. Zones de fond colorées. Échelle Y calée sur Q max uniquement (pas les seuils).</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Persistance des seuils dans la configuration</strong>
+    <p>Correction du bug de rechargement : <code>_refresh_config_ui()</code> repopule maintenant les 6 champs seuils au démarrage. Les seuils sont inclus dans "Enregistrer la configuration".</p>
+  </div>
+
+  <h2>Onglet Épisodes</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Colonne Vig. max. avec colorisation des lignes</strong>
+    <p>Pour chaque épisode, lecture du CSV Q, calcul du Q max, comparaison aux seuils. La ligne est colorée en jaune/orange/rouge selon le niveau atteint.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Bouton Rafraîchir + renommage de section</strong>
+    <p>Section renommée "Chargement d'un catalogue de crues (OCTAVE par ex.)". Bouton "↻ Rafraîchir" pour recalculer la Vig. max. après extraction ou changement de seuils.</p>
+  </div>
+
+  <h2>Pluie de bassin versant</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Calcul automatique pluie BV depuis les .grd</strong>
+    <p>Après extraction, la moyenne spatiale des .grd est calculée et écrite dans <code>PluieBV-Ep_*.csv</code>. Se régénère automatiquement si manquant lors de la sélection dans Visualisation.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Fichiers .grd en entiers</strong>
+    <p><code>force_integer=True</code> activé pour les pluies : les valeurs float sont arrondies à l'entier pour compatibilité avec les logiciels de calage aval.</p>
+  </div>
+
+  <h2>Onglet Analyse</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Graphique bubble chart comparatif</strong>
+    <p>Axe X = HU début, Y = Q max, taille = cumul pluie, couleur = intensité max. Lignes médianes et labels quadrants. Étiquettes date + Vig. max. avec placement greedy anti-superposition (8 directions).</p>
+  </div>
+
+  <h2>Code station / code site et seuils H</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Code station hydrométrie (10 car.) et dérivation automatique du code site</strong>
+    <p>Le champ de saisie accepte désormais le code station complet : <code>Y</code> + 9 chiffres (ex. <code>Y027401001</code> pour Le Boulou). Le code site à 8 caractères (<code>Y0274010</code>) est dérivé automatiquement par troncature des 7 premiers chiffres. Les deux codes sont persistés dans <code>config.json</code> sous <code>station.code_station</code> et <code>station.code_site</code>. Compatibilité ascendante avec les anciens JSON ne contenant que <code>code_site</code>.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Seuils de vigilance en hauteur H (m) en plus des seuils Q (m³/s)</strong>
+    <p>La section "Seuils de vigilance" dispose d'un sélecteur Grandeur (Q m³/s / H m) qui bascule les unités affichées et le jeu de valeurs édité. Les seuils Q sont stockés dans <code>seuils_q</code> et les seuils H dans <code>seuils_h</code> — deux jeux indépendants dans <code>config.json</code>. La récupération PHyC utilise le code site pour Q et le code station complet pour H. Le graphique de débit adapte son libellé d'axe Y et la colonne Vig. max. lit le bon jeu de seuils selon la grandeur extraite.</p>
+  </div>
+
+  <h2>Onglet Analyse</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Couleur des pastilles — compatibilité matplotlib 3.9+</strong>
+    <p><code>matplotlib.cm.get_cmap()</code> a été supprimé dans matplotlib 3.9. L'appel levait une exception silencieuse qui faisait tomber le code dans le fallback bleu uniforme (toutes les pastilles de la même couleur). Corrigé en utilisant <code>matplotlib.colormaps["YlOrRd"]</code> (API actuelle). La colorbar d'intensité pluie est également corrigée. Profité pour étendre la lecture des fichiers de métriques aux épisodes en hauteur (<code>H-Ep_*.txt</code>) en plus des débits (<code>Q-Ep_*.txt</code>).</p>
+  </div>
+
+  <h2>Extraction — robustesse</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Synthèse post-extraction (popup)</strong>
+    <p>Fenêtre modale récapitulant par épisode : données téléchargées, lacunes détectées, erreurs.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Relance automatique en cas d'erreur</strong>
+    <p>Si un épisode échoue, une relance immédiate est effectuée. Le résultat (succès ou échec définitif) apparaît dans le journal et la popup de synthèse.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Détection et signalement des lacunes</strong>
+    <p>Vérification de la continuité temporelle pour Q, HU et pluies. Les lacunes sont listées dans le journal (max 5) et la popup de synthèse.</p>
+  </div>
+
+  <h2>Filtres, tri et niveaux de vigilance</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Bandeau de filtres permanent dans l'onglet Épisodes</strong>
+    <p>Un bandeau bleu toujours visible sous le titre de la liste propose deux filtres indépendants : champ texte sur la date de début et la date de fin (filtrage instantané par correspondance de chaîne), et 7 cases à cocher pour le niveau de vigilance Vig. max. (Vert, ZT Jaune, Jaune, ZT Orange, Orange, ZT Rouge, Rouge). Un bouton "Réinitialiser" remet tous les filtres à zéro. Les filtres s'appliquent en temps réel via <code>trace_add("write", …)</code> sur les <code>BooleanVar</code> et <code>StringVar</code>.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Tri des colonnes dans l'onglet Épisodes</strong>
+    <p>Cliquer sur un en-tête de colonne (#, Date début, Date fin, Durée, Vig. max.) trie la liste dans l'ordre croissant ; un second clic inverse l'ordre (▲ / ▼). Le tri de la colonne Vig. max. utilise un dictionnaire d'ordre (<code>_VIG_ORDER</code>) : Vert=0, ZT Jaune=1, Jaune=2, ZT Orange=3, Orange=4, ZT Rouge=5, Rouge=6.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>6 niveaux de vigilance ZT + niveau Vert</strong>
+    <p>Les calculs de Vig. max. prennent désormais en compte les 6 seuils configurés (<code>zt_jaune</code>, <code>jaune</code>, <code>zt_orange</code>, <code>orange</code>, <code>zt_rouge</code>, <code>rouge</code>) vérifiés dans l'ordre décroissant. Les épisodes dont le débit reste sous tous les seuils reçoivent le niveau <strong>Vert</strong> (auparavant non distingué). Ce niveau apparaît dans les filtres, la colonne Vig. max. et les étiquettes du graphique Analyse.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Colorisation des épisodes Vert dans les onglets Épisodes et Visualisation</strong>
+    <p>Les lignes "Vert" du Treeview (onglet Épisodes) sont colorées en vert clair (<code>#D5F5E3</code> / <code>#1D6A39</code>) via le tag <code>vig_vert</code>. La même palette est appliquée aux items de la Listbox de l'onglet Visualisation.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Filtre Vig. max. dans l'onglet Analyse</strong>
+    <p>Cases à cocher pour les 7 niveaux de vigilance, centrées dans le bandeau de contrôle entre le titre et le bouton "Calculer / Rafraîchir". La sélection filtre les épisodes inclus dans le bubble chart ; la mise à jour est immédiate à chaque clic.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Duplication de la colorbar dans l'onglet Analyse</strong>
+    <p>Chaque appel à <code>_refresh_analyse()</code> ajoutait une nouvelle colorbar sans supprimer l'ancienne, réduisant progressivement la zone graphique. Corrigé en remplaçant <code>ax.cla()</code> par <code>fig.clear()</code> + <code>fig.add_subplot(111)</code>, qui efface l'intégralité de la figure (axes et objets figure-level comme les colorbars) avant chaque tracé.</p>
+  </div>
+
+  <h2>Nommage — OP<sub>2</sub>ALE</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>L'outil s'appelle désormais OP<sub>2</sub>ALE</strong>
+    <p><strong>OP<sub>2</sub>ALE — Outil pour Plathynes de Préparation et d'Analyse pour le caLage d'Épisodes.</strong> Le titre de la fenêtre principale, le lanceur (<code>Lancer_OPALE.bat</code>), l'icône (<code>logo_OPALE.ico</code>) et le SVG source (<code>logo_OPALE.svg</code>) ont été renommés en conséquence. L'icône intègre désormais le texte "OPALE" en blanc pour les tailles ≥ 48 px (généré par <code>creer_icone.py</code>).</p>
+  </div>
+
+  <h2>Icône et logo</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Logo et icône OP<sub>2</sub>ALE</strong>
+    <p>Création d'un logo vectoriel (<code>logo_OPALE.svg</code>) représentant un hydrogramme de crue méditerranéenne : long plateau de débit de base, montée quasi-verticale, décrue exponentielle lente, point rouge au pic, trois seuils de vigilance en pointillés colorés, goutte d'eau et silhouette de montagne sur fond bleu nuit arrondi. Le script <code>creer_icone.py</code> (Pillow requis) génère <code>logo_OPALE.ico</code> en 6 tailles (16 à 256 px) pour association au raccourci <code>Lancer_OPALE.bat</code>.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Icône dans la barre de titre et dans l'onglet Configuration</strong>
+    <p>Au démarrage, <code>self.iconbitmap("logo_OPALE.ico")</code> remplace l'icône par défaut de la fenêtre tkinter. Dans l'onglet Configuration, le logo (28×28 px, chargé via Pillow/ImageTk) s'affiche dans le bandeau bas à droite du lien contact <em>PIOT Charles-Eddy — SPCMO</em>.</p>
+  </div>
+
+  <h2>Onglet Visualisation — tri et pastilles</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Tri par date décroissante dans la liste des épisodes</strong>
+    <p>Les épisodes sont triés du plus récent au plus ancien. Le tri est effectué sur la date parsée depuis le nom de fichier (<code>DD_MM_YYYY</code> → <code>datetime</code>), et non sur la chaîne alphabétique, afin d'obtenir un ordre chronologique correct quel que soit le jour du mois.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Pastilles de vigilance dans la liste Visualisation</strong>
+    <p>Chaque item de la Listbox est préfixé d'un <strong>●</strong> et coloré (fond + texte) selon le niveau de vigilance maximal atteint, calculé à la volée par lecture du fichier Q extrait (<code>_vig_from_file()</code>). Les couleurs sont cohérentes avec les tags du Treeview (onglet Épisodes) et la classe <code>_VIG_ITEM_COLORS</code>.</p>
+  </div>
+
+  <h2>Onglet Paramétrage</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Onglet Paramétrage territorial (fond sombre, visuellement distinct)</strong>
+    <p>Nouvel onglet en dernière position permettant de configurer sans modifier le code source : le préfixe du code station hydrométrie (ex. <code>Y</code>), le nombre de chiffres du suffixe numérique (9 par défaut, le code site = préfixe + n-2 premiers chiffres), et le préfixe du code BNBV (ex. <code>MO</code>). Les valeurs sont persistées dans <code>config.json</code> sous la clé <code>"parametrage"</code> et lues via les propriétés <code>_pfx_station</code>, <code>_nb_digits</code>, <code>_pfx_bnbv</code>. À la sauvegarde, les labels de l'onglet Configuration se mettent à jour immédiatement.</p>
+  </div>
+
+  <h2>Onglet Import Plathynes</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Nouvel onglet Import Plathynes — génération automatique des fichiers évènement</strong>
+    <p>Ajout du module <code>modules/plathynes_importer.py</code> et de l'onglet dédié dans l'interface. À partir des données extraites (pluies <code>.grd</code>, débits <code>Q-Ep_*.txt</code>, humidité <code>HU-Ep_*.csv</code>), l'outil génère automatiquement pour chaque épisode : le fichier <code>.evt</code> (définition de l'évènement), le fichier <code>.mrr</code> (liste des .grd de pluie) et le fichier <code>.mqo</code> (débits observés au format Plathynes). Le projet <code>.prj</code> est mis à jour puis Plathynes est lancé avec le chemin absolu du projet.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Génération du fichier .evt avec HU initial</strong>
+    <p>Le fichier <code>.evt</code> contient les dates de début/fin (lues depuis le fichier Q), les 4 pas de temps configurables (forçage, calcul, sorties, bilans), et si disponible une section <code># Parameters</code> avec la valeur d'humidité initiale <strong>HU</strong> : <code>Parametre evenementiel: U &lt;val&gt; HU</code>. La valeur est lue depuis la première ligne de données du fichier <code>HU-Ep_*.csv</code>. Si le fichier HU est absent, le paramètre est omis et un avertissement est affiché dans le journal en nommant l'épisode concerné.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Pas de temps configurables via comboboxes</strong>
+    <p>Les quatre pas de temps (forçage, calcul, sorties, bilans) sont configurables indépendamment via des comboboxes (valeurs : 00:15, 00:30, 01:00). Les valeurs sont mémorisées dans <code>config.json</code> sous <code>plathynes.pdt_forcage</code>, <code>pdt_calcul</code>, <code>pdt_sorties</code>, <code>pdt_bilans</code>. Le bouton <strong>ℹ Aide Plathynes</strong> ouvre <code>TOC_PLATHYNES_new.html</code> dans le navigateur système (si le répertoire Plathynes est renseigné).</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Import des seuils de vigilance dans le fichier .prj Plathynes</strong>
+    <p>Nouvelle case à cocher <strong>"Importer les seuils de vigilance dans Plathynes"</strong> dans le bloc Lancer import (cochée par défaut). Lorsqu'elle est active, les 6 seuils (ZT Jaune, Jaune, ZT Orange, Orange, ZT Rouge, Rouge) lus depuis <code>config.json</code> (<code>seuils_q</code> ou <code>seuils_h</code>) sont écrits à la fin de la ligne <code>Station hydro:</code> du fichier <code>.prj</code>, ce qui les affiche dans l'interface Plathynes. Si des valeurs sont manquantes, un avertissement est logué sans bloquer l'import. La case <strong>"Ouvrir Plathynes avec le projet après l'import"</strong> est également passée à <code>True</code> par défaut. Les deux préférences sont auto-sauvegardées dans <code>config.json</code> sous <code>plathynes.importer_seuils</code> et <code>plathynes.ouvrir_apres_import</code> à chaque changement.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Détection des chevauchements de dates avec épisodes existants</strong>
+    <p>Avant l'affichage de la liste, l'outil lit les dates de début/fin de tous les évènements déjà présents dans le projet <code>.prj</code> (via <code>lire_plages_evenements()</code>). Les épisodes dont la plage de dates chevauche un évènement existant sont affichés en <strong>grisé et barré</strong> (police <code>overstrike</code> tkinter) et décochés d'office. Les épisodes déjà importés (nom présent dans le .prj) sont également grisés/barrés.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Comportement de la liste des épisodes</strong>
+    <p>Toutes les épisodes sont décochés par défaut. La molette souris fonctionne sur la liste lorsque le curseur la survole (<code>bind_all</code>/<code>unbind_all</code> sur <code>&lt;Enter&gt;</code>/<code>&lt;Leave&gt;</code> du canvas). L'application d'un filtre décoche automatiquement les épisodes masqués. La liste se rafraîchit automatiquement après chaque sélection de dossier via le bouton "Parcourir".</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Dossier d'installation Plathynes et ouverture avec chemin absolu</strong>
+    <p>Un champ "Plathynes :" dans la section Dossiers permet de renseigner le répertoire d'installation de Plathynes (pré-rempli à <code>C:\plathynes_v1.10.2</code>). L'outil y cherche <code>plathynes.bat</code> directement, avec un fallback sur les dossiers parent/grand-parent. Le projet est ouvert avec son chemin <strong>absolu</strong> (<code>os.path.abspath()</code>) car <code>plathynes.bat</code> fait un <code>cd bin</code> avant de lancer l'exécutable, rendant les chemins relatifs invalides.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Renommage "Dossier de sortie" → "Dossier de sortie local" dans l'onglet Configuration</strong>
+    <p>Le champ était ambigu (l'utilisateur pouvait croire que c'est le dossier cible Plathynes). Renommé en "Dossier de sortie local" avec un bouton ℹ expliquant son rôle : espace de travail local pour les fichiers extraits (pluies, débits, HU), distinct des dossiers d'import Plathynes.</p>
+  </div>
+
+  <h2>Graphique débit — seuils et mise en page</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Légende taille des bulles dans l'onglet Analyse</strong>
+    <p>Une légende "Cumul pluie *" est affichée sous la barre d'intensité des pluies, avec son bord gauche aligné sur le bord gauche de la colorbar. L'alignement est garanti par la lecture de <code>cb.ax.get_window_extent()</code> (coordonnées pixels réelles) après un premier <code>draw()</code>, converti en coordonnées figure. Elle présente 3 bulles grises représentant 25 %, 50 % et 100 % du cumul maximum des épisodes chargés. La note explicative est positionnée immédiatement sous la légende via <code>leg.get_window_extent().y0</code> après un deuxième <code>draw()</code>, avec un léger espace. Trois appels <code>draw()</code> au total.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Labels des 6 seuils de vigilance sur le graphique de débit</strong>
+    <p>Les seuils ZT Jaune, ZT Orange et ZT Rouge affichent désormais leur étiquette (nom + valeur) au même titre que Jaune, Orange et Rouge. Les seuils ZT sont tracés en pointillé/pastel, les seuils principaux en trait plein. L'unité est dynamique (<code>m³/s</code> ou <code>m</code> selon la grandeur). Un label n'est affiché que si sa valeur est inférieure ou égale à <code>Q_max × 1.20</code> — les seuils qui dépassent la plage visible du graphique restent tracés (ligne et zone de fond) mais sans texte débordant.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Optimisation des marges du graphique Visualisation</strong>
+    <p>Les marges autour des deux sous-graphiques (hyétogramme/HU et débit) sont définies explicitement dans <code>GridSpec</code> (<code>left=0.07, right=0.93, top=0.97, bottom=0.06, hspace=0.28</code>) pour maximiser la zone utile. L'appel <code>tight_layout()</code> — incompatible avec les axes <code>twinx</code> et source d'un <em>UserWarning</em> dans le terminal — est conservé mais silencé via <code>warnings.catch_warnings()</code>.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Suppression de toutes les constantes codées en dur</strong>
+    <p>Les valeurs <code>"Y"</code>, <code>"MO"</code> et <code>9</code> étaient codées en dur à 9 endroits dans <code>main.py</code> (<code>_save_config</code>, <code>_refresh_config_ui</code>, <code>_recup_info_phyc</code>, <code>_recup_seuils_phyc</code>, <code>_run_extraction</code>, <code>_on_bnbv_change</code> et les labels UI). Elles sont désormais toutes remplacées par les propriétés dynamiques.</p>
+  </div>
+
+  <h2>Pluie liquide Antilope — août 2026</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Extraction de la bande liquide Antilope (phase liquide / solide)</strong>
+    <p>Depuis janvier 2025, BDImage expose pour Antilope les bandes <code>liquide</code> et <code>solide</code> (source : produit Hydre Météo-France) en plus de la bande totale <code>rr</code>. Un nouveau radio mutuellement exclusif dans l'onglet <span class="badge badge-extract">Extraction</span> permet de choisir entre <em>Pluie totale</em> (comportement inchangé) et <em>Pluie totale + pluie liquide</em>. Lorsque cette option est activée, l'outil extrait en plus la bande <code>liquide</code> vers un sous-dossier <code>AntJ1-Liq-Ep_{date}/</code> et calcule le CSV de pluie BV <code>AntJ1-Liq_BV-Ep_{date}.csv</code>. Si la période est antérieure aux dates de disponibilité (08/01/2025 sur 60 mn, 14/09/2024 sur 15 mn), l'outil replie automatiquement sur la bande <code>rr</code> et le journal l'indique.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Hyétogramme avec barres empilées liquide / solide</strong>
+    <p>Lorsque les données liquide sont disponibles pour un épisode, le graphique hyétogramme de l'onglet <span class="badge badge-visu">Visualisation</span> affiche des barres empilées : la portion <span style="color:#1F618D;font-weight:600">bleue foncée</span> correspond à la pluie liquide et la portion <span style="color:#85C1E9;font-weight:600">bleue claire</span> représente la phase solide calculée par différence (total − liquide = graupel + neige). Le seuil hyétogramme s'applique à la portion liquide.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Choix de la bande pour l'export Plathynes</strong>
+    <p>Un radio mutuellement exclusif (<em>Pluie totale</em> / <em>Pluie liquide</em>) dans la section "Dossiers" de l'onglet <span class="badge badge-plath">Import Plathynes</span> permet de choisir quelle série de fichiers <code>.grd</code> Antilope sera copiée dans le projet Plathynes : les fichiers totaux (<code>AntJ1-Ep_*</code>) ou les fichiers liquides (<code>AntJ1-Liq-Ep_*</code>). Cette option est disponible uniquement si l'extraction a été faite avec la bande liquide.</p>
+  </div>
+
+  <h2>Migration PHyC v2.1 — juillet 2026</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Passage au webservice PHyC v2.1 (<code>bdtrv21.wsdl</code>)</strong>
+    <p>Suite à un retour SCV, l'URL WSDL par défaut est mise à jour de <code>bdtr.wsdl</code> (v1.1, obsolète) vers <code>bdtrv21.wsdl</code>. Les ports utilisés par l'outil (<code>ObservationsHydroPublicationPort</code>, <code>SeuilHydroPublicationPort</code>, <code>SiteHydroPublicationPort</code>, <code>AuthentificationPort</code>) sont identiques en v1.1 et v2.1 — aucune rupture de fonctionnement.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Récupération automatique du code BNBV depuis PHyC</strong>
+    <p>La v2.1 expose le champ <code>CdBNBV</code> (ex. <code>MO698</code>) dans la réponse <code>publierSiteHydroListe</code> avec <code>stations=True</code>. La méthode <code>get_libelle_et_bnbv()</code> dans <code>phyc_client.py</code> récupère désormais libellé et code BNBV en un seul appel. Le bouton <em>"Récup info PHyC"</em> pré-remplit automatiquement le champ BNBV si celui-ci est vide.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Migration automatique des <code>config.json</code> existants</strong>
+    <p>Au démarrage, si le fichier <code>config.json</code> contient encore l'ancienne URL <code>bdtr.wsdl</code>, elle est remplacée silencieusement par <code>bdtrv21.wsdl</code> et la configuration est sauvegardée. Aucune action manuelle requise.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Messages explicites quand HU ou débits non extraits</strong>
+    <p>L'onglet <strong>Caractérisation crues</strong> affiche désormais un message ciblé ("Cochez « Débits (Q) » lors de l'extraction…") au lieu du générique "Aucun épisode trouvé". Dans l'onglet <strong>Visualisation</strong>, les axes HU et Q affichent un texte en gris italique lorsque les données n'ont pas été extraites.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Liste Visualisation vide quand seules les pluies sont extraites</strong>
+    <p>Quand la case Q n'est pas cochée, le scan du dossier <code>Pluies/</code> permet désormais de découvrir les épisodes via les dossiers <code>AntJ1-Ep_*</code> et <code>Pant-Ep_*</code>, même en l'absence de fichiers <code>Q-Ep_*.txt</code>.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Requêtes PHyC Q désormais en code station (10 car.) au lieu du code site (8 car.)</strong>
+    <p>L'extraction des débits Q utilisait jusqu'ici le code site à 8 caractères pour interroger PHyC, tandis que les hauteurs H utilisaient déjà le code station complet (10 car.). Les deux grandeurs utilisent maintenant systématiquement le code station. Le parsing de la réponse XML accepte indifféremment <code>CdSiteHydro</code> et <code>CdStationHydro</code>, PHyC pouvant retourner l'un ou l'autre selon le code envoyé.</p>
+  </div>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

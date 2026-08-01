@@ -4003,8 +4003,8 @@ class App(tk.Tk):
             messagebox.showerror("Erreur", f"Impossible d'enregistrer la configuration :\n{e}")
 
     def _ouvrir_aide(self):
-        """Ouvre le fichier aide.html dans le navigateur par défaut."""
-        html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aide.html")
+        """Ouvre le fichier aide_v2.html dans le navigateur par défaut."""
+        html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aide_v2.html")
         webbrowser.open(f"file:///{html_path.replace(os.sep, '/')}")
 
     def _get_out_dirs(self):
