@@ -22,6 +22,9 @@ from modules.plathynes_importer import (
     importer_evenement, nom_evt_from_date_vig,
 )
 
+from modules import visu_logic
+from modules.utils import read_csv_serie
+
 try:
     from matplotlib.figure import Figure
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -61,6 +64,7 @@ _C = {
 # _visu_ouvrir_cumuls_spatiaux et _refresh_pluies_tab
 _C_ANT      = "#1F618D"   # bleu foncé Antilope ≤ seuil
 _C_ANT_OVER = "#7D3C98"   # violet Antilope > seuil hyétogramme
+_C_ANT_SOL  = "#85C1E9"   # bleu clair phase solide (graupel+neige)
 _C_PANT     = "#CC5500"   # orange foncé Panthère
 _C_HU       = "#C0392B"   # rouge HU
 
@@ -601,6 +605,16 @@ class App(tk.Tk):
         self.var_pdt_pluies = tk.StringVar(value="1 heure")
         ttk.Combobox(r, textvariable=self.var_pdt_pluies,
                      values=list(PDT_PLUIES_OPTIONS.keys()), state="readonly", width=15).pack(side=tk.LEFT)
+        # Sous-option bande Antilope (radio mutuellement exclusif)
+        r_ant = self._row(inn, bg)
+        self.var_ant_bande = tk.IntVar(value=0)
+        tk.Label(r_ant, text="    Bande :", bg=bg, font=("TkDefaultFont", 9)).pack(side=tk.LEFT)
+        tk.Radiobutton(r_ant, text="Pluie totale", variable=self.var_ant_bande, value=0,
+                       bg=bg, activebackground=bg).pack(side=tk.LEFT, padx=(8, 0))
+        tk.Radiobutton(r_ant, text="Pluie totale + pluie liquide", variable=self.var_ant_bande, value=1,
+                       bg=bg, activebackground=bg).pack(side=tk.LEFT, padx=(8, 0))
+        tk.Label(r_ant, text="(disponible dès jan. 2025 sur 60mn, sept. 2024 sur 15mn)",
+                 bg=bg, fg="#777777", font=("TkDefaultFont", 8, "italic")).pack(side=tk.LEFT, padx=(8, 0))
         # Ligne Panthère
         r2 = self._row(inn, bg)
         self.var_pluies_panthere = tk.BooleanVar(value=False)
@@ -818,131 +832,21 @@ class App(tk.Tk):
 
     def _vig_from_file(self, q_path):
         """Lit le Q max d'un fichier extrait et retourne le label de vigilance."""
-        try:
-            q_vals = []
-            with open(q_path, encoding="utf-8") as fh:
-                for row in csv.reader(fh, delimiter=";"):
-                    if row and len(row) >= 2:
-                        try:
-                            q_vals.append(float(row[1]))
-                        except ValueError:
-                            pass
-            if not q_vals:
-                return "Vert"
-            return self._vig_label_from_val(max(q_vals))
-        except Exception:
-            return "Vert"
+        grandeur = self.config_data.get("extraction", {}).get("grandeur", "Q")
+        if grandeur == "H":
+            seuils = self.config_data.get("seuils_h", {})
+        else:
+            seuils = self.config_data.get("seuils_q",
+                     self.config_data.get("seuils", {}))
+        return visu_logic.vig_from_file(q_path, seuils)
 
     # ── Stats Antilope vs Panthère ──────────────────────────────────────────
 
     @staticmethod
     def _calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals, seuil=0.0):
-        """Calcule les 4 indicateurs de comparaison Antilope vs Panthère pour un épisode.
-
-        Les deux séries sont alignées sur leurs timestamps COMMUNS (intersection).
-        Conventions : écart = Pan − Ant → positif si Pan > Ant (sur-estimation Panthère).
-        Le % relatif est calculé par rapport à la valeur Antilope au même pas de temps.
-
-        Paramètres
-        ----------
-        p_dates / p_vals    : liste de datetime / float pour Antilope (BV moyen, mm/pdt)
-        pant_dates / pant_vals : idem pour Panthère
-        seuil               : seuil hyétogramme (mm/pdt) pour l'indicateur "forte intensité"
-                              — dynamique, peut changer à la volée via le champ UI
-
-        Retourne dict avec clés :
-          ecart_max_1h, pct_ecart_max_1h, ts_max_1h
-          ecart_at_ant_peak, pct_ecart_at_peak, ts_ant_peak
-          ecart_3h, pct_ecart_3h, ts_3h_start, ts_3h_end
-          ecart_forte, pct_ecart_forte            (None si aucun pas > seuil)
-          pct_pan_over, n_common, pct_ecart_cumul
-        Retourne None si < 2 timestamps communs.
-        """
-        if not p_dates or not pant_dates:
-            return None
-        ant_d = dict(zip(p_dates, p_vals))
-        pan_d = dict(zip(pant_dates, pant_vals))
-        common = sorted(set(ant_d) & set(pan_d))
-        if len(common) < 2:
-            return None
-        ant_c = [ant_d[t] for t in common]
-        pan_c = [pan_d[t] for t in common]
-        diffs = [p - a for p, a in zip(pan_c, ant_c)]
-
-        # 1. Écart moyen
-        ecart_moyen = sum(diffs) / len(diffs)
-        pct_pan_over = sum(1 for d in diffs if d > 0) / len(diffs) * 100
-
-        # 2. Écart max 1h (|Pan - Ant| max)
-        abs_diffs = [abs(d) for d in diffs]
-        idx_max1h = max(range(len(abs_diffs)), key=lambda i: abs_diffs[i])
-        ecart_max_1h = diffs[idx_max1h]
-        ts_max_1h   = common[idx_max1h]
-
-        # 3. Cumul 1h max Antilope → écart à ce pas de temps
-        idx_ant_max = max(range(len(ant_c)), key=lambda i: ant_c[i])
-        ecart_at_ant_peak = diffs[idx_ant_max]
-        ts_ant_peak       = common[idx_ant_max]
-
-        # 4. 3h consécutives max Antilope → écart sur cette fenêtre
-        best_i = 0
-        best_sum = -1.0
-        for i in range(len(common) - 2):
-            s = ant_c[i] + ant_c[i+1] + ant_c[i+2]
-            if s > best_sum:
-                best_sum = s
-                best_i   = i
-        ecart_3h      = sum(diffs[best_i:best_i+3])
-        ts_3h_start   = common[best_i]
-        ts_3h_end     = common[best_i + 2]
-
-        # Cumuls et écart relatif du cumul
-        sum_ant = sum(ant_c)
-        sum_pan = sum(pan_d[t] for t in common)
-        pct_ecart_cumul = ((sum_pan - sum_ant) / sum_ant * 100) if sum_ant > 0 else 0.0
-        n_common = len(common)
-
-        # % par rapport à la valeur Antilope au pas de temps concerné
-        mean_ant = sum_ant / n_common if n_common > 0 else 1.0
-        def _pct(ecart, ref):
-            return (ecart / ref * 100) if ref and ref != 0 else None
-
-        pct_em  = _pct(ecart_moyen,       mean_ant)
-        pct_e1h = _pct(ecart_max_1h,      ant_c[idx_max1h])
-        pct_ep  = _pct(ecart_at_ant_peak, ant_c[idx_ant_max])
-        sum_ant_3h = sum(ant_c[best_i:best_i+3])
-        pct_e3h = _pct(ecart_3h,          sum_ant_3h) if sum_ant_3h else None
-
-        # Écart moyen sur les pas de forte intensité Antilope (> seuil)
-        forte_idx = [i for i, a in enumerate(ant_c) if a > seuil]
-        if forte_idx:
-            ecart_forte   = sum(diffs[i] for i in forte_idx) / len(forte_idx)
-            mean_ant_forte = sum(ant_c[i] for i in forte_idx) / len(forte_idx)
-            pct_ef        = _pct(ecart_forte, mean_ant_forte)
-        else:
-            ecart_forte = None
-            pct_ef      = None
-
-        return {
-            "ecart_moyen":       ecart_moyen,
-            "pct_ecart_moyen":   pct_em,
-            "pct_pan_over":      pct_pan_over,
-            "n_common":          n_common,
-            "pct_ecart_cumul":   pct_ecart_cumul,
-            "ecart_forte":        ecart_forte,
-            "pct_ecart_forte":    pct_ef,
-            "seuil":              seuil,
-            "ecart_max_1h":       ecart_max_1h,
-            "pct_ecart_max_1h":   pct_e1h,
-            "ts_max_1h":          ts_max_1h,
-            "ecart_at_ant_peak":  ecart_at_ant_peak,
-            "pct_ecart_at_peak":  pct_ep,
-            "ts_ant_peak":        ts_ant_peak,
-            "ecart_3h":           ecart_3h,
-            "pct_ecart_3h":       pct_e3h,
-            "ts_3h_start":        ts_3h_start,
-            "ts_3h_end":          ts_3h_end,
-        }
+        """Délègue à visu_logic.calc_ep_antpan_stats (wrapper de compatibilité)."""
+        return visu_logic.calc_ep_antpan_stats(
+            p_dates, p_vals, pant_dates, pant_vals, seuil)
 
     def _get_global_antpan_max(self, seuil=0.0):
         """Retourne les maxima globaux (|valeur|) pour chaque indicateur sur tous les épisodes.
@@ -966,34 +870,14 @@ class App(tk.Tk):
         max_e3h = 0.0   # |écart 3h consécutives|
         max_ef  = 0.0   # |écart fortes intensités|
 
-        def _read_bv(path):
-            pairs = []
-            try:
-                with open(path, encoding="utf-8") as f:
-                    reader = csv.reader(f, delimiter=";")
-                    next(reader, None)
-                    for row in reader:
-                        if len(row) >= 2:
-                            try:
-                                pairs.append((
-                                    datetime.strptime(row[0].strip(), "%d/%m/%Y %H:%M"),
-                                    float(row[1].strip())))
-                            except (ValueError, IndexError):
-                                pass
-            except Exception as _e:
-                print(f"[WARN] _get_global_antpan_max/_read_bv : "
-                      f"lecture impossible de '{path}' — {type(_e).__name__}: {_e}")
-            pairs.sort(key=lambda x: x[0])
-            return [r[0] for r in pairs], [r[1] for r in pairs]
-
         for ep in self._visu_episodes:
             if not (ep.get("p_path") and ep.get("pant_path")):
                 continue
             if not (os.path.exists(ep["p_path"]) and os.path.exists(ep["pant_path"])):
                 continue
             try:
-                pd_, pv_ = _read_bv(ep["p_path"])
-                pp_, ppv = _read_bv(ep["pant_path"])
+                pd_, pv_ = read_csv_serie(ep["p_path"])
+                pp_, ppv = read_csv_serie(ep["pant_path"])
                 s = self._calc_ep_antpan_stats(pd_, pv_, pp_, ppv, seuil)
                 if s is None:
                     continue
@@ -1017,96 +901,28 @@ class App(tk.Tk):
         return self._antpan_global_max
 
     def _refresh_visu_list(self):
-        """Scanne le dossier de sortie et remplit la liste des épisodes extraits."""
+        """Lance le scan en thread ; met à jour l'UI via after() à la fin."""
         self.visu_listbox.delete(0, tk.END)
         self._visu_episodes.clear()
-        self._antpan_global_max = None   # invalide le cache global
+        self._antpan_global_max = None
+        self.visu_listbox.insert(tk.END, "  Chargement…")
 
         debits_dir, hu_dir, pluies_dir, bv_dir = self._get_out_dirs()
 
-        def _parse_key(key):
-            """Extrait (datetime, label) depuis 'DD_MM_YYYY_Station'."""
-            parts = key.split("_")
-            try:
-                dt = datetime.strptime(f"{parts[0]}/{parts[1]}/{parts[2]}", "%d/%m/%Y")
-                station = " ".join(parts[3:]) if len(parts) > 3 else ""
-                return dt, f"{dt.strftime('%d/%m/%Y')} — {station}"
-            except (ValueError, IndexError):
-                return datetime.min, key
+        def _scan():
+            episodes = visu_logic.build_episode_list(
+                debits_dir, hu_dir, pluies_dir, bv_dir)
+            self.after(0, lambda: self._on_visu_list_ready(episodes))
 
-        # Construire un dict d'épisodes indexé par clé "DD_MM_YYYY_Station"
-        eps = {}  # key → ep dict
+        threading.Thread(target=_scan, daemon=True).start()
 
-        def _get_ep(key):
-            if key not in eps:
-                dt, label = _parse_key(key)
-                eps[key] = {"label": label, "_dt": dt, "_key": key,
-                            "q_path": None, "hu_path": None,
-                            "p_path": None, "pant_path": None}
-            return eps[key]
+    def _on_visu_list_ready(self, episodes):
+        """Callback UI appelé depuis after() après le scan en thread."""
+        self.visu_listbox.delete(0, tk.END)
+        self._visu_episodes.clear()
+        self._antpan_global_max = None
 
-        # Scan Debits/ — fichiers Q-Ep_*.txt (pilotent débit + HU)
-        if os.path.isdir(debits_dir):
-            for fname in os.listdir(debits_dir):
-                if not (fname.startswith("Q-Ep_") and fname.endswith(".txt")):
-                    continue
-                key = fname[5:-4]  # DD_MM_YYYY_Station
-                ep  = _get_ep(key)
-                ep["q_path"]  = os.path.join(debits_dir, fname)
-                hu_fname = fname.replace("Q-Ep_", "HU-Ep_").replace(".txt", ".csv")
-                hu_path  = os.path.join(hu_dir, hu_fname)
-                ep["hu_path"] = hu_path if os.path.exists(hu_path) else None
-
-        # Scan Pluies temps moy BV pour graph/ — AntJ1_BV et Pant_BV
-        if os.path.isdir(bv_dir):
-            for fname in os.listdir(bv_dir):
-                if fname.startswith("AntJ1_BV-Ep_") and fname.endswith(".csv"):
-                    key = fname[len("AntJ1_BV-Ep_"):-4]
-                    _get_ep(key)["p_path"] = os.path.join(bv_dir, fname)
-                elif fname.startswith("Pant_BV-Ep_") and fname.endswith(".csv"):
-                    key = fname[len("Pant_BV-Ep_"):-4]
-                    _get_ep(key)["pant_path"] = os.path.join(bv_dir, fname)
-
-        # Scan Pluies/ pour découvrir les épisodes via dossiers .grd (cas sans débits)
-        if os.path.isdir(pluies_dir):
-            for dname in os.listdir(pluies_dir):
-                for pfx in ("AntJ1-Ep_", "Pluie-Ep_", "Pant-Ep_"):
-                    if dname.startswith(pfx):
-                        key = dname[len(pfx):]
-                        _get_ep(key)
-                        break
-
-        # Générer AntJ1_BV et Pant_BV à la volée si .grd présent mais CSV absent
-        from modules.bdimage_client import calculer_pluie_bv_csv
-        for key, ep in list(eps.items()):
-            if ep["p_path"] is None:
-                p_path = os.path.join(bv_dir, f"AntJ1_BV-Ep_{key}.csv")
-                for _pfx in ("AntJ1-Ep_", "Pluie-Ep_"):
-                    grd_dir = os.path.join(pluies_dir, f"{_pfx}{key}")
-                    if os.path.isdir(grd_dir):
-                        try:
-                            os.makedirs(bv_dir, exist_ok=True)
-                            calculer_pluie_bv_csv(grd_dir, p_path)
-                            ep["p_path"] = p_path
-                        except Exception as _e:
-                            print(f"[WARN] _refresh_visu_list : calcul Ant BV échoué "
-                                  f"pour {key} ({grd_dir}) — {type(_e).__name__}: {_e}")
-                        break
-            if ep["pant_path"] is None:
-                pant_path = os.path.join(bv_dir, f"Pant_BV-Ep_{key}.csv")
-                grd_dir = os.path.join(pluies_dir, f"Pant-Ep_{key}")
-                if os.path.isdir(grd_dir):
-                    try:
-                        os.makedirs(bv_dir, exist_ok=True)
-                        calculer_pluie_bv_csv(grd_dir, pant_path)
-                        ep["pant_path"] = pant_path
-                    except Exception as _e:
-                        print(f"[WARN] _refresh_visu_list : calcul Pant BV échoué "
-                              f"pour {key} ({grd_dir}) — {type(_e).__name__}: {_e}")
-
-        # Trier par date décroissante
-        sorted_eps = sorted(eps.values(), key=lambda e: e["_dt"], reverse=True)
-        for ep in sorted_eps:
+        for ep in episodes:
             self._visu_episodes.append(ep)
             parts_marker = []
             if ep["q_path"]:    parts_marker.append("Q")
@@ -1114,7 +930,7 @@ class App(tk.Tk):
             if ep["p_path"]:    parts_marker.append("Ant")
             if ep["pant_path"]: parts_marker.append("Pan")
             marker = "+".join(parts_marker) if parts_marker else "?"
-            vig    = self._vig_from_file(ep["q_path"]) if ep["q_path"] else "vig_vert"
+            vig    = self._vig_from_file(ep["q_path"]) if ep["q_path"] else "Vert"
             bg, fg = self._VIG_ITEM_COLORS.get(vig, ("#EBF5FB", "#1A5276"))
             idx = self.visu_listbox.size()
             self.visu_listbox.insert(tk.END, f"●  [{marker}]  {ep['label']}")
@@ -1168,33 +984,15 @@ class App(tk.Tk):
         C_P        = _C_ANT
         C_P_EXCESS = _C_ANT_OVER
 
-        def _read_csv(path, has_header=True):
-            pairs = []
-            try:
-                with open(path, encoding="utf-8") as f:
-                    reader = csv.reader(f, delimiter=";")
-                    if has_header:
-                        next(reader, None)
-                    for row in reader:
-                        if len(row) >= 2:
-                            try:
-                                pairs.append((
-                                    datetime.strptime(row[0].strip(), "%d/%m/%Y %H:%M"),
-                                    float(row[1].strip())))
-                            except (ValueError, IndexError):
-                                pass
-            except Exception:
-                pass
-            pairs.sort(key=lambda x: x[0])
-            return [r[0] for r in pairs], [r[1] for r in pairs]
-
-        q_dates,    q_vals    = (_read_csv(ep["q_path"], has_header=False)
+        q_dates,    q_vals    = (read_csv_serie(ep["q_path"], has_header=False)
                                   if ep.get("q_path") and os.path.exists(ep["q_path"]) else ([], []))
-        hu_dates,   hu_vals   = (_read_csv(ep["hu_path"])
+        hu_dates,   hu_vals   = (read_csv_serie(ep["hu_path"])
                                   if ep.get("hu_path") and os.path.exists(ep["hu_path"]) else ([], []))
-        p_dates,    p_vals    = (_read_csv(ep["p_path"])
+        p_dates,    p_vals    = (read_csv_serie(ep["p_path"])
                                   if ep.get("p_path")  and os.path.exists(ep["p_path"])  else ([], []))
-        pant_dates, pant_vals = (_read_csv(ep["pant_path"])
+        p_liq_dates, p_liq_vals = (read_csv_serie(ep["p_liq_path"])
+                                    if ep.get("p_liq_path") and os.path.exists(ep["p_liq_path"]) else ([], []))
+        pant_dates, pant_vals = (read_csv_serie(ep["pant_path"])
                                   if ep.get("pant_path") and os.path.exists(ep["pant_path"]) else ([], []))
 
         # Seuil hyétogramme
@@ -1228,30 +1026,71 @@ class App(tk.Tk):
                 self._visu_bar_info.append((rect, val, "Panthère"))
 
         # ── Antilope par-dessus (zorder élevé, alpha légèrement augmenté)
+        C_P_SOL = _C_ANT_SOL
         ant_handles, ant_labels = [], []
         if p_dates:
             bar_w = (p_dates[1] - p_dates[0]) * 0.8 if len(p_dates) >= 2 else timedelta(hours=1)
-            base_vals = [min(v, seuil) for v in p_vals]
-            b1 = self._visu_ax_p.bar(p_dates, base_vals, width=bar_w,
-                                      color=C_P, alpha=0.70, align="center",
-                                      zorder=3, label=f"Antilope BV ≤ {seuil:.0f} mm")
-            ant_handles.append(b1)
-            ant_labels.append(f"Antilope BV ≤ {seuil:.0f} mm")
-            # Enregistrer patches b1 avec valeur totale (Antilope en priorité sur Panthère)
-            for rect, total in zip(b1.patches, p_vals):
-                self._visu_bar_info.insert(0, (rect, total, "Antilope"))
-            excess_vals = [max(v - seuil, 0) for v in p_vals]
-            if any(v > 0 for v in excess_vals):
-                b2 = self._visu_ax_p.bar(p_dates, excess_vals, width=bar_w,
-                                          bottom=base_vals,
-                                          color=C_P_EXCESS, alpha=0.82, align="center",
-                                          zorder=3, label=f"Antilope BV > {seuil:.0f} mm")
-                ant_handles.append(b2)
-                ant_labels.append(f"Antilope BV > {seuil:.0f} mm")
-                # Patches b2 : même valeur totale, portion excédentaire visible
-                for rect, excess_v, total in zip(b2.patches, excess_vals, p_vals):
-                    if excess_v > 0:
-                        self._visu_bar_info.insert(0, (rect, total, "Antilope"))
+
+            # Aligner les valeurs liquide sur les dates totales
+            if p_liq_dates:
+                liq_map = dict(zip(p_liq_dates, p_liq_vals))
+                liq_aligned = [liq_map.get(d, 0.0) for d in p_dates]
+                sol_aligned = [max(0.0, t - l) for t, l in zip(p_vals, liq_aligned)]
+            else:
+                liq_aligned = []
+                sol_aligned = []
+
+            if liq_aligned:
+                # Mode liquide+solide : barres empilées liq (bas) + sol (haut)
+                base_vals = [min(v, seuil) for v in liq_aligned]
+                b_liq = self._visu_ax_p.bar(p_dates, base_vals, width=bar_w,
+                                             color=C_P, alpha=0.82, align="center",
+                                             zorder=3, label=f"Antilope liquide ≤ {seuil:.0f} mm")
+                ant_handles.append(b_liq)
+                ant_labels.append(f"Antilope liquide ≤ {seuil:.0f} mm")
+                for rect, total in zip(b_liq.patches, p_vals):
+                    self._visu_bar_info.insert(0, (rect, total, "Antilope liq"))
+                liq_excess = [max(v - seuil, 0) for v in liq_aligned]
+                if any(v > 0 for v in liq_excess):
+                    b_liq_ex = self._visu_ax_p.bar(p_dates, liq_excess, width=bar_w,
+                                                    bottom=base_vals,
+                                                    color=C_P_EXCESS, alpha=0.82, align="center",
+                                                    zorder=3, label=f"Antilope liquide > {seuil:.0f} mm")
+                    ant_handles.append(b_liq_ex)
+                    ant_labels.append(f"Antilope liquide > {seuil:.0f} mm")
+                    for rect, total in zip(b_liq_ex.patches, p_vals):
+                        self._visu_bar_info.insert(0, (rect, total, "Antilope liq"))
+                # Phase solide (graupel+neige) empilée au-dessus du liquide
+                if any(v > 0 for v in sol_aligned):
+                    b_sol = self._visu_ax_p.bar(p_dates, sol_aligned, width=bar_w,
+                                                 bottom=liq_aligned,
+                                                 color=C_P_SOL, alpha=0.75, align="center",
+                                                 zorder=3, label="Antilope solide (par diff.)")
+                    ant_handles.append(b_sol)
+                    ant_labels.append("Antilope solide (par diff.)")
+                    for rect, total in zip(b_sol.patches, p_vals):
+                        self._visu_bar_info.insert(0, (rect, total, "Antilope sol"))
+            else:
+                # Mode normal : barres totales avec seuil
+                base_vals = [min(v, seuil) for v in p_vals]
+                b1 = self._visu_ax_p.bar(p_dates, base_vals, width=bar_w,
+                                          color=C_P, alpha=0.70, align="center",
+                                          zorder=3, label=f"Antilope BV ≤ {seuil:.0f} mm")
+                ant_handles.append(b1)
+                ant_labels.append(f"Antilope BV ≤ {seuil:.0f} mm")
+                for rect, total in zip(b1.patches, p_vals):
+                    self._visu_bar_info.insert(0, (rect, total, "Antilope"))
+                excess_vals = [max(v - seuil, 0) for v in p_vals]
+                if any(v > 0 for v in excess_vals):
+                    b2 = self._visu_ax_p.bar(p_dates, excess_vals, width=bar_w,
+                                              bottom=base_vals,
+                                              color=C_P_EXCESS, alpha=0.82, align="center",
+                                              zorder=3, label=f"Antilope BV > {seuil:.0f} mm")
+                    ant_handles.append(b2)
+                    ant_labels.append(f"Antilope BV > {seuil:.0f} mm")
+                    for rect, excess_v, total in zip(b2.patches, excess_vals, p_vals):
+                        if excess_v > 0:
+                            self._visu_bar_info.insert(0, (rect, total, "Antilope"))
             self._visu_ax_p.axhline(seuil, color=C_P_EXCESS, linewidth=0.9,
                                      linestyle="--", alpha=0.6, zorder=4)
 
@@ -2039,192 +1878,39 @@ class App(tk.Tk):
         if cache_key in self._indices_cache:
             return self._indices_cache[cache_key]
 
-        result = None
-        try:
-            _, _, pluies_dir, bv_dir = self._get_out_dirs()
-            cumul_dir = os.path.join(bv_dir, "GRD cumuls")
-            if produit == "antilope":
-                candidates = [f"AntJ1-Ep_{key}", f"Pluie-Ep_{key}"]
-                pfx = "AntJ1_CumulGRD-Ep_"
-            else:
-                candidates = [f"Pant-Ep_{key}"]
-                pfx = "Pant_CumulGRD-Ep_"
-            cumul_path = os.path.join(cumul_dir, f"{pfx}{key}.grd")
-            if os.path.isfile(cumul_path):
-                arr, hdr = self._lire_grd(cumul_path)
-            else:
-                grd_dir = next(
-                    (os.path.join(pluies_dir, c) for c in candidates
-                     if os.path.isdir(os.path.join(pluies_dir, c))), None)
-                if grd_dir is None:
-                    self._indices_cache[cache_key] = None
-                    return None
-                arr, hdr = self._calculer_cumul_grd(grd_dir)
-                os.makedirs(cumul_dir, exist_ok=True)
-                self._ecrire_grd(cumul_path, arr, hdr)
-            data = np.where(arr == hdr["nodata"], np.nan, arr)
+        _, _, pluies_dir, bv_dir = self._get_out_dirs()
 
-            # ── Masque BV avec cache (une seule lecture par chemin) ───────────
-            masque_path = getattr(self, "var_masque_asc", None)
-            masque_path = masque_path.get().strip() if masque_path else \
-                          self.config_data.get("station", {}).get("masque_asc", "")
-            if not hasattr(self, "_masque_cache"):
-                self._masque_cache = (None, None, None)
-            cached_path, masque_array, mask_header = self._masque_cache
-            if masque_path and masque_path != cached_path and os.path.isfile(masque_path):
-                masque_array, mask_header = self._lire_asc_numpy(masque_path)
-                self._masque_cache = (masque_path, masque_array, mask_header)
-            elif masque_path != cached_path:
-                masque_array, mask_header = None, None
-                self._masque_cache = (masque_path, None, None)
+        # Cache masque BV (une seule lecture par chemin)
+        masque_path = getattr(self, "var_masque_asc", None)
+        masque_path = masque_path.get().strip() if masque_path else \
+                      self.config_data.get("station", {}).get("masque_asc", "")
 
-            # ── Pixels BV via numpy vectorisé ────────────────────────────────
-            if masque_array is not None and mask_header is not None:
-                mx   = mask_header["xllcorner"]; my  = mask_header["yllcorner"]
-                mcs  = mask_header["cellsize"];  mnr = mask_header["nrows"]
-                mnc  = mask_header["ncols"]
-                nc_g = hdr["ncols"]; nr_g = hdr["nrows"]
-                cs_g = hdr["cellsize"]
-                xll_g = hdr["xllcorner"]; yll_g = hdr["yllcorner"]
-                # Centres X/Y de chaque pixel GRD
-                cols_g = np.arange(nc_g)
-                rows_g = np.arange(nr_g)
-                gx = xll_g + (cols_g + 0.5) * cs_g          # (nc_g,)
-                gy = yll_g + (nr_g - rows_g - 0.5) * cs_g   # (nr_g,)
-                # Indices dans le masque
-                mj = ((gx - mx) / mcs).astype(int)           # (nc_g,)
-                mi = ((my + mnr * mcs - gy) / mcs).astype(int)  # (nr_g,)
-                valid_col = (mj >= 0) & (mj < mnc)
-                valid_row = (mi >= 0) & (mi < mnr)
-                vals = []
-                for ri in range(nr_g):
-                    if not valid_row[ri]:
-                        continue
-                    for ci in range(nc_g):
-                        if not valid_col[ci]:
-                            continue
-                        v = data[ri, ci]
-                        if not np.isnan(v) and masque_array[mi[ri], mj[ci]] == 1:
-                            vals.append(v)
-                pixels_bv = np.array(vals, dtype=np.float32)
-            else:
-                pixels_bv = data[~np.isnan(data)]
-
-            if pixels_bv.size <= 1:
-                self._indices_cache[cache_key] = None
-                return None
-            mu = float(np.mean(pixels_bv))
-            if mu <= 0:
-                self._indices_cache[cache_key] = None
-                return None
-            cv      = float(np.std(pixels_bv)) / mu
-            max_moy = float(np.max(pixels_bv)) / mu
-            px_s = np.sort(pixels_bv)
-            n_s  = len(px_s)
-            gini = float(
-                (2 * np.dot(np.arange(1, n_s + 1, dtype=np.float64), px_s)
-                 / (n_s * float(np.sum(px_s)))) - (n_s + 1) / n_s)
-            result = {"cv": max(0.0, cv), "gini": max(0.0, gini), "max_moy": max_moy}
-        except Exception as exc:
-            print(f"[WARN] indices {produit} ep={key} : {exc}")
+        result = visu_logic.indices_ep_calcul(
+            ep, produit, pluies_dir, bv_dir, masque_path or None)
         self._indices_cache[cache_key] = result
         return result
 
     # ── Helpers GRD ──────────────────────────────────────────────────────────
 
     def _lire_asc_numpy(self, filepath):
-        """Lecture rapide d'un fichier ESRI ASCII (.asc/.grd) via numpy.loadtxt."""
-        header = {}
-        header_keys = {"ncols", "nrows", "xllcorner", "yllcorner",
-                       "xllcenter", "yllcenter", "cellsize",
-                       "nodata_value", "nodata"}
-        skip = 0
-        with open(filepath, "r") as fh:
-            for line in fh:
-                parts = line.strip().split()
-                if not parts:
-                    skip += 1
-                    continue
-                if parts[0].lower() in header_keys:
-                    header[parts[0].lower()] = float(parts[1])
-                    skip += 1
-                else:
-                    break   # première ligne de données
-        ncols_hdr = int(header.get("ncols", 0))
-        uc = range(ncols_hdr) if ncols_hdr else None
-        arr = np.loadtxt(filepath, skiprows=skip, dtype=np.float32, usecols=uc)
-        h = {
-            "ncols":     int(header.get("ncols",     arr.shape[1])),
-            "nrows":     int(header.get("nrows",     arr.shape[0])),
-            "xllcorner": header.get("xllcorner", header.get("xllcenter", 0)),
-            "yllcorner": header.get("yllcorner", header.get("yllcenter", 0)),
-            "cellsize":  header.get("cellsize", 1000),
-            "nodata":    header.get("nodata_value", header.get("nodata", -1)),
-        }
-        return arr, h
+        """Wrapper — délègue à visu_logic.lire_asc_numpy."""
+        return visu_logic.lire_asc_numpy(filepath)
 
     def _lire_grd(self, filepath):
-        """Lit un fichier GRD/ASC (format ESRI ASCII) → (np.array float32, header dict)."""
-        header = {}
-        header_keys = {"ncols", "nrows", "xllcorner", "yllcorner",
-                       "xllcenter", "yllcenter", "cellsize",
-                       "nodata_value", "nodata"}  # .asc utilise parfois "nodata"
-        rows = []
-        with open(filepath, "r") as fh:
-            for line in fh:
-                parts = line.strip().split()
-                if not parts:
-                    continue
-                if parts[0].lower() in header_keys:
-                    header[parts[0].lower()] = float(parts[1])
-                else:
-                    rows.append([float(v) for v in parts])
-        arr = np.array(rows, dtype=np.float32)
-        h = {
-            "ncols":    int(header.get("ncols", arr.shape[1])),
-            "nrows":    int(header.get("nrows", arr.shape[0])),
-            "xllcorner": header.get("xllcorner", header.get("xllcenter", 0)),
-            "yllcorner": header.get("yllcorner", header.get("yllcenter", 0)),
-            "cellsize":  header.get("cellsize", 1000),
-            "nodata":    header.get("nodata_value", header.get("nodata", -1)),
-        }
-        return arr, h
+        """Wrapper — délègue à visu_logic.lire_grd."""
+        return visu_logic.lire_grd(filepath)
 
     def _lire_asc(self, filepath):
         """Identique à _lire_grd mais pour fichiers .asc avec clé NODATA_VALUE."""
-        return self._lire_grd(filepath)
+        return visu_logic.lire_grd(filepath)
 
     def _calculer_cumul_grd(self, grd_dir):
-        """Somme tous les .grd du dossier (1/10 mm → mm via ×0.1) → (cumul mm, header)."""
-        fichiers = sorted(
-            f for f in os.listdir(grd_dir)
-            if f.lower().endswith(".grd") or f.lower().endswith(".asc"))
-        if not fichiers:
-            raise ValueError(f"Aucun fichier GRD dans {grd_dir}")
-        cumul = None
-        header = None
-        for fname in fichiers:
-            arr, h = self._lire_grd(os.path.join(grd_dir, fname))
-            valid = arr != h["nodata"]
-            vals  = np.where(valid, arr * 0.1, 0.0)   # 1/10 mm → mm
-            if cumul is None:
-                cumul  = vals
-                header = h
-            else:
-                cumul += vals
-        return cumul, header
+        """Wrapper — délègue à visu_logic.calculer_cumul_grd."""
+        return visu_logic.calculer_cumul_grd(grd_dir)
 
     def _ecrire_grd(self, filepath, array, header):
-        """Écrit un tableau numpy en format ESRI ASCII GRD."""
-        with open(filepath, "w") as fh:
-            fh.write(f"ncols         {header['ncols']}\n")
-            fh.write(f"nrows         {header['nrows']}\n")
-            fh.write(f"xllcorner     {header['xllcorner']:.2f}\n")
-            fh.write(f"yllcorner     {header['yllcorner']:.2f}\n")
-            fh.write(f"cellsize      {header['cellsize']:.2f}\n")
-            fh.write(f"NODATA_VALUE  -1\n")
-            for row in array:
-                fh.write(" ".join(f"{v:.4f}" for v in row) + "\n")
+        """Wrapper — délègue à visu_logic.ecrire_grd."""
+        visu_logic.ecrire_grd(filepath, array, header)
 
     # ── Encart stats Antilope vs Panthère ───────────────────────────────────
 
@@ -2719,6 +2405,19 @@ class App(tk.Tk):
                   command=lambda: (self._refresh_visu_list(), self._plath_refresh())
                   ).pack(side=tk.LEFT)
 
+        # Ligne 1b : bande Antilope pour export Plathynes
+        r_ab = self._row(inn_d, bg_d)
+        tk.Label(r_ab, text="", bg=bg_d, width=9, anchor="w").pack(side=tk.LEFT)
+        self._lbl(r_ab, "Antilope :", bg_d, w=13)
+        self.var_plath_ant_bande = tk.IntVar(value=0)
+        tk.Radiobutton(r_ab, text="Pluie totale", variable=self.var_plath_ant_bande, value=0,
+                       bg=bg_d, activebackground=bg_d,
+                       font=("TkDefaultFont", 9)).pack(side=tk.LEFT, padx=(4, 0))
+        tk.Radiobutton(r_ab, text="Pluie liquide", variable=self.var_plath_ant_bande, value=1,
+                       bg=bg_d, activebackground=bg_d,
+                       font=("TkDefaultFont", 9)).pack(side=tk.LEFT, padx=(12, 0))
+        tk.Label(r_ab, text="(pluie liquide disponible si extraction avec bande liquide)",
+                 bg=bg_d, fg="#777777", font=("TkDefaultFont", 8, "italic")).pack(side=tk.LEFT, padx=(8, 0))
         # Ligne 2 : installation Plathynes
         r2 = self._row(inn_d, bg_d)
         tk.Label(r2, text="Plathynes :", bg=bg_d, font=("TkDefaultFont", 8, "bold"),
@@ -2962,7 +2661,10 @@ class App(tk.Tk):
 
         # ── Utiliser directement la liste déjà construite par l'onglet Visualisation ──
         _, _, pluies_dir, _ = self._get_out_dirs()
-        _GRD_PREFIXES = ("Pluie-Ep_", "AntJ1-Ep_", "Pant-Ep_")
+        _use_liq = getattr(self, "var_plath_ant_bande", None)
+        _use_liq = _use_liq is not None and _use_liq.get() == 1
+        _GRD_PREFIXES = ("Pluie-Ep_", "AntJ1-Liq-Ep_", "Pant-Ep_") if _use_liq \
+                   else ("Pluie-Ep_", "AntJ1-Ep_", "Pant-Ep_")
 
         # ── Construire la liste complète (_plath_ep_rows) ────────────────────
         self._plath_ep_vars.clear()
@@ -4569,6 +4271,7 @@ class App(tk.Tk):
 
         options = {
             "pluies":           self.var_pluies.get(),
+            "ant_bande":        self.var_ant_bande.get(),
             "pdt_pluies":       PDT_PLUIES_OPTIONS.get(self.var_pdt_pluies.get(), 60),
             "pluies_panthere":  self.var_pluies_panthere.get(),
             "hu":               self.var_hu.get(),

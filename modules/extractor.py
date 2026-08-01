@@ -183,6 +183,31 @@ def _process_episode(episode, bdi, phyc, ul, lr, nom_station, code_phyc,
             errs.append(f"Antilope : {e}")
             synthese["Antilope"] = {"ok": False, "erreur": str(e)}
 
+    # ── Pluies Antilope — bande liquide (optionnel) ───────────────────────────
+    if options.get("pluies") and options.get("ant_bande", 0) == 1:
+        pdt_p = options.get("pdt_pluies", 60)
+        out_liq = os.path.join(base_out, nom_station, "Pluies", f"AntJ1-Liq-Ep_{date_tag}_{nom_station}")
+        log_fn(f"\n[Antilope liquide] pdt={pdt_p}mn -> {out_liq}")
+        try:
+            bdi.extraire_pluies(
+                date_debut=date_debut, date_fin=date_fin,
+                ul=ul, lr=lr,
+                pdt_minutes=pdt_p,
+                output_dir=out_liq,
+                log_fn=log_fn,
+                bande="liquide",
+            )
+            # Calcul pluie moyenne BV liquide
+            os.makedirs(bv_dir, exist_ok=True)
+            out_liq_bv = os.path.join(bv_dir, f"AntJ1-Liq_BV-Ep_{date_tag}_{nom_station}.csv")
+            try:
+                calculer_pluie_bv_csv(out_liq, out_liq_bv, log_fn=log_fn)
+            except Exception as e:
+                log_fn(f"  [AntJ1-Liq_BV] AVERTISSEMENT : calcul moyenne echoue : {e}")
+        except Exception as e:
+            log_fn(f"  [Antilope liquide] ERREUR : {e}")
+            errs.append(f"Antilope liquide : {e}")
+
     # ── Pluies Panthère ───────────────────────────────────────────────────────
     if options.get("pluies_panthere"):
         out_panth = os.path.join(base_out, nom_station, "Pluies", f"Pant-Ep_{date_tag}_{nom_station}")
