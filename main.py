@@ -119,23 +119,6 @@ class App(tk.Tk):
         self._build_ui()
         self._load_config()
 
-    # ── Helpers paramétrage ─────────────────────────────────────────────────
-
-    @property
-    def _pfx_station(self):
-        return self.config_data.get("parametrage", {}).get("prefixe_station", "Y")
-
-    @property
-    def _nb_digits(self):
-        try:
-            return int(self.config_data.get("parametrage", {}).get("nb_chiffres_station", 9))
-        except (ValueError, TypeError):
-            return 9
-
-    @property
-    def _pfx_bnbv(self):
-        return self.config_data.get("parametrage", {}).get("prefixe_bnbv", "MO")
-
     # -----------------------------------------------------------------------
     # Construction de l'interface
     # -----------------------------------------------------------------------
@@ -152,7 +135,6 @@ class App(tk.Tk):
         self.tab_pluies      = ttk.Frame(self._notebook)
         self.tab_analyse     = ttk.Frame(self._notebook)
         self.tab_plathynes   = ttk.Frame(self._notebook)
-        self.tab_parametrage = tk.Frame(self._notebook, bg="#1B2631")
 
         # Icône logo Plathynes pour l'onglet Import
         self._plath_tab_img = None
@@ -180,7 +162,6 @@ class App(tk.Tk):
         self._notebook.add(self.tab_pluies,      text="  Analyse pluies  ")
         self._notebook.add(self.tab_analyse,     text="  Caractérisation crues  ")
         self._notebook.add(self.tab_plathynes,   text="  Import Plathynes  ", **_plath_tab_kw)
-        self._notebook.add(self.tab_parametrage, text="  ⚙  Paramétrage  ")
 
         self._build_tab_config()
         self._build_tab_episodes()
@@ -189,7 +170,6 @@ class App(tk.Tk):
         self._build_tab_pluies()
         self._build_tab_analyse()
         self._build_tab_plathynes()
-        self._build_tab_parametrage()
         self._place_logo()
         self._notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed)
 
@@ -276,14 +256,10 @@ class App(tk.Tk):
 
         r = self._row(inn, bg)
         self._lbl(r, "Code station hydrométrie :", bg)
-        self._var_pfx_station_lbl = tk.StringVar(value="Y")
-        tk.Label(r, textvariable=self._var_pfx_station_lbl, bg=bg,
-                 font=("TkDefaultFont", 10, "bold")).pack(side=tk.LEFT)
-        self.var_code_station_suffix = tk.StringVar()
-        ttk.Entry(r, textvariable=self.var_code_station_suffix, width=12).pack(side=tk.LEFT, padx=(2, 4))
-        self._var_pfx_station_hint = tk.StringVar(value="ex: 027401001  (→ code site Q/H : Y0274010)")
-        tk.Label(r, textvariable=self._var_pfx_station_hint, fg="#777777", bg=bg,
-                 font=("TkDefaultFont", 8)).pack(side=tk.LEFT)
+        self.var_code_station = tk.StringVar()
+        ttk.Entry(r, textvariable=self.var_code_station, width=14).pack(side=tk.LEFT, padx=(2, 4))
+        tk.Label(r, text="10 caractères : 1 lettre + 9 chiffres  (ex: Y0274010XX  → code site : Y02740101)",
+                 fg="#777777", bg=bg, font=("TkDefaultFont", 8)).pack(side=tk.LEFT)
 
         r = self._row(inn, bg)
         self._lbl(r, "Identifiant PHyC :", bg)
@@ -314,12 +290,11 @@ class App(tk.Tk):
 
         r = self._row(inn, bg)
         self._lbl(r, "Code BNBV :", bg)
-        self._var_pfx_bnbv_lbl = tk.StringVar(value="MO")
-        tk.Label(r, textvariable=self._var_pfx_bnbv_lbl, bg=bg,
-                 font=("TkDefaultFont", 10, "bold")).pack(side=tk.LEFT)
-        self.var_code_bnbv_suffix = tk.StringVar()
-        self.var_code_bnbv_suffix.trace_add("write", self._on_bnbv_change)
-        ttk.Entry(r, textvariable=self.var_code_bnbv_suffix, width=8).pack(side=tk.LEFT, padx=(2, 4))
+        self.var_code_bnbv = tk.StringVar()
+        self.var_code_bnbv.trace_add("write", self._on_bnbv_change)
+        ttk.Entry(r, textvariable=self.var_code_bnbv, width=10).pack(side=tk.LEFT, padx=(2, 4))
+        tk.Label(r, text="(ex: MO715)", fg="#777777", bg=bg,
+                 font=("TkDefaultFont", 8)).pack(side=tk.LEFT)
 
         r = self._row(inn, bg)
         self._lbl(r, "Coin UL (X,Y L93) :", bg)
@@ -3042,171 +3017,6 @@ class App(tk.Tk):
         except Exception as e:
             self._plath_log_msg(f"  [AVERT] Impossible de lancer Plathynes : {e}", "erreur")
 
-    # ── Onglet Paramétrage ───────────────────────────────────────────────────
-
-    def _build_tab_parametrage(self):
-        frm = self._make_scrollable_tab(self.tab_parametrage)
-        BG  = "#1B2631"
-        BG2 = "#212F3D"
-        FG  = "#D6EAF8"
-        FG2 = "#85C1E9"
-        ACC = "#2E86C1"
-
-        # ── En-tête ────────────────────────────────────────────────────────
-        hdr = tk.Frame(frm, bg="#154360", pady=14)
-        hdr.pack(fill=tk.X)
-        tk.Label(hdr, text="⚙  Paramétrage territorial",
-                 bg="#154360", fg="#FFFFFF",
-                 font=("TkDefaultFont", 13, "bold")).pack(side=tk.LEFT, padx=20)
-        tk.Label(hdr, text="Préfixes et longueurs des codes identifiants",
-                 bg="#154360", fg="#AED6F1",
-                 font=("TkDefaultFont", 9, "italic")).pack(side=tk.LEFT, padx=(0, 20))
-
-        body = tk.Frame(frm, bg=BG, padx=30, pady=20)
-        body.pack(fill=tk.BOTH, expand=True)
-
-        # ── Note d'avertissement ───────────────────────────────────────────
-        note = tk.Frame(body, bg="#1A4971", padx=14, pady=10, relief="flat")
-        note.pack(fill=tk.X, pady=(0, 22))
-        tk.Label(note, text="ℹ  Ces paramètres s'appliquent à toute la configuration.\n"
-                             "Après modification, pensez à re-vérifier les codes station et BNBV\n"
-                             "dans l'onglet Configuration.",
-                 bg="#1A4971", fg="#D6EAF8", font=("TkDefaultFont", 9),
-                 justify=tk.LEFT).pack(anchor=tk.W)
-
-        def _row(label_text):
-            r = tk.Frame(body, bg=BG, pady=6)
-            r.pack(fill=tk.X)
-            tk.Label(r, text=label_text, bg=BG, fg=FG,
-                     font=("TkDefaultFont", 10), width=36, anchor=tk.W).pack(side=tk.LEFT)
-            return r
-
-        # ── Code station — préfixe ─────────────────────────────────────────
-        r = _row("Préfixe du code station hydrométrie :")
-        self._var_param_pfx_station = tk.StringVar()
-        tk.Entry(r, textvariable=self._var_param_pfx_station, width=6,
-                 font=("TkDefaultFont", 10, "bold")).pack(side=tk.LEFT, padx=(0, 12))
-        tk.Label(r, text="(ex : Y pour les stations du SPCMO)",
-                 bg=BG, fg=FG2, font=("TkDefaultFont", 8, "italic")).pack(side=tk.LEFT)
-
-        # ── Code station — nb chiffres ─────────────────────────────────────
-        r = _row("Nombre de chiffres après le préfixe :")
-        self._var_param_nb_digits = tk.StringVar()
-        tk.Entry(r, textvariable=self._var_param_nb_digits, width=4,
-                 font=("TkDefaultFont", 10)).pack(side=tk.LEFT, padx=(0, 12))
-        tk.Label(r, text="(9 par défaut — le code site = préfixe + (n-2) premiers chiffres)",
-                 bg=BG, fg=FG2, font=("TkDefaultFont", 8, "italic")).pack(side=tk.LEFT)
-
-        # ── Séparateur ─────────────────────────────────────────────────────
-        tk.Frame(body, bg="#2E4057", height=1).pack(fill=tk.X, pady=16)
-
-        # ── Code BNBV — préfixe ────────────────────────────────────────────
-        r = _row("Préfixe du code BNBV :")
-        self._var_param_pfx_bnbv = tk.StringVar()
-        tk.Entry(r, textvariable=self._var_param_pfx_bnbv, width=6,
-                 font=("TkDefaultFont", 10, "bold")).pack(side=tk.LEFT, padx=(0, 12))
-        tk.Label(r, text="(ex : MO pour SPCMO)",
-                 bg=BG, fg=FG2, font=("TkDefaultFont", 8, "italic")).pack(side=tk.LEFT)
-
-        # ── Bouton Enregistrer ─────────────────────────────────────────────
-        tk.Frame(body, bg="#2E4057", height=1).pack(fill=tk.X, pady=(20, 16))
-        btn_row = tk.Frame(body, bg=BG)
-        btn_row.pack(anchor=tk.W)
-        tk.Button(btn_row, text="  💾  Enregistrer le paramétrage  ",
-                  bg=ACC, fg="white",
-                  activebackground="#1A5276", activeforeground="white",
-                  relief="flat", bd=0, padx=14, pady=8,
-                  font=("TkDefaultFont", 10, "bold"), cursor="hand2",
-                  command=self._save_parametrage).pack(side=tk.LEFT)
-        self._lbl_param_status = tk.Label(btn_row, text="", bg=BG,
-                                           font=("TkDefaultFont", 9))
-        self._lbl_param_status.pack(side=tk.LEFT, padx=14)
-
-        # ── Barre basse : Aide + contact ───────────────────────────────────
-        tk.Frame(body, bg="#2E4057", height=1).pack(fill=tk.X, pady=(20, 12))
-        bottom_row = tk.Frame(body, bg=BG)
-        bottom_row.pack(fill=tk.X)
-
-        tk.Button(bottom_row, text="  ℹ  Aide",
-                  bg="#1A4971", fg="#AED6F1",
-                  activebackground="#2E4057", activeforeground="#FFFFFF",
-                  relief="groove", bd=1, padx=12, pady=7,
-                  font=("TkDefaultFont", 9), cursor="hand2",
-                  command=self._ouvrir_aide).pack(side=tk.LEFT)
-
-        _ico_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo_OPALE.ico")
-        if os.path.isfile(_ico_path):
-            try:
-                from PIL import Image, ImageTk
-                _img = Image.open(_ico_path).resize((28, 28), Image.LANCZOS)
-                self._logo_photo_param = ImageTk.PhotoImage(_img)
-                tk.Label(bottom_row, image=self._logo_photo_param,
-                         bg=BG).pack(side=tk.RIGHT, padx=(0, 6))
-            except Exception:
-                pass
-
-        lbl_contact = tk.Label(
-            bottom_row,
-            text="PIOT Charles-Eddy — SPCMO",
-            fg="#AED6F1", bg=BG,
-            font=("TkDefaultFont", 8, "underline"),
-            cursor="hand2",
-        )
-        lbl_contact.pack(side=tk.RIGHT, padx=(0, 4))
-        lbl_contact.bind("<Button-1>", lambda e: webbrowser.open(
-            "mailto:charles-eddy.piot@developpement-durable.gouv.fr"
-            "?subject=Info%20%2F%20bugg%20outil%20pr%C3%A9pa%20crues%20Plathynes"
-        ))
-
-    def _refresh_parametrage_ui(self):
-        p = self.config_data.get("parametrage", {})
-        if hasattr(self, "_var_param_pfx_station"):
-            self._var_param_pfx_station.set(p.get("prefixe_station", "Y"))
-            self._var_param_nb_digits.set(str(p.get("nb_chiffres_station", 9)))
-            self._var_param_pfx_bnbv.set(p.get("prefixe_bnbv", "MO"))
-
-    def _save_parametrage(self):
-        pfx_st = self._var_param_pfx_station.get().strip()
-        nb_str = self._var_param_nb_digits.get().strip()
-        pfx_bv = self._var_param_pfx_bnbv.get().strip()
-
-        if not pfx_st:
-            self._lbl_param_status.config(text="⚠ Le préfixe station ne peut pas être vide.", fg="#E74C3C")
-            return
-        if not pfx_bv:
-            self._lbl_param_status.config(text="⚠ Le préfixe BNBV ne peut pas être vide.", fg="#E74C3C")
-            return
-        try:
-            nb = int(nb_str)
-            if nb < 3:
-                raise ValueError
-        except ValueError:
-            self._lbl_param_status.config(text="⚠ Nombre de chiffres invalide (entier ≥ 3 attendu).", fg="#E74C3C")
-            return
-
-        self.config_data["parametrage"] = {
-            "prefixe_station":     pfx_st,
-            "nb_chiffres_station": nb,
-            "prefixe_bnbv":        pfx_bv,
-        }
-        try:
-            from modules.config_manager import save_config
-            save_config(self.config_data)
-        except Exception as e:
-            self._lbl_param_status.config(text=f"⚠ Erreur sauvegarde : {e}", fg="#E74C3C")
-            return
-
-        # Mettre à jour les labels dynamiques dans Configuration
-        self._var_pfx_station_lbl.set(pfx_st)
-        self._var_pfx_bnbv_lbl.set(pfx_bv)
-        nd = self._nb_digits
-        site_digits = nd - 2
-        self._var_pfx_station_hint.set(
-            f"({nd} chiffres — code site = {pfx_st} + {site_digits} premiers chiffres)")
-
-        self._lbl_param_status.config(
-            text="✓ Paramétrage enregistré. Vérifiez les codes en Configuration.", fg="#27AE60")
-
     # ── Onglet Analyse ───────────────────────────────────────────────────────
 
     def _build_tab_analyse(self):
@@ -3798,9 +3608,8 @@ class App(tk.Tk):
             return {}
 
     def _on_bnbv_change(self, *_):
-        suffix = self.var_code_bnbv_suffix.get().strip()
-        code   = self._pfx_bnbv + suffix
-        table  = self._load_bbox_table()
+        code  = self.var_code_bnbv.get().strip()
+        table = self._load_bbox_table()
         if code in table:
             self.var_ul.set(table[code]["ul"])
             self.var_lr.set(table[code]["lr"])
@@ -3833,12 +3642,6 @@ class App(tk.Tk):
                 "station": {"code_station": "", "code_site": "", "code_bnbv": "", "nom_station": "", "ul": "", "lr": ""},
                 "output_dir": "./sorties",
             }
-        self.config_data.setdefault("parametrage", {
-            "prefixe_station":      "Y",
-            "nb_chiffres_station":  9,
-            "prefixe_bnbv":         "MO",
-        })
-        self._refresh_parametrage_ui()
         self._refresh_config_ui()
         self._refresh_extraction_ui()
         self._refresh_plathynes_ui()
@@ -3854,22 +3657,9 @@ class App(tk.Tk):
         self.var_outdir.set(self.config_data.get("output_dir", "./sorties"))
 
         st = self.config_data.get("station", {})
-        # Priorité code_station, fallback code_site (compat anciens JSON)
         code_st = st.get("code_station", "") or st.get("code_site", "")
-        pfx = self._pfx_station
-        self.var_code_station_suffix.set(code_st[len(pfx):] if code_st.startswith(pfx) else code_st)
-        code_bnbv = st.get("code_bnbv", "")
-        pfx_b = self._pfx_bnbv
-        self.var_code_bnbv_suffix.set(code_bnbv[len(pfx_b):] if code_bnbv.startswith(pfx_b) else code_bnbv)
-        # Mise à jour des labels préfixe dans l'UI Configuration
-        self._var_pfx_station_lbl.set(pfx)
-        self._var_pfx_bnbv_lbl.set(pfx_b)
-        nd = self._nb_digits
-        site_digits = nd - 2
-        ex_suffix = "0" * nd
-        ex_site   = pfx + ex_suffix[:site_digits] + "…"
-        self._var_pfx_station_hint.set(
-            f"ex: {'2' + '0'*(nd-1)}  (→ code site Q/H : {pfx}{'0'*site_digits}…  {nd} chiffres)")
+        self.var_code_station.set(code_st)
+        self.var_code_bnbv.set(st.get("code_bnbv", ""))
         self.var_nom_station.set(st.get("nom_station", ""))
         self.var_ul.set(st.get("ul", ""))
         self.var_lr.set(st.get("lr", ""))
@@ -3960,14 +3750,12 @@ class App(tk.Tk):
         self.config_data["phyc"]["motdepasse"]= self.var_phyc_pwd.get()
         self.config_data["bdimage"]["url"]    = self.var_bdi_url.get().strip()
         self.config_data["output_dir"]        = self.var_outdir.get().strip()
-        suffix9 = self.var_code_station_suffix.get().strip()
-        nd = self._nb_digits
-        code_station = self._pfx_station + suffix9
-        code_site    = self._pfx_station + suffix9[:nd - 2]
+        code_station = self.var_code_station.get().strip()
+        code_site    = code_station[:8]  # 1 lettre + 7 chiffres
         self.config_data["station"] = {
             "code_station": code_station,
             "code_site":    code_site,
-            "code_bnbv":   self._pfx_bnbv + self.var_code_bnbv_suffix.get().strip(),
+            "code_bnbv":   self.var_code_bnbv.get().strip(),
             "nom_station": self.var_nom_station.get().strip(),
             "ul": self.var_ul.get().strip(),
             "lr": self.var_lr.get().strip(),
@@ -4087,15 +3875,15 @@ class App(tk.Tk):
     # -----------------------------------------------------------------------
 
     def _recup_info_phyc(self):
-        suffix = self.var_code_station_suffix.get().strip()
-        nd = self._nb_digits
-        if len(suffix) != nd:
+        import re
+        code_station = self.var_code_station.get().strip()
+        if not re.match(r'^[A-Za-z]\d{9}$', code_station):
             self._set_phyc_status(
-                f"Code invalide : saisissez {nd} chiffres après {self._pfx_station} "
-                f"(ex: {'027401001'[:nd]}). Actuellement {len(suffix)} caractère(s) saisi(s).", ok=False)
+                f"Code station invalide : saisissez 10 caractères (1 lettre + 9 chiffres). "
+                f"Ex: Y027401001. Actuellement saisi : '{code_station}'", ok=False)
             return
 
-        code_site  = self._pfx_station + suffix[:nd - 2]
+        code_site  = code_station[:8]
         url        = self.var_phyc_url.get().strip()
         idcontact  = self.var_phyc_id.get().strip()
         motdepasse = self.var_phyc_pwd.get()
@@ -4137,11 +3925,9 @@ class App(tk.Tk):
                     self.var_nom_station.set(libelle)
                     msgs.append(f"Libellé : {libelle}")
                 if code_bnbv_phyc:
-                    pfx_b = self._pfx_bnbv
-                    suffix = code_bnbv_phyc[len(pfx_b):] if code_bnbv_phyc.startswith(pfx_b) else code_bnbv_phyc
                     # N'écraser que si le champ BNBV est vide
-                    if not self.var_code_bnbv_suffix.get().strip():
-                        self.var_code_bnbv_suffix.set(suffix)
+                    if not self.var_code_bnbv.get().strip():
+                        self.var_code_bnbv.set(code_bnbv_phyc)
                     msgs.append(f"BNBV : {code_bnbv_phyc}")
                 if msgs:
                     self._set_phyc_status(
@@ -4163,14 +3949,13 @@ class App(tk.Tk):
 
     def _recup_seuils_phyc(self):
         """Récupère les seuils de vigilance depuis PHyC et pré-remplit les champs."""
-        suffix = self.var_code_station_suffix.get().strip()
-        nd = self._nb_digits
-        if len(suffix) < nd - 2:
-            self.var_seuil_status.set(f"Code station manquant ({nd} chiffres attendus).")
+        import re
+        code_station = self.var_code_station.get().strip()
+        if not re.match(r'^[A-Za-z]\d{9}$', code_station):
+            self.var_seuil_status.set("Code station invalide (10 car. : 1 lettre + 9 chiffres).")
             return
-        # Pour Q → code site (nd-2 chiffres) ; pour H → code station complet (nd chiffres)
         use_h = self.var_seuils_grandeur.get() == "H (m)"
-        code_entite = self._pfx_station + suffix if use_h else self._pfx_station + suffix[:nd - 2]
+        code_entite = code_station if use_h else code_station[:8]
         phyc_cfg = self.config_data.get("phyc", {})
         unite = "m" if use_h else "m³/s"
         self.var_seuil_status.set(f"Connexion PHyC en cours (seuils {unite})...")
@@ -4256,15 +4041,16 @@ class App(tk.Tk):
                                    "Sélectionnez au moins un épisode dans l'onglet Épisodes.")
             return
 
-        suffix_st = self.var_code_station_suffix.get().strip()
-        nd = self._nb_digits
-        if len(suffix_st) != nd:
+        import re
+        code_station = self.var_code_station.get().strip()
+        if not re.match(r'^[A-Za-z]\d{9}$', code_station):
             messagebox.showwarning("Code invalide",
-                                   f"Saisissez {nd} chiffres pour le code station hydrométrie.")
+                                   "Le code station doit comporter 10 caractères : "
+                                   "1 lettre suivie de 9 chiffres (ex: Y027401001).")
             return
 
-        suffix_bnbv = self.var_code_bnbv_suffix.get().strip()
-        if not suffix_bnbv:
+        code_bnbv = self.var_code_bnbv.get().strip()
+        if not code_bnbv:
             messagebox.showwarning("Code BNBV manquant",
                                    "Saisissez le code BNBV dans l'onglet Configuration.")
             return
@@ -4309,9 +4095,9 @@ class App(tk.Tk):
         self.config_data["bdimage"]["url"]     = self.var_bdi_url.get().strip()
         self.config_data["output_dir"]         = self.var_outdir.get().strip() or "./sorties"
         self.config_data["station"] = {
-            "code_station": self._pfx_station + suffix_st,
-            "code_site":    self._pfx_station + suffix_st[:self._nb_digits - 2],
-            "code_bnbv":    self._pfx_bnbv + suffix_bnbv,
+            "code_station": code_station,
+            "code_site":    code_station[:8],
+            "code_bnbv":    code_bnbv,
             "nom_station": self.var_nom_station.get().strip(),
             "ul": self.var_ul.get().strip(),
             "lr": self.var_lr.get().strip(),

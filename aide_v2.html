@@ -377,8 +377,8 @@
   <ul>
     <li>Un accès au réseau <strong>RIE</strong> (réseau interne SPC / SCV)</li>
     <li>Un compte <strong>PHyC</strong> (identifiant + mot de passe)</li>
-    <li>Le <strong>code station hydrométrie</strong> de votre site (format <code>Yxxxxxxxxx</code>, 10 caractères — ex. <code>Y027401001</code> pour Le Boulou). Le code site à 8 caractères est dérivé automatiquement des 7 premiers chiffres. Le préfixe (<code>Y</code> par défaut) et la longueur du suffixe sont configurables dans l'onglet ⚙ Paramétrage.</li>
-    <li>Le <strong>code BNBV</strong> du bassin versant pour les pluies/HU (format <code>MOxxxxxx</code>). Le préfixe (<code>MO</code> par défaut) est configurable dans l'onglet ⚙ Paramétrage. <em>En PHyC v2.1, le code BNBV est récupéré automatiquement lors du test de connexion</em> (bouton "Récup info PHyC") — il n'est plus nécessaire de le saisir manuellement.</li>
+    <li>Le <strong>code station hydrométrie</strong> de votre site : <strong>10 caractères</strong>, 1 lettre suivie de 9 chiffres (ex. <code>Y027401001</code> pour Le Boulou). Le code site à 8 caractères est dérivé automatiquement (premiers 8 caractères). Pas de préfixe à configurer.</li>
+    <li>Le <strong>code BNBV</strong> du bassin versant pour les pluies/HU (ex. <code>MO715</code>). <em>En PHyC v2.1, le code BNBV est récupéré et pré-chargé automatiquement lors du test de connexion</em> (bouton "Récup info PHyC") — il n'est généralement pas nécessaire de le saisir manuellement.</li>
   </ul>
   <div class="note note-ok">
     <strong>La bounding box est précalculée — aucune saisie requise.</strong><br>
@@ -629,21 +629,6 @@
     </div>
   </div>
 
-  <h2>Étape 8 — Adapter les préfixes (optionnel)</h2>
-  <div class="step">
-    <div class="step-num">8</div>
-    <div class="step-content">
-      <h3>Onglet <span class="badge" style="background:#154360;color:#fff">⚙ Paramétrage</span></h3>
-      <p>Cet onglet (fond sombre, visuellement séparé) permet d'adapter l'outil à un autre territoire sans modifier le code source :</p>
-      <ul>
-        <li><strong>Préfixe du code station hydrométrie</strong> — lettre ou chaîne précédant les chiffres du code station (ex. <code>Y</code> pour les stations du SPCMO).</li>
-        <li><strong>Nombre de chiffres</strong> — longueur du suffixe numérique (9 par défaut). Le code site est automatiquement déduit : préfixe + (n-2) premiers chiffres.</li>
-        <li><strong>Préfixe du code BNBV</strong> — préfixe des bassins versants (ex. <code>MO</code> pour SPCMO).</li>
-      </ul>
-      <p>Cliquez <em>"Enregistrer le paramétrage"</em>. Les labels de l'onglet Configuration se mettent à jour immédiatement. Vérifiez ensuite que les codes station et BNBV saisis sont cohérents avec les nouveaux préfixes.</p>
-    </div>
-  </div>
-
   <h2>Conseils pratiques</h2>
   <ul>
     <li>Pour les stations sans seuils PHyC, saisissez les valeurs manuellement dans Configuration puis cliquez "Appliquer".</li>
@@ -656,10 +641,10 @@
 <!-- ══════════════════════════════════════════════════ AUTRE TERRITOIRE -->
 <div id="tab-territoire" class="tab-panel">
   <h1>Bounding box pour un autre territoire</h1>
-  <p>L'outil est pré-configuré pour le territoire du <strong>SPCMO</strong>. Les préfixes de codes station et BNBV se configurent directement depuis l'onglet <strong>⚙ Paramétrage</strong> de l'application, sans modifier le code source. Cette page couvre uniquement la régénération de la bounding box des bassins versants pour un autre territoire.</p>
+  <p>L'outil est pré-configuré pour le territoire du <strong>SPCMO</strong>. Cette page couvre la régénération de la bounding box des bassins versants pour un autre territoire.</p>
 
   <div class="note note-info">
-    <strong>Préfixes et longueurs de codes :</strong> pour adapter le préfixe du code station hydrométrie (ex. <code>Y</code>), le nombre de chiffres, ou le préfixe BNBV (ex. <code>MO</code>), utilisez l'onglet <strong>⚙ Paramétrage</strong> de l'application — aucune modification de code nécessaire.
+    <strong>Format des codes :</strong> le code station est toujours composé de <strong>10 caractères</strong> (1 lettre + 9 chiffres, ex. <code>Y027401001</code>). Le code BNBV est le code complet tel que retourné par PHyC (ex. <code>MO715</code>). Ces formats sont fixés dans le code — aucun paramétrage de préfixe n'est nécessaire.
   </div>
 
   <h2>1. Régénérer la bounding box des bassins versants</h2>
@@ -691,7 +676,6 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <h2>Récapitulatif</h2>
   <table>
     <tr><th>Adaptation</th><th>Où le faire</th><th>Ce qu'on change</th></tr>
-    <tr><td>Préfixe code station / nb chiffres / préfixe BNBV</td><td>Onglet <strong>⚙ Paramétrage</strong> de l'application</td><td>Champs visuels — aucun fichier à modifier</td></tr>
     <tr><td>Bounding box / nouveau territoire</td><td><code>tools/gen_bbox_bnbv.py</code></td><td><code>SHP</code>, <code>DBF</code>, <code>MARGE_M</code></td></tr>
     <tr><td>Marge bbox uniquement</td><td><code>tools/gen_bbox_bnbv.py</code></td><td><code>MARGE_M = 5000</code> → valeur souhaitée en mètres</td></tr>
   </table>
@@ -726,7 +710,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <div class="arch-grid">
     <div class="arch-box main-">
       <strong>📄 main.py</strong><br>
-      Interface graphique tkinter. 8 onglets : Configuration, Épisodes, Extraction, Visualisation, Analyse pluies, Caractérisation crues, Import Plathynes, Paramétrage. Gère les threads pour les appels réseau.
+      Interface graphique tkinter. 7 onglets : Configuration, Épisodes, Extraction, Visualisation, Analyse pluies, Caractérisation crues, Import Plathynes. Gère les threads pour les appels réseau.
     </div>
     <div class="arch-box module">
       <strong>📁 modules/</strong><br>
@@ -852,8 +836,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <h2>main.py — Interface graphique</h2>
   <table>
     <tr><th>Méthode</th><th>Rôle</th><th>Conditions / Dépendances</th></tr>
-    <tr><td><code>_pfx_station</code> / <code>_nb_digits</code> / <code>_pfx_bnbv</code></td><td>Propriétés lisant <code>config_data["parametrage"]</code></td><td>Valeurs par défaut : <code>"Y"</code> / <code>9</code> / <code>"MO"</code>. Utilisées partout à la place des constantes codées en dur.</td></tr>
-    <tr><td><code>_build_tab_config()</code></td><td>Construction onglet Config (5 sections)</td><td>Labels préfixe "Y" et "MO" liés à des <code>StringVar</code> (<code>_var_pfx_station_lbl</code>, <code>_var_pfx_bnbv_lbl</code>) mis à jour lors de la sauvegarde du Paramétrage.</td></tr>
+    <tr><td><code>_build_tab_config()</code></td><td>Construction onglet Config (5 sections)</td><td>Champ code station (<code>var_code_station</code>, 10 car.) et champ code BNBV (<code>var_code_bnbv</code>) — valeurs directes, sans préfixe.</td></tr>
     <tr><td><code>_save_config()</code></td><td>Lit tous les champs UI → JSON via <code>save_config()</code></td><td>Dérive <code>code_station</code> (10 car.) et <code>code_site</code> (8 car.) depuis les 9 chiffres saisis. Sauve les seuils dans <code>seuils_q</code> ou <code>seuils_h</code> selon la grandeur sélectionnée.</td></tr>
     <tr><td><code>_refresh_config_ui()</code></td><td>Repopule les champs UI depuis <code>config_data</code></td><td>Charge <code>code_station</code> (fallback sur <code>code_site</code> pour les anciens JSON). Recharge les seuils du jeu actif (Q ou H).</td></tr>
     <tr><td><code>_recup_seuils_phyc()</code></td><td>Thread : appelle <code>PhycClient.get_seuils_vigilance()</code></td><td>Utilise le code station (10 car.) pour Q et H. Nécessite connexion PHyC active.</td></tr>
@@ -882,9 +865,6 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <tr><td><code>_refresh_visu_list()</code></td><td>Scanne le dossier de sortie, trie par date décroissante (date parsée DD/MM/YYYY), colorise chaque item via <code>itemconfig</code></td><td>Préfixe <code>●</code> + couleurs bg/fg selon <code>_vig_from_file()</code>. Génère PluieBV manquants à la volée.</td></tr>
     <tr><td><code>_collect_analyse_data()</code></td><td>Lit tous les CSV Q/HU/P, extrait métriques clés + pré-calcule <code>ep["vig"]</code></td><td>Le champ <code>vig</code> est calculé par <code>_vig_label_from_val(q_max)</code> et utilisé par le filtre Vig. max. de l'onglet Analyse.</td></tr>
     <tr><td><code>_plot_analyse(episodes)</code></td><td>Bubble chart avec placement greedy anti-superposition des étiquettes</td><td>Utilise <code>fig.clear()</code> + <code>fig.add_subplot()</code> (et non <code>ax.cla()</code>) pour éviter la duplication de la colorbar entre deux appels. Filtre par <code>ep["vig"]</code> selon les cases Vig. max. cochées. Colorbar intensité (<code>shrink=0.42</code>, ancrée en haut). Légende taille des bulles ("Cumul pluie *") alignée à gauche de la colorbar : position lue via <code>cb.ax.get_window_extent()</code> <em>après</em> un premier <code>draw()</code> (coordonnées pixels → coordonnées figure), placée avec <code>loc="upper left"</code>. Note explicative (25 %, 50 %, 100 % du cumul max) positionnée via <code>leg.get_window_extent().y0</code> après un deuxième <code>draw()</code>. Trois appels <code>draw()</code> au total pour garantir des positions stabilisées.</td></tr>
-    <tr><td><code>_build_tab_parametrage()</code></td><td>Construction de l'onglet Paramétrage (fond sombre <code>#1B2631</code>)</td><td>3 champs : préfixe station, nb chiffres, préfixe BNBV. Note d'information. Bouton "Enregistrer".</td></tr>
-    <tr><td><code>_refresh_parametrage_ui()</code></td><td>Repopule les champs depuis <code>config_data["parametrage"]</code></td><td>Appelée au chargement de la config.</td></tr>
-    <tr><td><code>_save_parametrage()</code></td><td>Valide et persiste le paramétrage, met à jour les labels dynamiques de l'onglet Configuration</td><td>Écrit dans <code>config_data["parametrage"]</code>, appelle <code>save_config()</code>, rafraîchit <code>_var_pfx_station_lbl</code>, <code>_var_pfx_bnbv_lbl</code> et le texte d'aide.</td></tr>
   </table>
 
   <h2>modules/plathynes_importer.py</h2>
@@ -1169,7 +1149,6 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
       <div><strong>Analyse pluies :</strong> _build_tab_pluies, _refresh_pluies_tab</div>
       <div><strong>Caractérisation crues :</strong> _collect_analyse_data, _plot_analyse</div>
       <div><strong>Import Plathynes :</strong> _build_tab_plathynes, _plath_refresh, _plath_apply_filter, _plath_run_import, _plath_importer_seuils, _on_plath_pref_change, _plath_ouvrir_avec_projet, _plath_aide_pdt</div>
-      <div><strong>Paramétrage :</strong> _build_tab_parametrage, _save_parametrage, _refresh_parametrage_ui</div>
     </div>
     <div class="dep-out">↓ appelle : extractor.py, phyc_client.py, bdimage_client.py, config_manager.py, csv_loader.py, phyc_diag.py, plathynes_importer.py</div>
   </div>
@@ -1334,7 +1313,7 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   </tr>
   <tr>
     <td class="sw-row-lbl">Sortie affichée</td>
-    <td>Champs pré-remplis, labels préfixe mis à jour</td>
+    <td>Champs pré-remplis (code station, BNBV, seuils)</td>
     <td>Treeview coloré par Vig. max., tri ▲/▼</td>
     <td>Journal temps réel, popup synthèse + durée</td>
     <td>Hyétogramme + HU + Q + encart stats Antilope vs Panthère</td>
@@ -1587,12 +1566,18 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <p>Chaque item de la Listbox est préfixé d'un <strong>●</strong> et coloré (fond + texte) selon le niveau de vigilance maximal atteint, calculé à la volée par lecture du fichier Q extrait (<code>_vig_from_file()</code>). Les couleurs sont cohérentes avec les tags du Treeview (onglet Épisodes) et la classe <code>_VIG_ITEM_COLORS</code>.</p>
   </div>
 
-  <h2>Onglet Paramétrage</h2>
+  <h2>Suppression onglet Paramétrage — codes sans préfixe (août 2026)</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Suppression de l'onglet Paramétrage</strong>
+    <p>L'onglet <em>⚙ Paramétrage</em> et la notion de préfixes configurables ont été supprimés. Le code station est désormais toujours saisi en entier (<strong>10 caractères</strong> : 1 lettre + 9 chiffres, ex. <code>Y027401001</code>) directement dans l'onglet Configuration — le code site (8 car.) est dérivé automatiquement. Le code BNBV est stocké tel quel (ex. <code>MO715</code>), sans découpage préfixe/suffixe. Les propriétés <code>_pfx_station</code>, <code>_nb_digits</code>, <code>_pfx_bnbv</code> et la section <code>"parametrage"</code> du JSON ont été supprimées.</p>
+  </div>
 
   <div class="change-entry">
     <span class="change-tag ct-feat">Fonctionnalité</span>
-    <strong>Onglet Paramétrage territorial (fond sombre, visuellement distinct)</strong>
-    <p>Nouvel onglet en dernière position permettant de configurer sans modifier le code source : le préfixe du code station hydrométrie (ex. <code>Y</code>), le nombre de chiffres du suffixe numérique (9 par défaut, le code site = préfixe + n-2 premiers chiffres), et le préfixe du code BNBV (ex. <code>MO</code>). Les valeurs sont persistées dans <code>config.json</code> sous la clé <code>"parametrage"</code> et lues via les propriétés <code>_pfx_station</code>, <code>_nb_digits</code>, <code>_pfx_bnbv</code>. À la sauvegarde, les labels de l'onglet Configuration se mettent à jour immédiatement.</p>
+    <strong>Auto-remplissage du code BNBV depuis PHyC v2.1</strong>
+    <p>Lors du test de connexion PHyC (<em>Récup info PHyC</em>), le code BNBV retourné par <code>get_libelle_et_bnbv()</code> (ex. <code>MO715</code>) est pré-chargé automatiquement dans le champ BNBV de l'onglet Configuration si celui-ci est vide. Aucune saisie manuelle n'est nécessaire.</p>
   </div>
 
   <h2>Onglet Import Plathynes</h2>

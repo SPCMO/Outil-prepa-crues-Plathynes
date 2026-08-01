@@ -24,6 +24,16 @@ _ANTILOPE_TD_FIRST = datetime(2020, 10, 12)
 # Produit historique disponible depuis 01/07/2006 (60mn uniquement)
 _ANTILOPE_J1 = ("antilope", "j1")
 
+# Bandes liquide/solide Antilope — disponibles selon la doc BDImage officielle :
+#   france-td-60mn / france-tr-60mn : depuis 08/01/2025
+#   france-td-15mn / france-tr-15mn : depuis 14/09/2024
+# Source : produit Hydre de Météo-France
+_ANTILOPE_LIQUIDE_FIRST_60MN = datetime(2025, 1, 8)
+_ANTILOPE_LIQUIDE_FIRST_15MN = datetime(2024, 9, 14)
+
+# Bandes disponibles par produit (pour info — seule "rr" existe sur j1/temps-reel)
+ANTILOPE_BANDES = ("rr", "liquide", "solide", "qualite")
+
 
 def _antilope_product(pdt_minutes, date_debut):
     """Sélectionne le bon produit antilope selon la date et le pas de temps.
@@ -64,8 +74,8 @@ class BdimageClient:
     # ------------------------------------------------------------------
 
     def extraire_pluies(self, date_debut, date_fin, ul, lr, pdt_minutes=60,
-                        output_dir=".", log_fn=None):
-        """Extrait les pluies spatialisées antilope sur une bbox.
+                        output_dir=".", log_fn=None, bande="rr"):
+        """Extrait les pluies spatialisées Antilope sur une bbox.
 
         Arguments:
             date_debut, date_fin (datetime) : période de l'épisode
@@ -74,21 +84,38 @@ class BdimageClient:
             pdt_minutes (int) : 15, 30 ou 60
             output_dir (str) : dossier de sortie pour les .grd
             log_fn (callable) : fonction de log(str)
+            bande (str) : bande à extraire — "rr" (défaut, toujours dispo),
+                          "liquide", "solide" ou "qualite".
+                          Les bandes liquide/solide ne sont disponibles que sur
+                          les produits france-td/tr-60mn (depuis 08/01/2025)
+                          et france-td/tr-15mn (depuis 14/09/2024).
+                          Sur j1 ou avant ces dates, repli automatique sur "rr".
 
         Retourne:
             list[str] : chemins des fichiers .grd créés
         """
+        log = log_fn or (lambda s: None)
         (type_img, sous_type), effective_pdt = _antilope_product(pdt_minutes, date_debut)
-        if effective_pdt != pdt_minutes and log_fn:
-            log_fn(f"  ⚠ Pas de produit {pdt_minutes}mn avant le 12/10/2020 — "
-                   f"utilisation de {type_img}/{sous_type} (pdt={effective_pdt}mn)")
+        if effective_pdt != pdt_minutes:
+            log(f"  ⚠ Pas de produit {pdt_minutes}mn avant le 12/10/2020 — "
+                f"utilisation de {type_img}/{sous_type} (pdt={effective_pdt}mn)")
+
+        # Vérification disponibilité des bandes liquide/solide
+        bande_effective = bande
+        if bande in ("liquide", "solide", "qualite"):
+            cutoff = (_ANTILOPE_LIQUIDE_FIRST_15MN if effective_pdt <= 15
+                      else _ANTILOPE_LIQUIDE_FIRST_60MN)
+            if sous_type in ("j1", "temps-reel") or date_debut < cutoff:
+                log(f"  ⚠ Bande '{bande}' non disponible sur {type_img}/{sous_type} "
+                    f"avant le {cutoff:%d/%m/%Y} — repli sur 'rr'")
+                bande_effective = "rr"
 
         return self._extraire_bbox(
             type_img=type_img, sous_type=sous_type,
             date_debut=date_debut, date_fin=date_fin,
             ul=ul, lr=lr,
             pdt=effective_pdt, duree=effective_pdt,
-            bandes="rr",
+            bandes=bande_effective,
             facteur=1.0,          # garder les 1/10 mm natifs BDImage (Plathynes ÷10 → mm)
             force_integer=True,
             output_dir=output_dir,
