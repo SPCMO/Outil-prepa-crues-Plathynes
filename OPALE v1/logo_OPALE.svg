@@ -1,0 +1,47 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="c"><rect x="0" y="0" width="256" height="256" rx="40"/></clipPath>
+  </defs>
+
+  <!-- Fond -->
+  <rect x="0" y="0" width="256" height="256" rx="40" fill="#0B2545"/>
+
+  <!-- Montagne -->
+  <polygon points="30,230 90,128 122,160 164,98 202,145 230,230" fill="#163A6B" clip-path="url(#c)"/>
+
+  <!-- Remplissage crue -->
+  <path d="M0,210 Q40,195 62,205 Q85,218 102,192 Q115,172 124,155 Q132,140 140,146 Q150,156 160,178 Q172,202 192,193 Q210,184 232,197 Q246,206 256,205 L256,256 L0,256 Z"
+        fill="#1A6BB5" opacity="0.55" clip-path="url(#c)"/>
+
+  <!-- Hydrogramme : montée rapide, décroissance lente -->
+  <path d="M8,218 C28,217 50,216 65,214 C74,209 80,198 87,181 C93,163 99,141 105,116 C107,107 108,100 110,95 C111,91 112,89 114,91 C118,97 124,114 133,136 C143,158 154,174 169,183 C183,190 200,194 218,197 C232,199 244,200 256,201"
+        fill="none" stroke="#5BB8F5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#c)"/>
+
+  <!-- Point peak rouge (cohérent avec seuil rouge) -->
+  <circle cx="112" cy="89" r="6" fill="#E53935" clip-path="url(#c)"/>
+
+  <!-- Ligne verticale peak -->
+  <line x1="112" y1="102" x2="112" y2="230" stroke="#E53935" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.6" clip-path="url(#c)"/>
+
+  <!-- Seuils horizontaux -->
+  <line x1="4" y1="192" x2="252" y2="192" stroke="#FFDD57" stroke-width="1.2" stroke-dasharray="7,5" opacity="0.6" clip-path="url(#c)"/>
+  <line x1="4" y1="170" x2="252" y2="170" stroke="#FF9800" stroke-width="1.2" stroke-dasharray="7,5" opacity="0.6" clip-path="url(#c)"/>
+  <line x1="4" y1="150" x2="252" y2="150" stroke="#E53935" stroke-width="1.2" stroke-dasharray="7,5" opacity="0.6" clip-path="url(#c)"/>
+
+  <!-- Pastilles seuils -->
+  <circle cx="240" cy="192" r="5.5" fill="#FFDD57" clip-path="url(#c)"/>
+  <circle cx="240" cy="170" r="5.5" fill="#FF9800" clip-path="url(#c)"/>
+  <circle cx="240" cy="150" r="5.5" fill="#E53935" clip-path="url(#c)"/>
+
+  <!-- Goutte d'eau -->
+  <path d="M32,22 C32,22 18,41 18,50 C18,59 24,66 32,66 C40,66 46,59 46,50 C46,41 32,22 32,22 Z" fill="#5BB8F5" clip-path="url(#c)"/>
+
+  <!-- Texte OPALE en haut -->
+  <text x="129" y="37" text-anchor="middle" font-family="Arial,sans-serif" font-size="32" font-weight="700"
+        fill="#000000" opacity="0.35" clip-path="url(#c)">OPALE</text>
+  <text x="128" y="36" text-anchor="middle" font-family="Arial,sans-serif" font-size="32" font-weight="700"
+        fill="#FFFFFF" opacity="0.92" clip-path="url(#c)">OPALE</text>
+
+  <!-- Bordure -->
+  <rect x="0" y="0" width="256" height="256" rx="40" fill="none" stroke="#2A5FA8" stroke-width="2.5"/>
+</svg>
