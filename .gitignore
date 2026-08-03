@@ -1,5 +1,5 @@
 # ── Configuration sensible (identifiants PHyC, codes station) ──────────────
-config/config.json
+**/config/config.json
 
 # ── Données de sortie utilisateur ──────────────────────────────────────────
 sorties/
