@@ -786,8 +786,12 @@ class App(tk.Tk):
                 relief="solid", bd=1, padx=2, pady=2)
             # positionné par place() lors de _visu_update_legende
             self._visu_canvas.draw()
-            self._visu_bar_info       = []   # [(rect, val_mm, label_produit), ...]
-            self._visu_tooltip_artist = None
+            self._visu_bar_info          = []   # [(rect, val_mm, label_produit), ...]
+            self._visu_tooltip_artist    = None
+            self._visu_annots_p          = []   # annotations graphique pluie (HU)
+            self._visu_annots_q          = []   # annotations graphique Q (Q début/max)
+            self.var_visu_labels_p       = tk.BooleanVar(value=True)
+            self.var_visu_labels_q       = tk.BooleanVar(value=True)
             self._visu_canvas.mpl_connect('motion_notify_event', self._on_hyet_hover)
         else:
             tk.Label(right,
@@ -958,7 +962,10 @@ class App(tk.Tk):
         self._visu_bar_info       = []
         self._visu_tooltip_artist = None
         self._visu_q_data         = ([], [])   # (dates, vals) pour tooltip Q
+        self._visu_hu_data        = ([], [])   # (dates, vals) pour tooltip HU
         self._visu_tooltip_q      = None
+        self._visu_annots_p       = []
+        self._visu_annots_q       = []
 
         C_Q        = "#1A5276"
         C_HU       = _C_HU
@@ -970,6 +977,7 @@ class App(tk.Tk):
         self._visu_q_data = (q_dates, q_vals)
         hu_dates,   hu_vals   = (read_csv_serie(ep["hu_path"])
                                   if ep.get("hu_path") and os.path.exists(ep["hu_path"]) else ([], []))
+        self._visu_hu_data = (hu_dates, hu_vals)
         p_dates,    p_vals    = (read_csv_serie(ep["p_path"])
                                   if ep.get("p_path")  and os.path.exists(ep["p_path"])  else ([], []))
         p_liq_dates, p_liq_vals = (read_csv_serie(ep["p_liq_path"])
@@ -1066,8 +1074,8 @@ class App(tk.Tk):
                             fill=False, edgecolor=C_P, linewidth=0.7, zorder=4))
                     ant_handles.append(b_sol)
                     ant_labels.append("Antilope solide (par diff.)")
-                    for rect, total in zip(b_sol.patches, p_vals):
-                        self._visu_bar_info.insert(0, (rect, total, "Antilope sol"))
+                    for rect, sol_v in zip(b_sol.patches, sol_aligned):
+                        self._visu_bar_info.insert(0, (rect, sol_v, "Antilope sol"))
             else:
                 # Mode normal : barres totales avec seuil
                 base_vals = [min(v, seuil) for v in p_vals]
@@ -1119,28 +1127,31 @@ class App(tk.Tk):
                 min(100, hu_max_v + hu_span * 0.5),
             )
 
+            _show_p = getattr(self, "var_visu_labels_p", None)
+            _show_p = _show_p.get() if _show_p else True
+
             def _annot_hu(ax, dt, val, label_top, above=True):
-                """Annotation en deux lignes : étiquette (petite) + valeur (normale).
-                above=True  : étiquette au-dessus du point, valeur encore au-dessus
-                above=False : étiquette en-dessous du point, valeur encore en-dessous
-                """
+                """Annotation en deux lignes : étiquette (petite) + valeur (normale)."""
                 ax.plot(dt, val, "o", color=C_HU, markersize=5, zorder=5)
                 if above:
                     y_lbl, y_val = 16, 6
                 else:
                     y_lbl, y_val = -6, -16
-                ax.annotate(label_top,
+                a1 = ax.annotate(label_top,
                             xy=(dt, val), xytext=(6, y_lbl),
                             textcoords="offset points",
                             fontsize=7, color=C_HU, fontstyle="italic",
                             bbox=dict(boxstyle="round,pad=0.15",
                                       fc="white", ec=C_HU, alpha=0.0, lw=0))
-                ax.annotate(f"{val:.1f} %",
+                a2 = ax.annotate(f"{val:.1f} %",
                             xy=(dt, val), xytext=(6, y_val),
                             textcoords="offset points",
                             fontsize=8.5, color=C_HU, fontweight="bold",
                             bbox=dict(boxstyle="round,pad=0.2",
                                       fc="white", ec=C_HU, alpha=0.85))
+                a1.set_visible(_show_p)
+                a2.set_visible(_show_p)
+                self._visu_annots_p.extend([a1, a2])
 
             # HU début — annotation au-dessus du point
             _annot_hu(self._visu_ax_hu, hu_dates[0], hu_vals[0], "HU début", above=True)
@@ -1266,15 +1277,17 @@ class App(tk.Tk):
             # Forcer la plage x sur les données Q pour éviter le repli sur epoch
             self._visu_ax_q.set_xlim(q_dates[0], q_dates[-1])
             # Annotation Q début — étiquette au-dessus, valeur en-dessous de l'étiquette
+            _show_q = getattr(self, "var_visu_labels_q", None)
+            _show_q = _show_q.get() if _show_q else True
             self._visu_ax_q.plot(q_dates[0], q_vals[0], "o", color=C_Q,
                                   markersize=5, zorder=5)
-            self._visu_ax_q.annotate("Q début",
+            _aq1 = self._visu_ax_q.annotate("Q début",
                 xy=(q_dates[0], q_vals[0]), xytext=(6, 26),
                 textcoords="offset points",
                 fontsize=7, color=C_Q, fontstyle="italic",
                 bbox=dict(boxstyle="round,pad=0.15", fc="white", ec=C_Q,
                           alpha=0.0, lw=0))
-            self._visu_ax_q.annotate(f"{q_vals[0]:.1f} $m^3$/s",
+            _aq2 = self._visu_ax_q.annotate(f"{q_vals[0]:.1f} $m^3$/s",
                 xy=(q_dates[0], q_vals[0]), xytext=(6, 10),
                 textcoords="offset points",
                 fontsize=8.5, color=C_Q, fontweight="bold",
@@ -1286,13 +1299,13 @@ class App(tk.Tk):
             q_max_dt  = q_dates[q_max_idx]
             self._visu_ax_q.plot(q_max_dt, q_max_val, "o", color=C_Q,
                                   markersize=5, zorder=5)
-            self._visu_ax_q.annotate("Q max",
+            _aq3 = self._visu_ax_q.annotate("Q max",
                 xy=(q_max_dt, q_max_val), xytext=(6, 34),
                 textcoords="offset points",
                 fontsize=7, color=C_Q, fontstyle="italic",
                 bbox=dict(boxstyle="round,pad=0.15", fc="white", ec=C_Q,
                           alpha=0.0, lw=0))
-            self._visu_ax_q.annotate(
+            _aq4 = self._visu_ax_q.annotate(
                 f"{q_max_val:.1f} $m^3$/s\n{q_max_dt.strftime('%d/%m %H:%M')}",
                 xy=(q_max_dt, q_max_val), xytext=(6, 10),
                 textcoords="offset points",
@@ -1300,6 +1313,9 @@ class App(tk.Tk):
                 linespacing=1.3,
                 bbox=dict(boxstyle="round,pad=0.2", fc="white",
                           ec=C_Q, alpha=0.85))
+            for _a in (_aq1, _aq2, _aq3, _aq4):
+                _a.set_visible(_show_q)
+                self._visu_annots_q.append(_a)
 
         ylabel_q = f"Hauteur H ({unite_q})" if grandeur_ep == "H" else f"Débit Q ({unite_q})"
         self._visu_ax_q.set_ylabel(ylabel_q, color=C_Q, fontsize=9)
@@ -1391,20 +1407,21 @@ class App(tk.Tk):
                 self._visu_canvas.draw_idle()
             return
 
-        # Trouver la barre dont le centre X est le plus proche du curseur,
-        # en ignorant les patches de hauteur nulle.
+        # ── Trouver la colonne de barres la plus proche en X ─────────────────
         x_cur = event.xdata
-        best_dist, hit = float('inf'), None
+        # 1er passage : trouver le centre X du bar le plus proche
+        best_dist, best_cx = float('inf'), None
         for rect, val, label in self._visu_bar_info:
             if rect.get_height() == 0:
                 continue
             bar_cx = rect.get_x() + rect.get_width() / 2
             dist = abs(bar_cx - x_cur)
-            if dist < best_dist and dist <= rect.get_width():   # dans la largeur de barre
+            if dist < best_dist:
                 best_dist = dist
-                hit = (rect, val, label)
+                best_cx = bar_cx
 
-        if hit is None:
+        # Pas de barre ou curseur trop loin (> 1 largeur de barre)
+        if best_cx is None:
             if self._visu_tooltip_artist and self._visu_tooltip_artist.get_visible():
                 self._visu_tooltip_artist.set_visible(False)
                 redraw = True
@@ -1412,23 +1429,78 @@ class App(tk.Tk):
                 self._visu_canvas.draw_idle()
             return
 
-        rect_hit, val, label = hit
-        txt = f"{label} : {val:.1f} mm"
-        # Ancrer le tooltip sur le haut de la barre (y=0 = top dans l'axe inversé)
-        ann_x = rect_hit.get_x() + rect_hit.get_width() / 2
-        ann_y = rect_hit.get_y()   # bord haut de la barre (axe Y inversé, plus petit = plus haut)
+        # 2e passage : collecter TOUTES les barres à ce centre X (même colonne)
+        # Ordre d'insertion : Antilope en tête (insert 0), Panthère en queue (append)
+        seen_labels = {}   # label → val (premier = prioritaire)
+        ann_y = 0.0        # point d'ancrage Y = min des y (bord haut dans axe inversé)
+        bar_half_w = None
+        for rect, val, label in self._visu_bar_info:
+            if rect.get_height() == 0:
+                continue
+            bar_cx = rect.get_x() + rect.get_width() / 2
+            if abs(bar_cx - best_cx) > (rect.get_width() * 0.1):
+                continue
+            if bar_half_w is None:
+                bar_half_w = rect.get_width() / 2
+            if label not in seen_labels:
+                seen_labels[label] = val
+            # Bord haut = y le plus petit (axe Y inversé, 0 en haut)
+            ann_y = min(ann_y, rect.get_y())
+
+        # Vérifier que le curseur est dans la largeur d'une barre
+        if bar_half_w is not None and best_dist > bar_half_w:
+            if self._visu_tooltip_artist and self._visu_tooltip_artist.get_visible():
+                self._visu_tooltip_artist.set_visible(False)
+                redraw = True
+            if redraw:
+                self._visu_canvas.draw_idle()
+            return
+
+        # ── Ajouter HU au même pas de temps ──────────────────────────────────
+        hu_dates, hu_vals = getattr(self, "_visu_hu_data", ([], []))
+        hu_str = None
+        if hu_dates:
+            import matplotlib.dates as _mdates2
+            hu_nums = _mdates2.date2num(hu_dates)
+            idx_hu = min(range(len(hu_nums)), key=lambda i: abs(hu_nums[i] - best_cx))
+            hu_str = f"{hu_vals[idx_hu]:.1f} %"
+
+        # ── Construire le texte multi-lignes ──────────────────────────────────
+        # Ordre d'affichage : liquide / solide / Panthère / HU
+        _LABEL_NAMES = {
+            "Antilope liq": "Ant. tot.",
+            "Antilope sol": "Ant. solide",
+            "Antilope":     "Antilope",
+            "Panthère":     "Panthère",
+        }
+        _LABEL_ORDER = ["Antilope liq", "Antilope", "Antilope sol", "Panthère"]
+        lines_txt = []
+        for lbl in _LABEL_ORDER:
+            if lbl in seen_labels:
+                lines_txt.append(f"{_LABEL_NAMES[lbl]} : {seen_labels[lbl]:.1f} mm")
+        if hu_str:
+            lines_txt.append(f"HU : {hu_str}")
+        txt = "\n".join(lines_txt) if lines_txt else ""
+
+        if not txt:
+            if self._visu_tooltip_artist and self._visu_tooltip_artist.get_visible():
+                self._visu_tooltip_artist.set_visible(False)
+                redraw = True
+            if redraw:
+                self._visu_canvas.draw_idle()
+            return
 
         if self._visu_tooltip_artist is None:
             self._visu_tooltip_artist = self._visu_ax_p.annotate(
                 txt,
-                xy=(ann_x, ann_y), xytext=(8, -18), textcoords="offset points",
-                fontsize=7.5,
-                bbox=dict(boxstyle="round,pad=0.3", facecolor="#FFFDE7",
-                          edgecolor="#AAAAAA", linewidth=0.7, alpha=0.93),
+                xy=(best_cx, ann_y), xytext=(8, -8), textcoords="offset points",
+                fontsize=7.5, linespacing=1.4,
+                bbox=dict(boxstyle="round,pad=0.35", facecolor="#FFFDE7",
+                          edgecolor="#AAAAAA", linewidth=0.7, alpha=0.95),
                 zorder=20)
         else:
             self._visu_tooltip_artist.set_text(txt)
-            self._visu_tooltip_artist.xy = (ann_x, ann_y)
+            self._visu_tooltip_artist.xy = (best_cx, ann_y)
             self._visu_tooltip_artist.set_visible(True)
 
         self._visu_canvas.draw_idle()
@@ -1519,6 +1591,43 @@ class App(tk.Tk):
 
         for lh, ll in zip(h_hu, l_hu):
             _ligne(ll, None, C_HU, "")
+
+        # ── Cases à cocher : désactiver étiquettes ───────────────────────────
+        sep = tk.Frame(frm, height=1, bg="#CCCCCC")
+        sep.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(3, 1))
+        row += 1
+
+        def _toggle_labels_p(*_):
+            vis = self.var_visu_labels_p.get()
+            for a in getattr(self, "_visu_annots_p", []):
+                try:
+                    a.set_visible(vis)
+                except Exception:
+                    pass
+            self._visu_canvas.draw_idle()
+
+        def _toggle_labels_q(*_):
+            vis = self.var_visu_labels_q.get()
+            for a in getattr(self, "_visu_annots_q", []):
+                try:
+                    a.set_visible(vis)
+                except Exception:
+                    pass
+            self._visu_canvas.draw_idle()
+
+        chk_p = tk.Checkbutton(frm, text="Étiquettes pluie", variable=self.var_visu_labels_p,
+                                command=_toggle_labels_p,
+                                bg=BG, fg="#444", font=("TkDefaultFont", 7),
+                                activebackground=BG, anchor="w")
+        chk_p.grid(row=row, column=0, columnspan=2, sticky="w", padx=2, pady=(0, 0))
+        row += 1
+
+        chk_q = tk.Checkbutton(frm, text="Étiquettes Q/H", variable=self.var_visu_labels_q,
+                                command=_toggle_labels_q,
+                                bg=BG, fg="#444", font=("TkDefaultFont", 7),
+                                activebackground=BG, anchor="w")
+        chk_q.grid(row=row, column=0, columnspan=2, sticky="w", padx=2, pady=(0, 2))
+        row += 1
 
         # relx=0.93 → right=0.93 du GridSpec ; rely=0.03 → top=0.97 du GridSpec
         frm.update_idletasks()
