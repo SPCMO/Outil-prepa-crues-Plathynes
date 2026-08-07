@@ -1033,7 +1033,7 @@ class App(tk.Tk):
                     b_liq_ex = self._visu_ax_p.bar(p_dates, liq_excess, width=bar_w,
                                                     bottom=base_vals,
                                                     color=C_P_EXCESS, alpha=0.25,
-                                                    hatch="///", edgecolor=C_P_EXCESS, linewidth=0.6,
+                                                    hatch="///", edgecolor=C_P_EXCESS, linewidth=1.5,
                                                     align="center", zorder=3,
                                                     label=f"Antilope liquide > {seuil:.0f} mm")
                     ant_handles.append(b_liq_ex)
@@ -1067,7 +1067,7 @@ class App(tk.Tk):
                     b2 = self._visu_ax_p.bar(p_dates, excess_vals, width=bar_w,
                                               bottom=base_vals,
                                               color=C_P_EXCESS, alpha=0.25,
-                                              hatch="///", edgecolor=C_P_EXCESS, linewidth=0.6,
+                                              hatch="///", edgecolor=C_P_EXCESS, linewidth=1.5,
                                               align="center", zorder=3,
                                               label=f"Antilope BV > {seuil:.0f} mm")
                     ant_handles.append(b2)
