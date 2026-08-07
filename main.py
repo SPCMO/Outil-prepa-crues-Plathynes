@@ -1052,6 +1052,13 @@ class App(tk.Tk):
                                                  hatch="**", edgecolor="white", linewidth=0.4,
                                                  align="center", zorder=3,
                                                  label="Antilope solide (par diff.)")
+                    # Liseré bleu (couleur liquide) en surimpression via rectangles transparents
+                    import matplotlib.patches as _mp
+                    for _patch in b_sol.patches:
+                        self._visu_ax_p.add_patch(_mp.Rectangle(
+                            (_patch.get_x(), _patch.get_y()),
+                            _patch.get_width(), _patch.get_height(),
+                            fill=False, edgecolor=C_P, linewidth=1.2, zorder=4))
                     ant_handles.append(b_sol)
                     ant_labels.append("Antilope solide (par diff.)")
                     for rect, total in zip(b_sol.patches, p_vals):
@@ -1367,7 +1374,8 @@ class App(tk.Tk):
                 redraw = True
 
         # ── Graphique pluie (barres) ──────────────────────────────────────────
-        in_p = event.inaxes is self._visu_ax_p
+        # _visu_ax_hu est un twinx() de _visu_ax_p : il intercepte les events souris
+        in_p = event.inaxes in (self._visu_ax_p, self._visu_ax_hu)
         if not in_p or not self._visu_bar_info:
             if self._visu_tooltip_artist and self._visu_tooltip_artist.get_visible():
                 self._visu_tooltip_artist.set_visible(False)
