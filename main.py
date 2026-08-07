@@ -1052,13 +1052,18 @@ class App(tk.Tk):
                                                  hatch="**", edgecolor="white", linewidth=0.4,
                                                  align="center", zorder=3,
                                                  label="Antilope solide (par diff.)")
-                    # Liseré bleu (couleur liquide) en surimpression via rectangles transparents
+                    # Liseré bleu fin (couleur liquide), rentré vers l'intérieur via shrink
                     import matplotlib.patches as _mp
+                    _shrink = 0.012   # fraction de la largeur pour rentrer le liseré
                     for _patch in b_sol.patches:
+                        _pw = _patch.get_width()
+                        _ph = _patch.get_height()
+                        _sx = _pw * _shrink
+                        _sy = _ph * _shrink
                         self._visu_ax_p.add_patch(_mp.Rectangle(
-                            (_patch.get_x(), _patch.get_y()),
-                            _patch.get_width(), _patch.get_height(),
-                            fill=False, edgecolor=C_P, linewidth=1.2, zorder=4))
+                            (_patch.get_x() + _sx, _patch.get_y() + _sy),
+                            _pw - 2 * _sx, _ph - 2 * _sy,
+                            fill=False, edgecolor=C_P, linewidth=0.7, zorder=4))
                     ant_handles.append(b_sol)
                     ant_labels.append("Antilope solide (par diff.)")
                     for rect, total in zip(b_sol.patches, p_vals):
@@ -1374,9 +1379,11 @@ class App(tk.Tk):
                 redraw = True
 
         # ── Graphique pluie (barres) ──────────────────────────────────────────
-        # _visu_ax_hu est un twinx() de _visu_ax_p : il intercepte les events souris
+        # _visu_ax_hu est un twinx() de _visu_ax_p : il intercepte les events souris.
+        # On utilise les coordonnées X (dates partagées) plutôt que rect.contains()
+        # qui échoue quand l'axes capturant != l'axes contenant les patches.
         in_p = event.inaxes in (self._visu_ax_p, self._visu_ax_hu)
-        if not in_p or not self._visu_bar_info:
+        if not in_p or not self._visu_bar_info or event.xdata is None:
             if self._visu_tooltip_artist and self._visu_tooltip_artist.get_visible():
                 self._visu_tooltip_artist.set_visible(False)
                 redraw = True
@@ -1384,15 +1391,18 @@ class App(tk.Tk):
                 self._visu_canvas.draw_idle()
             return
 
-        hit = None
+        # Trouver la barre dont le centre X est le plus proche du curseur,
+        # en ignorant les patches de hauteur nulle.
+        x_cur = event.xdata
+        best_dist, hit = float('inf'), None
         for rect, val, label in self._visu_bar_info:
-            try:
-                contained, _ = rect.contains(event)
-            except Exception:
+            if rect.get_height() == 0:
                 continue
-            if contained:
-                hit = (val, label)
-                break
+            bar_cx = rect.get_x() + rect.get_width() / 2
+            dist = abs(bar_cx - x_cur)
+            if dist < best_dist and dist <= rect.get_width():   # dans la largeur de barre
+                best_dist = dist
+                hit = (rect, val, label)
 
         if hit is None:
             if self._visu_tooltip_artist and self._visu_tooltip_artist.get_visible():
@@ -1402,21 +1412,23 @@ class App(tk.Tk):
                 self._visu_canvas.draw_idle()
             return
 
-        val, label = hit
+        rect_hit, val, label = hit
         txt = f"{label} : {val:.1f} mm"
+        # Ancrer le tooltip sur le haut de la barre (y=0 = top dans l'axe inversé)
+        ann_x = rect_hit.get_x() + rect_hit.get_width() / 2
+        ann_y = rect_hit.get_y()   # bord haut de la barre (axe Y inversé, plus petit = plus haut)
 
         if self._visu_tooltip_artist is None:
             self._visu_tooltip_artist = self._visu_ax_p.annotate(
                 txt,
-                xy=(event.xdata, event.ydata),
-                xytext=(10, 10), textcoords="offset points",
+                xy=(ann_x, ann_y), xytext=(8, -18), textcoords="offset points",
                 fontsize=7.5,
                 bbox=dict(boxstyle="round,pad=0.3", facecolor="#FFFDE7",
                           edgecolor="#AAAAAA", linewidth=0.7, alpha=0.93),
                 zorder=20)
         else:
             self._visu_tooltip_artist.set_text(txt)
-            self._visu_tooltip_artist.xy = (event.xdata, event.ydata)
+            self._visu_tooltip_artist.xy = (ann_x, ann_y)
             self._visu_tooltip_artist.set_visible(True)
 
         self._visu_canvas.draw_idle()
