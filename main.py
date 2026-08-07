@@ -994,11 +994,11 @@ class App(tk.Tk):
             bp = self._visu_ax_p.bar(pant_dates, pant_vals, width=bar_w_pant,
                                       color=C_PANT, alpha=0.25, align="center",
                                       edgecolor=C_PANT, linewidth=1.4,
-                                      label="Panthère BV (mm)", zorder=1)
+                                      label="Panthère totale (mm)", zorder=1)
             for patch in bp:
                 patch.set_linestyle("--")
             pant_handles.append(bp)
-            pant_labels.append("Panthère BV (mm)")
+            pant_labels.append("Panthère totale (mm)")
             # Enregistrer les patches Panthère pour le tooltip (vérifiés en dernier)
             for rect, val in zip(bp.patches, pant_vals):
                 self._visu_bar_info.append((rect, val, "Panthère"))
@@ -1023,9 +1023,9 @@ class App(tk.Tk):
                 base_vals = [min(v, seuil) for v in liq_aligned]
                 b_liq = self._visu_ax_p.bar(p_dates, base_vals, width=bar_w,
                                              color=C_P, alpha=0.82, align="center",
-                                             zorder=3, label=f"Antilope liquide ≤ {seuil:.0f} mm")
+                                             zorder=3, label=f"Antilope totale ≤ {seuil:.0f} mm")
                 ant_handles.append(b_liq)
-                ant_labels.append(f"Antilope liquide ≤ {seuil:.0f} mm")
+                ant_labels.append(f"Antilope totale ≤ {seuil:.0f} mm")
                 for rect, total in zip(b_liq.patches, p_vals):
                     self._visu_bar_info.insert(0, (rect, total, "Antilope liq"))
                 liq_excess = [max(v - seuil, 0) for v in liq_aligned]
@@ -1035,9 +1035,9 @@ class App(tk.Tk):
                                                     color=C_P_EXCESS, alpha=0.25,
                                                     hatch="///", edgecolor=C_P_EXCESS, linewidth=1.5,
                                                     align="center", zorder=3,
-                                                    label=f"Antilope liquide > {seuil:.0f} mm")
+                                                    label=f"Antilope totale > {seuil:.0f} mm")
                     ant_handles.append(b_liq_ex)
-                    ant_labels.append(f"Antilope liquide > {seuil:.0f} mm")
+                    ant_labels.append(f"Antilope totale > {seuil:.0f} mm")
                     for rect, total in zip(b_liq_ex.patches, p_vals):
                         self._visu_bar_info.insert(0, (rect, total, "Antilope liq"))
                 # Phase solide (graupel+neige) empilée au-dessus du liquide
@@ -1444,7 +1444,7 @@ class App(tk.Tk):
                 _ligne(_lbl, sum_ant if _i == 0 else None, _col, "antilope" if _i == 0 else "", _icn)
 
         if pant_handles:
-            lbl_pan = pant_labels[0] if pant_labels else "Panthère BV"
+            lbl_pan = pant_labels[0] if pant_labels else "Panthère totale"
             _ligne(lbl_pan, sum_pant, C_PANT, "panthere")
 
         for lh, ll in zip(h_hu, l_hu):
