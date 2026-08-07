@@ -784,12 +784,15 @@ class App(tk.Tk):
             self._visu_legende_frame = tk.Frame(
                 self._visu_canvas.get_tk_widget(), bg="white",
                 relief="solid", bd=1, padx=2, pady=2)
-            # positionné par place() lors de _visu_update_legende
+            self._visu_legende_q_frame = tk.Frame(
+                self._visu_canvas.get_tk_widget(), bg="white",
+                relief="solid", bd=1, padx=2, pady=2)
+            # positionné par place() lors de _visu_update_legende / _plot_episode
             self._visu_canvas.draw()
             self._visu_bar_info          = []   # [(rect, val_mm, label_produit), ...]
             self._visu_tooltip_artist    = None
-            self._visu_annots_p          = []   # annotations graphique pluie (HU)
-            self._visu_annots_q          = []   # annotations graphique Q (Q début/max)
+            self._visu_annots_p          = []
+            self._visu_annots_q          = []
             self.var_visu_labels_p       = tk.BooleanVar(value=True)
             self.var_visu_labels_q       = tk.BooleanVar(value=True)
             self._visu_canvas.mpl_connect('motion_notify_event', self._on_hyet_hover)
@@ -1319,6 +1322,25 @@ class App(tk.Tk):
         if h3:
             self._visu_ax_q.legend(h3, l3, loc="upper right", fontsize=8)
 
+        # ── Case à cocher tooltip Q dans sa propre frame ─────────────────────
+        frm_q = getattr(self, "_visu_legende_q_frame", None)
+        if frm_q is not None:
+            for w in frm_q.winfo_children():
+                w.destroy()
+            BG_Q = "#FAFAFA"
+            def _toggle_tooltip_q(*_):
+                if not self.var_visu_labels_q.get():
+                    tt = getattr(self, "_visu_tooltip_q", None)
+                    if tt and tt.get_visible():
+                        tt.set_visible(False)
+                        self._visu_canvas.draw_idle()
+            tk.Checkbutton(frm_q, text="Tooltip Q/H", variable=self.var_visu_labels_q,
+                           command=_toggle_tooltip_q,
+                           bg=BG_Q, fg="#444", font=("TkDefaultFont", 7),
+                           activebackground=BG_Q, anchor="w").pack(padx=2, pady=2)
+            frm_q.update_idletasks()
+            frm_q.place(relx=0.93, rely=0.52, anchor="ne")
+
         # ── Synchronisation et formatage de l'axe X (identique sur les 2 graphiques) ─
         all_dates = sorted(
             [d for d in q_dates] +
@@ -1601,25 +1623,11 @@ class App(tk.Tk):
                     tt.set_visible(False)
                     self._visu_canvas.draw_idle()
 
-        def _toggle_tooltip_q(*_):
-            if not self.var_visu_labels_q.get():
-                tt = getattr(self, "_visu_tooltip_q", None)
-                if tt and tt.get_visible():
-                    tt.set_visible(False)
-                    self._visu_canvas.draw_idle()
-
         chk_p = tk.Checkbutton(frm, text="Tooltip pluie", variable=self.var_visu_labels_p,
                                 command=_toggle_tooltip_p,
                                 bg=BG, fg="#444", font=("TkDefaultFont", 7),
                                 activebackground=BG, anchor="w")
-        chk_p.grid(row=row, column=0, columnspan=2, sticky="w", padx=2, pady=(0, 0))
-        row += 1
-
-        chk_q = tk.Checkbutton(frm, text="Tooltip Q/H", variable=self.var_visu_labels_q,
-                                command=_toggle_tooltip_q,
-                                bg=BG, fg="#444", font=("TkDefaultFont", 7),
-                                activebackground=BG, anchor="w")
-        chk_q.grid(row=row, column=0, columnspan=2, sticky="w", padx=2, pady=(0, 2))
+        chk_p.grid(row=row, column=0, columnspan=2, sticky="w", padx=2, pady=(0, 2))
         row += 1
 
         # relx=0.93 → right=0.93 du GridSpec ; rely=0.03 → top=0.97 du GridSpec
