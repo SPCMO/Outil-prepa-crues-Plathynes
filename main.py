@@ -957,6 +957,8 @@ class App(tk.Tk):
         # Réinitialiser la liste des barres pour les tooltips de survol
         self._visu_bar_info       = []
         self._visu_tooltip_artist = None
+        self._visu_q_data         = ([], [])   # (dates, vals) pour tooltip Q
+        self._visu_tooltip_q      = None
 
         C_Q        = "#1A5276"
         C_HU       = _C_HU
@@ -965,6 +967,7 @@ class App(tk.Tk):
 
         q_dates,    q_vals    = (read_csv_serie(ep["q_path"], has_header=False)
                                   if ep.get("q_path") and os.path.exists(ep["q_path"]) else ([], []))
+        self._visu_q_data = (q_dates, q_vals)
         hu_dates,   hu_vals   = (read_csv_serie(ep["hu_path"])
                                   if ep.get("hu_path") and os.path.exists(ep["hu_path"]) else ([], []))
         p_dates,    p_vals    = (read_csv_serie(ep["p_path"])
@@ -1327,17 +1330,52 @@ class App(tk.Tk):
     # ── Tooltip survol barres hyétogramme ────────────────────────────────────
 
     def _on_hyet_hover(self, event):
-        """Affiche la valeur (mm) de la barre survolée dans le graphique Pluies."""
+        """Affiche la valeur au survol : mm pour les barres pluie, m³/s pour la courbe Q."""
         if not HAS_MPL:
             return
-        # Vérifier que la souris est dans le graphique pluies et qu'on a des barres
-        if event.inaxes is not self._visu_ax_p or not self._visu_bar_info:
+
+        redraw = False
+
+        # ── Graphique Q (courbe) ──────────────────────────────────────────────
+        in_q = event.inaxes is self._visu_ax_q
+        q_dates, q_vals = getattr(self, "_visu_q_data", ([], []))
+        if in_q and q_dates and event.xdata is not None:
+            import matplotlib.dates as _mdates
+            # Trouver le point Q le plus proche en x
+            x_num = event.xdata
+            q_nums = _mdates.date2num(q_dates)
+            idx = min(range(len(q_nums)), key=lambda i: abs(q_nums[i] - x_num))
+            qv = q_vals[idx]
+            qd = q_dates[idx]
+            txt_q = f"{qd.strftime('%d/%m %H:%M')} — {qv:.1f} m³/s"
+            if self._visu_tooltip_q is None:
+                self._visu_tooltip_q = self._visu_ax_q.annotate(
+                    txt_q,
+                    xy=(qd, qv), xytext=(10, 10), textcoords="offset points",
+                    fontsize=7.5,
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor="#EAF2FF",
+                              edgecolor="#1A5276", linewidth=0.7, alpha=0.93),
+                    zorder=20)
+            else:
+                self._visu_tooltip_q.set_text(txt_q)
+                self._visu_tooltip_q.xy = (qd, qv)
+                self._visu_tooltip_q.set_visible(True)
+            redraw = True
+        else:
+            if self._visu_tooltip_q and self._visu_tooltip_q.get_visible():
+                self._visu_tooltip_q.set_visible(False)
+                redraw = True
+
+        # ── Graphique pluie (barres) ──────────────────────────────────────────
+        in_p = event.inaxes is self._visu_ax_p
+        if not in_p or not self._visu_bar_info:
             if self._visu_tooltip_artist and self._visu_tooltip_artist.get_visible():
                 self._visu_tooltip_artist.set_visible(False)
+                redraw = True
+            if redraw:
                 self._visu_canvas.draw_idle()
             return
 
-        # Chercher la première barre touchée (Antilope en tête de liste → priorité)
         hit = None
         for rect, val, label in self._visu_bar_info:
             try:
@@ -1351,6 +1389,8 @@ class App(tk.Tk):
         if hit is None:
             if self._visu_tooltip_artist and self._visu_tooltip_artist.get_visible():
                 self._visu_tooltip_artist.set_visible(False)
+                redraw = True
+            if redraw:
                 self._visu_canvas.draw_idle()
             return
 
@@ -1358,7 +1398,6 @@ class App(tk.Tk):
         txt = f"{label} : {val:.1f} mm"
 
         if self._visu_tooltip_artist is None:
-            # Créer l'annotation une seule fois par épisode
             self._visu_tooltip_artist = self._visu_ax_p.annotate(
                 txt,
                 xy=(event.xdata, event.ydata),
@@ -1366,8 +1405,7 @@ class App(tk.Tk):
                 fontsize=7.5,
                 bbox=dict(boxstyle="round,pad=0.3", facecolor="#FFFDE7",
                           edgecolor="#AAAAAA", linewidth=0.7, alpha=0.93),
-                zorder=20
-            )
+                zorder=20)
         else:
             self._visu_tooltip_artist.set_text(txt)
             self._visu_tooltip_artist.xy = (event.xdata, event.ydata)
