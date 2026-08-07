@@ -1684,6 +1684,7 @@ class App(tk.Tk):
 
         PRODUITS = [
             ("antilope", [f"AntJ1-Ep_{key}", f"Pluie-Ep_{key}"], "AntJ1_CumulGRD-Ep_"),
+            ("antilope_liq", [f"AntJ1-Liq-Ep_{key}"],            "AntJ1-Liq_CumulGRD-Ep_"),
             ("panthere", [f"Pant-Ep_{key}"],                      "Pant_CumulGRD-Ep_"),
         ]
         results = {}
@@ -1711,6 +1712,15 @@ class App(tk.Tk):
                     print(f"[WARN] lecture cumul {produit} : {exc}")
                     results[produit] = None
 
+        # GRD solide = total − liquide (pixel par pixel, ≥ 0)
+        if results.get("antilope") and results.get("antilope_liq"):
+            arr_tot, hdr_tot = results["antilope"]
+            arr_liq, _       = results["antilope_liq"]
+            arr_sol = np.maximum(0.0, arr_tot - arr_liq)
+            results["antilope_sol"] = (arr_sol, hdr_tot)
+        else:
+            results["antilope_sol"] = None
+
         if all(v is None for v in results.values()):
             messagebox.showwarning("Cumul spatial",
                 f"Aucune donnée GRD disponible pour l'épisode « {key} »")
@@ -1731,16 +1741,16 @@ class App(tk.Tk):
         # ── Fenêtre ──────────────────────────────────────────────────────────
         top = tk.Toplevel(self)
         top.title(f"Cumuls spatialisés — {key}")
-        top.geometry("1150x600")
+        top.geometry("1600x600")
         _ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo_OPALE.ico")
         if os.path.isfile(_ico):
             try: top.iconbitmap(_ico)
             except Exception: pass
 
-        fig = Figure(figsize=(11.5, 5.8), dpi=96)
+        fig = Figure(figsize=(16, 5.8), dpi=96)
         fig.patch.set_facecolor("#F8F9FA")
-        gs = GridSpec(1, 3, figure=fig, width_ratios=[1, 1, 0.06],
-                      wspace=0.18, left=0.06, right=0.92, top=0.84, bottom=0.10)
+        gs = GridSpec(1, 4, figure=fig, width_ratios=[1, 1, 1, 0.06],
+                      wspace=0.18, left=0.05, right=0.94, top=0.84, bottom=0.10)
 
         bounds = [0, 2, 5, 10, 17, 25, 35, 45, 55, 70, 100, 150, 200, 300, 9999]
         colors_cls = [
@@ -1827,35 +1837,19 @@ class App(tk.Tk):
 
         stats_by_prod = {}   # {produit: {"cv":…, "gini":…, "max_moy":…} | None}
 
-        for i, (produit, titre) in enumerate(
-                [("antilope", "Antilope"), ("panthere", "Panthère")]):
-            ax = fig.add_subplot(gs[0, i])
-            res = results.get(produit)
-            if res is None:
-                ax.text(0.5, 0.5, f"Données {titre}\nnon disponibles",
-                        ha="center", va="center", transform=ax.transAxes,
-                        fontsize=10, color="#888888")
-                ax.text(0.5, 1.03, titre, transform=ax.transAxes,
-                        ha="center", va="bottom", fontsize=10, fontweight="bold",
-                        clip_on=False)
-                continue
+        COULEURS["antilope_sol"] = _C_ANT_SOL
 
-            arr, hdr = res
-            nc  = hdr["ncols"];  nr  = hdr["nrows"]
-            xll = hdr["xllcorner"]; yll = hdr["yllcorner"]; cs = hdr["cellsize"]
-            data = np.where(arr == hdr["nodata"], np.nan, arr)
-            ext  = [xll, xll + nc*cs, yll, yll + nr*cs]
+        # ── Panneaux : Antilope totale | Antilope solide | Panthère ─────────
+        PANELS = [
+            (0, "antilope",     "Antilope",          False),
+            (1, "antilope_sol", "Antilope solide\n(par diff.)", True),
+            (2, "panthere",     "Panthère",           False),
+        ]
 
-            img = ax.imshow(data, origin="upper", extent=ext,
-                            cmap=cmap_disc, norm=norm_disc, interpolation="nearest")
-            img_ref = img
-            _appliquer_masque(ax, hdr)
-
-            # Cumul moyen sur les pixels valides (dans la bbox, ~représentatif du BV)
+        def _calc_stats(produit, data, hdr):
             pixels_bv = _pixels_dans_bv(data, hdr)
             cumul_txt = f"{round(float(np.nanmean(pixels_bv)))} mm" \
                         if pixels_bv.size > 0 else "— mm"
-            # Indices de variabilité spatiale sur les pixels dans le BV
             if pixels_bv.size > 1:
                 mu_bv = float(np.mean(pixels_bv))
                 if mu_bv > 0:
@@ -1875,13 +1869,54 @@ class App(tk.Tk):
                     stats_by_prod[produit] = None
             else:
                 stats_by_prod[produit] = None
-            couleur_titre = COULEURS[produit]
-            ax.text(0.5, 1.03, f"{titre} — Cumul : {cumul_txt}",
+            return cumul_txt
+
+        for col_i, produit, titre, hatched in PANELS:
+            ax = fig.add_subplot(gs[0, col_i])
+            res = results.get(produit)
+            if res is None:
+                ax.text(0.5, 0.5, f"Données\nnon disponibles",
+                        ha="center", va="center", transform=ax.transAxes,
+                        fontsize=10, color="#888888")
+                ax.text(0.5, 1.03, titre, transform=ax.transAxes,
+                        ha="center", va="bottom", fontsize=9, fontweight="bold",
+                        clip_on=False)
+                continue
+
+            arr, hdr = res
+            nc  = hdr["ncols"];  nr  = hdr["nrows"]
+            xll = hdr["xllcorner"]; yll = hdr["yllcorner"]; cs = hdr["cellsize"]
+            nodata = hdr.get("nodata", -9999)
+            data = np.where(arr == nodata, np.nan, arr)
+            ext  = [xll, xll + nc*cs, yll, yll + nr*cs]
+
+            if hatched:
+                # Palette semi-transparente + hachures superposées
+                img = ax.imshow(data, origin="upper", extent=ext,
+                                cmap=cmap_disc, norm=norm_disc,
+                                interpolation="nearest", alpha=0.55)
+                # Rectangle hachuré sur toute l'étendue des données valides
+                import matplotlib.patches as _mpp
+                ax.add_patch(_mpp.Rectangle(
+                    (ext[0], ext[2]), ext[1] - ext[0], ext[3] - ext[2],
+                    fill=False, hatch="///", edgecolor="#555555",
+                    linewidth=0.0, alpha=0.45, zorder=3))
+            else:
+                img = ax.imshow(data, origin="upper", extent=ext,
+                                cmap=cmap_disc, norm=norm_disc,
+                                interpolation="nearest")
+            img_ref = img
+            _appliquer_masque(ax, hdr)
+
+            cumul_txt = _calc_stats(produit, data, hdr)
+            couleur_titre = COULEURS.get(produit, "#333333")
+            lbl_titre = "Cumul total" if produit != "antilope_sol" else "Cumul solide"
+            ax.text(0.5, 1.03, f"{titre} — {lbl_titre} : {cumul_txt}",
                     transform=ax.transAxes, ha="center", va="bottom",
-                    fontsize=10, fontweight="bold", color=couleur_titre,
+                    fontsize=9, fontweight="bold", color=couleur_titre,
                     clip_on=False)
             ax.set_xlabel("Lambert 93 X (m)", fontsize=7)
-            if i == 0:
+            if col_i == 0:
                 ax.set_ylabel("Lambert 93 Y (m)", fontsize=7)
             else:
                 ax.tick_params(labelleft=False)
@@ -1890,7 +1925,7 @@ class App(tk.Tk):
 
         # Colorbar unique à droite
         if img_ref is not None:
-            ax_cb = fig.add_subplot(gs[0, 2])
+            ax_cb = fig.add_subplot(gs[0, 3])
             cb = fig.colorbar(img_ref, cax=ax_cb)
             cb.set_label("mm", fontsize=8)
             tick_vals = [b for b in bounds if 0 < b < 9999]
@@ -1936,9 +1971,17 @@ class App(tk.Tk):
 
         frm_ant = tk.Frame(stats_bar, bg="white")
         frm_ant.pack(side="left", fill="both", expand=True, padx=(8, 4), pady=2)
-        tk.Label(frm_ant, text="Antilope", fg=C_ANT, bg="white",
+        tk.Label(frm_ant, text="Antilope totale", fg=C_ANT, bg="white",
                  font=("Arial", 8, "bold")).pack(anchor="w")
         _ajouter_bloc_stats(frm_ant, stats_by_prod.get("antilope"))
+
+        tk.Frame(stats_bar, width=1, bg="#CCCCCC").pack(side="left", fill="y", pady=4)
+
+        frm_sol = tk.Frame(stats_bar, bg="white")
+        frm_sol.pack(side="left", fill="both", expand=True, padx=(4, 4), pady=2)
+        tk.Label(frm_sol, text="Antilope solide", fg=_C_ANT_SOL, bg="white",
+                 font=("Arial", 8, "bold")).pack(anchor="w")
+        _ajouter_bloc_stats(frm_sol, stats_by_prod.get("antilope_sol"))
 
         tk.Frame(stats_bar, width=1, bg="#CCCCCC").pack(side="left", fill="y", pady=4)
 
