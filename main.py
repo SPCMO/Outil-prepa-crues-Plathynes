@@ -1637,7 +1637,7 @@ class App(tk.Tk):
                     tt.set_visible(False)
                     self._visu_canvas.draw_idle()
 
-        chk_p = tk.Checkbutton(frm, text="Info-bulle pluie", variable=self.var_visu_labels_p,
+        chk_p = tk.Checkbutton(frm, text="Info-bulle pluies et HU", variable=self.var_visu_labels_p,
                                 command=_toggle_tooltip_p,
                                 bg=BG, fg="#444", font=("TkDefaultFont", 7),
                                 activebackground=BG, anchor="w")
