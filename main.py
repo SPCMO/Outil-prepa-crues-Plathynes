@@ -1127,31 +1127,28 @@ class App(tk.Tk):
                 min(100, hu_max_v + hu_span * 0.5),
             )
 
-            _show_p = getattr(self, "var_visu_labels_p", None)
-            _show_p = _show_p.get() if _show_p else True
-
             def _annot_hu(ax, dt, val, label_top, above=True):
-                """Annotation en deux lignes : étiquette (petite) + valeur (normale)."""
+                """Annotation en deux lignes : étiquette (petite) + valeur (normale).
+                above=True  : étiquette au-dessus du point, valeur encore au-dessus
+                above=False : étiquette en-dessous du point, valeur encore en-dessous
+                """
                 ax.plot(dt, val, "o", color=C_HU, markersize=5, zorder=5)
                 if above:
                     y_lbl, y_val = 16, 6
                 else:
                     y_lbl, y_val = -6, -16
-                a1 = ax.annotate(label_top,
+                ax.annotate(label_top,
                             xy=(dt, val), xytext=(6, y_lbl),
                             textcoords="offset points",
                             fontsize=7, color=C_HU, fontstyle="italic",
                             bbox=dict(boxstyle="round,pad=0.15",
                                       fc="white", ec=C_HU, alpha=0.0, lw=0))
-                a2 = ax.annotate(f"{val:.1f} %",
+                ax.annotate(f"{val:.1f} %",
                             xy=(dt, val), xytext=(6, y_val),
                             textcoords="offset points",
                             fontsize=8.5, color=C_HU, fontweight="bold",
                             bbox=dict(boxstyle="round,pad=0.2",
                                       fc="white", ec=C_HU, alpha=0.85))
-                a1.set_visible(_show_p)
-                a2.set_visible(_show_p)
-                self._visu_annots_p.extend([a1, a2])
 
             # HU début — annotation au-dessus du point
             _annot_hu(self._visu_ax_hu, hu_dates[0], hu_vals[0], "HU début", above=True)
@@ -1277,17 +1274,15 @@ class App(tk.Tk):
             # Forcer la plage x sur les données Q pour éviter le repli sur epoch
             self._visu_ax_q.set_xlim(q_dates[0], q_dates[-1])
             # Annotation Q début — étiquette au-dessus, valeur en-dessous de l'étiquette
-            _show_q = getattr(self, "var_visu_labels_q", None)
-            _show_q = _show_q.get() if _show_q else True
             self._visu_ax_q.plot(q_dates[0], q_vals[0], "o", color=C_Q,
                                   markersize=5, zorder=5)
-            _aq1 = self._visu_ax_q.annotate("Q début",
+            self._visu_ax_q.annotate("Q début",
                 xy=(q_dates[0], q_vals[0]), xytext=(6, 26),
                 textcoords="offset points",
                 fontsize=7, color=C_Q, fontstyle="italic",
                 bbox=dict(boxstyle="round,pad=0.15", fc="white", ec=C_Q,
                           alpha=0.0, lw=0))
-            _aq2 = self._visu_ax_q.annotate(f"{q_vals[0]:.1f} $m^3$/s",
+            self._visu_ax_q.annotate(f"{q_vals[0]:.1f} $m^3$/s",
                 xy=(q_dates[0], q_vals[0]), xytext=(6, 10),
                 textcoords="offset points",
                 fontsize=8.5, color=C_Q, fontweight="bold",
@@ -1299,13 +1294,13 @@ class App(tk.Tk):
             q_max_dt  = q_dates[q_max_idx]
             self._visu_ax_q.plot(q_max_dt, q_max_val, "o", color=C_Q,
                                   markersize=5, zorder=5)
-            _aq3 = self._visu_ax_q.annotate("Q max",
+            self._visu_ax_q.annotate("Q max",
                 xy=(q_max_dt, q_max_val), xytext=(6, 34),
                 textcoords="offset points",
                 fontsize=7, color=C_Q, fontstyle="italic",
                 bbox=dict(boxstyle="round,pad=0.15", fc="white", ec=C_Q,
                           alpha=0.0, lw=0))
-            _aq4 = self._visu_ax_q.annotate(
+            self._visu_ax_q.annotate(
                 f"{q_max_val:.1f} $m^3$/s\n{q_max_dt.strftime('%d/%m %H:%M')}",
                 xy=(q_max_dt, q_max_val), xytext=(6, 10),
                 textcoords="offset points",
@@ -1313,9 +1308,6 @@ class App(tk.Tk):
                 linespacing=1.3,
                 bbox=dict(boxstyle="round,pad=0.2", fc="white",
                           ec=C_Q, alpha=0.85))
-            for _a in (_aq1, _aq2, _aq3, _aq4):
-                _a.set_visible(_show_q)
-                self._visu_annots_q.append(_a)
 
         ylabel_q = f"Hauteur H ({unite_q})" if grandeur_ep == "H" else f"Débit Q ({unite_q})"
         self._visu_ax_q.set_ylabel(ylabel_q, color=C_Q, fontsize=9)
@@ -1365,9 +1357,14 @@ class App(tk.Tk):
         redraw = False
 
         # ── Graphique Q (courbe) ──────────────────────────────────────────────
+        _tooltip_q_on = getattr(self, "var_visu_labels_q", None)
+        _tooltip_q_on = _tooltip_q_on.get() if _tooltip_q_on else True
+        _tooltip_p_on = getattr(self, "var_visu_labels_p", None)
+        _tooltip_p_on = _tooltip_p_on.get() if _tooltip_p_on else True
+
         in_q = event.inaxes is self._visu_ax_q
         q_dates, q_vals = getattr(self, "_visu_q_data", ([], []))
-        if in_q and q_dates and event.xdata is not None:
+        if _tooltip_q_on and in_q and q_dates and event.xdata is not None:
             import matplotlib.dates as _mdates
             # Trouver le point Q le plus proche en x
             x_num = event.xdata
@@ -1399,7 +1396,7 @@ class App(tk.Tk):
         # On utilise les coordonnées X (dates partagées) plutôt que rect.contains()
         # qui échoue quand l'axes capturant != l'axes contenant les patches.
         in_p = event.inaxes in (self._visu_ax_p, self._visu_ax_hu)
-        if not in_p or not self._visu_bar_info or event.xdata is None:
+        if not _tooltip_p_on or not in_p or not self._visu_bar_info or event.xdata is None:
             if self._visu_tooltip_artist and self._visu_tooltip_artist.get_visible():
                 self._visu_tooltip_artist.set_visible(False)
                 redraw = True
@@ -1597,33 +1594,29 @@ class App(tk.Tk):
         sep.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(3, 1))
         row += 1
 
-        def _toggle_labels_p(*_):
-            vis = self.var_visu_labels_p.get()
-            for a in getattr(self, "_visu_annots_p", []):
-                try:
-                    a.set_visible(vis)
-                except Exception:
-                    pass
-            self._visu_canvas.draw_idle()
+        def _toggle_tooltip_p(*_):
+            if not self.var_visu_labels_p.get():
+                tt = getattr(self, "_visu_tooltip_artist", None)
+                if tt and tt.get_visible():
+                    tt.set_visible(False)
+                    self._visu_canvas.draw_idle()
 
-        def _toggle_labels_q(*_):
-            vis = self.var_visu_labels_q.get()
-            for a in getattr(self, "_visu_annots_q", []):
-                try:
-                    a.set_visible(vis)
-                except Exception:
-                    pass
-            self._visu_canvas.draw_idle()
+        def _toggle_tooltip_q(*_):
+            if not self.var_visu_labels_q.get():
+                tt = getattr(self, "_visu_tooltip_q", None)
+                if tt and tt.get_visible():
+                    tt.set_visible(False)
+                    self._visu_canvas.draw_idle()
 
-        chk_p = tk.Checkbutton(frm, text="Étiquettes pluie", variable=self.var_visu_labels_p,
-                                command=_toggle_labels_p,
+        chk_p = tk.Checkbutton(frm, text="Tooltip pluie", variable=self.var_visu_labels_p,
+                                command=_toggle_tooltip_p,
                                 bg=BG, fg="#444", font=("TkDefaultFont", 7),
                                 activebackground=BG, anchor="w")
         chk_p.grid(row=row, column=0, columnspan=2, sticky="w", padx=2, pady=(0, 0))
         row += 1
 
-        chk_q = tk.Checkbutton(frm, text="Étiquettes Q/H", variable=self.var_visu_labels_q,
-                                command=_toggle_labels_q,
+        chk_q = tk.Checkbutton(frm, text="Tooltip Q/H", variable=self.var_visu_labels_q,
+                                command=_toggle_tooltip_q,
                                 bg=BG, fg="#444", font=("TkDefaultFont", 7),
                                 activebackground=BG, anchor="w")
         chk_q.grid(row=row, column=0, columnspan=2, sticky="w", padx=2, pady=(0, 2))
