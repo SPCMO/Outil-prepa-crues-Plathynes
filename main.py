@@ -3944,9 +3944,7 @@ class App(tk.Tk):
                     self.var_nom_station.set(libelle)
                     msgs.append(f"Libellé : {libelle}")
                 if code_bnbv_phyc:
-                    # N'écraser que si le champ BNBV est vide
-                    if not self.var_code_bnbv.get().strip():
-                        self.var_code_bnbv.set(code_bnbv_phyc)
+                    self.var_code_bnbv.set(code_bnbv_phyc)
                     msgs.append(f"BNBV : {code_bnbv_phyc}")
                 if msgs:
                     self._set_phyc_status(
