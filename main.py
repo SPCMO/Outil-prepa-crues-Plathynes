@@ -1157,18 +1157,14 @@ class App(tk.Tk):
         # Cumuls intégrés directement dans les labels (pas de phantom entries)
         _sum_ant  = round(sum(p_vals))    if p_vals    else None
         _sum_pant = round(sum(pant_vals)) if pant_vals else None
+        _sum_sol  = round(sum(sol_aligned)) if sol_aligned else None
 
         h_hu, l_hu = self._visu_ax_hu.get_legend_handles_labels()
-
-        # Label Antilope inf : on y colle le cumul AJ1 directement
-        _cum_ant_sfx = (f"      cumul AJ1 : {_sum_ant} mm" if _sum_ant is not None else "")
-        # Label Panthère : cumul Pan. sur la même ligne, précédé d'un tiret
-        _cum_pan_sfx = (f"  -  cumul Pan. : {_sum_pant} mm" if _sum_pant is not None else "")
 
         # Tableau légende tkinter 2 colonnes superposé en haut-droite
         self._visu_update_legende(
             ant_handles, ant_labels, pant_handles, pant_labels,
-            h_hu, l_hu, _sum_ant, _sum_pant, ep)
+            h_hu, l_hu, _sum_ant, _sum_pant, _sum_sol, ep)
 
         # ── Encart stats Ant. vs Pan. (bas-droite) ────────────────────────────
         if p_dates and pant_dates:
@@ -1381,7 +1377,7 @@ class App(tk.Tk):
     # ── Tableau légende cliquable (Produit | Cumul) ──────────────────────────
 
     def _visu_update_legende(self, ant_handles, ant_labels, pant_handles, pant_labels,
-                              h_hu, l_hu, sum_ant, sum_pant, ep):
+                              h_hu, l_hu, sum_ant, sum_pant, sum_sol, ep):
         """Tableau tkinter 2 colonnes (Produit | Cumul) superposé en haut-droite du canvas."""
         frm = getattr(self, "_visu_legende_frame", None)
         if frm is None:
@@ -1425,7 +1421,14 @@ class App(tk.Tk):
                 lbl.bind("<Button-1>",
                          lambda _e, p=produit_key: self._visu_ouvrir_cumul_spatial(p, ep))
             else:
-                tk.Label(frm, text=f"{cumul_mm} mm" if cumul_mm is not None else "—",
+                # cumul_mm peut être un nombre (→ on ajoute " mm") ou une chaîne déjà formatée
+                if cumul_mm is None:
+                    _cum_txt = "—"
+                elif isinstance(cumul_mm, str):
+                    _cum_txt = cumul_mm
+                else:
+                    _cum_txt = f"{cumul_mm} mm"
+                tk.Label(frm, text=_cum_txt,
                          bg=BG, fg="#888", font=("TkDefaultFont", 7),
                          padx=4, anchor="w").grid(row=row, column=1, sticky="w", pady=0)
             row += 1
@@ -1437,6 +1440,14 @@ class App(tk.Tk):
                 _lbl_l = _lbl.lower()
                 if "solide" in _lbl_l:
                     _col, _icn = _C_ANT_SOL, "■"
+                    # Cumul solide + % du total
+                    if sum_sol is not None and sum_ant:
+                        _pct_sol = round(sum_sol / sum_ant * 100)
+                        _cum_sol = f"{sum_sol} mm ({_pct_sol} %)"
+                    else:
+                        _cum_sol = None
+                    _ligne(_lbl, _cum_sol, _col, "", _icn)
+                    continue
                 elif ">" in _lbl:
                     _col, _icn = C_P_EXCESS, "▨"
                 else:
@@ -2073,7 +2084,7 @@ class App(tk.Tk):
         C_ANT = _C_ANT
         C_PAN = _C_PANT
         C_NEU = "#888888"
-        COL_W = [230, 100, 155, 155, 100, 110, 95, 105]
+        COL_W = [230, 100, 155, 155, 155, 100, 110, 95, 105]
 
         # ── Lecture données ──────────────────────────────────────────────────
         def _bv_sum(path):
@@ -2114,7 +2125,7 @@ class App(tk.Tk):
             return best
 
         # ── Collecte des données (une seule lecture) ─────────────────────────
-        rows_data = []   # (date_lbl, vig_bg, vig_fg, q_txt, ant_txt, pan_txt, pct_txt, c_p, idx_ant, idx_pan)
+        rows_data = []   # (date_lbl, vig_bg, vig_fg, q_txt, ant_txt, sol_txt, pan_txt, pct_txt, c_p, idx_ant, idx_pan)
         chart_data = []  # (dt, pct_ecart_or_None) — None = données manquantes
         for ep in self._visu_episodes:
             date_lbl = ep.get("label", "—")
@@ -2122,9 +2133,16 @@ class App(tk.Tk):
             vig_bg, vig_fg = self._VIG_ITEM_COLORS.get(vig_lbl, ("#EBF5FB", "#1A5276"))
             q_val = _q_max(ep.get("q_path"))
             s_ant = _bv_sum(ep.get("p_path"))
+            s_liq = _bv_sum(ep.get("p_liq_path"))
             s_pan = _bv_sum(ep.get("pant_path"))
             q_txt   = f"{q_val:.1f}" if q_val is not None else "—"
             ant_txt = f"{s_ant:.0f}" if s_ant is not None else "—"
+            if s_ant is not None and s_liq is not None and s_ant > 0:
+                s_sol   = max(0.0, s_ant - s_liq)
+                pct_sol = s_sol / s_ant * 100
+                sol_txt = f"{s_sol:.0f} mm — {pct_sol:.0f} %"
+            else:
+                sol_txt = "—"
             pan_txt = f"{s_pan:.0f}" if s_pan is not None else "—"
             if s_ant is not None and s_pan is not None and s_ant > 0:
                 pct     = (s_pan - s_ant) / s_ant * 100
@@ -2137,7 +2155,7 @@ class App(tk.Tk):
             idx_ant = self._indices_ep(ep, "antilope")
             idx_pan = self._indices_ep(ep, "panthere")
             rows_data.append((date_lbl, vig_bg, vig_fg, q_txt,
-                               ant_txt, pan_txt, pct_txt, c_p, idx_ant, idx_pan))
+                               ant_txt, sol_txt, pan_txt, pct_txt, c_p, idx_ant, idx_pan))
             chart_data.append((ep.get("_dt"), pct))
 
         # ── En-tête figé ─────────────────────────────────────────────────────
@@ -2145,14 +2163,15 @@ class App(tk.Tk):
         hdr_frame = tk.Frame(frm, bg=HDR_BG)
         hdr_frame.pack(fill=tk.X, side=tk.TOP)
         col_defs = [
-            ("Date épisode",        "#333333", False),
-            ("Q max (m³/s)",        "#333333", False),
-            ("Cumul Antilope (mm)", C_ANT,     False),
-            ("Cumul Panthère (mm)", C_PAN,     False),
-            ("Écart (%)",           "#333333", False),
-            ("Coeff. Var.\n(Ant./Pant.)", "#333333", True),   # True = afficher ⓘ
-            ("Gini\n(Ant./Pant.)",   "#333333", False),
-            ("Max/Moy\n(Ant./Pant.)","#333333", False),
+            ("Date épisode",              "#333333",  False),
+            ("Q max (m³/s)",              "#333333",  False),
+            ("Cumul Antilope tot. (mm)",  C_ANT,      False),
+            ("Cumul Ant. solide\n(eq. mm)", _C_ANT_SOL, False),
+            ("Cumul Panthère (mm)",       C_PAN,      False),
+            ("Écart (%)",                 "#333333",  False),
+            ("Coeff. Var.\n(Ant./Pant.)", "#333333",  True),   # True = afficher ⓘ
+            ("Gini\n(Ant./Pant.)",        "#333333",  False),
+            ("Max/Moy\n(Ant./Pant.)",     "#333333",  False),
         ]
         for j, (lbl, fg, avec_info) in enumerate(col_defs):
             if avec_info:
@@ -2213,7 +2232,7 @@ class App(tk.Tk):
                          ).grid(row=row, column=col, sticky="nsew", padx=1, pady=0)
 
         for i, (date_lbl, vig_bg, vig_fg,
-                q_txt, ant_txt, pan_txt, pct_txt, c_p,
+                q_txt, ant_txt, sol_txt, pan_txt, pct_txt, c_p,
                 idx_ant, idx_pan) in enumerate(rows_data):
             row_bg = "#F0F3F4" if i % 2 == 0 else "white"
             tk.Label(frame, text=date_lbl, bg=vig_bg, fg=vig_fg,
@@ -2223,16 +2242,17 @@ class App(tk.Tk):
                      font=("TkDefaultFont", 8), anchor="center", padx=8, pady=5
                      ).grid(row=i, column=1, sticky="nsew", padx=1, pady=0)
             for j, (txt, fg) in enumerate(
-                    [(ant_txt, C_ANT), (pan_txt, C_PAN), (pct_txt, c_p)], start=2):
+                    [(ant_txt, C_ANT), (sol_txt, _C_ANT_SOL),
+                     (pan_txt, C_PAN), (pct_txt, c_p)], start=2):
                 tk.Label(frame, text=txt, bg=row_bg, fg=fg,
                          font=("TkDefaultFont", 8, "bold"), anchor="center", padx=8, pady=5
                          ).grid(row=i, column=j, sticky="nsew", padx=1, pady=0)
             # Colonnes indices : Antilope / Panthère — cliquable → cumuls spatiaux
             ep_ref = self._visu_episodes[i]
             for col_j, fn_s, key_n in [
-                (5, App._seuil_cv,     "cv"),
-                (6, App._seuil_gini,   "gini"),
-                (7, App._seuil_maxmoy, "max_moy"),
+                (6, App._seuil_cv,     "cv"),
+                (7, App._seuil_gini,   "gini"),
+                (8, App._seuil_maxmoy, "max_moy"),
             ]:
                 ant_v = idx_ant.get(key_n) if idx_ant else None
                 pan_v = idx_pan.get(key_n) if idx_pan else None
