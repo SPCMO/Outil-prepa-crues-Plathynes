@@ -178,6 +178,7 @@ class App(tk.Tk):
         """Refresh automatique lors du changement d'onglet."""
         selected = self._notebook.select()
         if selected == str(self.tab_visu):
+            self._refresh_visu_list()
             self._appliquer_seuils()
         elif selected == str(self.tab_plathynes):
             self._refresh_visu_list()
