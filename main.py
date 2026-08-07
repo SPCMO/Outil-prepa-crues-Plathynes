@@ -3974,7 +3974,7 @@ class App(tk.Tk):
         # Toujours passer le code SITE (8 car.) pour obtenir H et Q en un seul appel.
         code_site = code_station[:8]
         phyc_cfg = self.config_data.get("phyc", {})
-        self.var_seuil_status.set(f"Connexion PHyC en cours (seuils {unite})...")
+        self.var_seuil_status.set("Connexion PHyC en cours...")
 
         def _worker():
             try:
