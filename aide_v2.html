@@ -1676,6 +1676,20 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <p>Un radio mutuellement exclusif (<em>Pluie totale</em> / <em>Pluie liquide</em>) dans la section "Dossiers" de l'onglet <span class="badge badge-plath">Import Plathynes</span> permet de choisir quelle série de fichiers <code>.grd</code> Antilope sera copiée dans le projet Plathynes : les fichiers totaux (<code>AntJ1-Ep_*</code>) ou les fichiers liquides (<code>AntJ1-Liq-Ep_*</code>). Cette option est disponible uniquement si l'extraction a été faite avec la bande liquide.</p>
   </div>
 
+  <h2>Seuils de vigilance H et Q depuis PHyC — août 2026</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Récupération PHyC : seuils H <em>et</em> Q en un seul appel</strong>
+    <p>Le bouton <em>"Récupérer depuis PHyC"</em> de l'onglet Configuration (bandeau Seuils de vigilance) effectue désormais un unique appel en passant le <strong>code site</strong> (7 chiffres, dérivé automatiquement du code station). La réponse PHyC contient les deux grandeurs dans le même XML : valeurs rattachées au <em>site</em> → <strong>Q en L/s</strong> (÷1000 → m³/s), valeurs rattachées à la <em>station</em> → <strong>H en mm</strong> (÷1000 → m). Les champs de l'onglet sont pré-remplis selon la grandeur sélectionnée (Q ou H) ; le message de statut indique combien de seuils H et Q sont disponibles pour ce site, même si la grandeur affichée n'en a pas.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Pré-remplissage du code BNBV depuis PHyC</strong>
+    <p>Lors du clic sur <em>"Récup info PHyC"</em> (bandeau Station hydrologique), si PHyC retourne un code BNBV, il est désormais systématiquement injecté dans le champ <em>Code BNBV</em> — même si un code était déjà saisi — afin de garantir la cohérence avec les données PHyC.</p>
+  </div>
+
   <h2>Corrections techniques — août 2026</h2>
 
   <div class="change-entry">

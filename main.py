@@ -3971,12 +3971,9 @@ class App(tk.Tk):
         if not re.match(r'^[A-Za-z]\d{9}$', code_station):
             self.var_seuil_status.set("Code station invalide (10 car. : 1 lettre + 9 chiffres).")
             return
-        use_h = self.var_seuils_grandeur.get() == "H (m)"
-        # PHyC attend le code station complet (10 car.) pour les seuils H (grandeur mesurée à la station),
-        # mais le code site (8 car.) pour les seuils Q (grandeur calculée sur le tronçon).
-        code_entite = code_station if use_h else code_station[:8]
+        # Toujours passer le code SITE (8 car.) pour obtenir H et Q en un seul appel.
+        code_site = code_station[:8]
         phyc_cfg = self.config_data.get("phyc", {})
-        unite = "m" if use_h else "m³/s"
         self.var_seuil_status.set(f"Connexion PHyC en cours (seuils {unite})...")
 
         def _worker():
@@ -3984,7 +3981,7 @@ class App(tk.Tk):
                 phyc = PhycClient(wsdl_url=phyc_cfg.get("url", ""))
                 phyc.login(phyc_cfg.get("idcontact", ""),
                            phyc_cfg.get("motdepasse", ""))
-                seuils = phyc.get_seuils_vigilance(code_entite)
+                seuils = phyc.get_seuils_vigilance(code_site)
                 phyc.logout()
                 self.after(0, lambda s=seuils: self._fill_seuils(s))
             except Exception as e:
@@ -3994,18 +3991,31 @@ class App(tk.Tk):
         threading.Thread(target=_worker, daemon=True).start()
 
     def _fill_seuils(self, seuils):
-        """Pré-remplit les champs seuils avec les valeurs PHyC."""
+        """Pré-remplit les champs seuils avec les valeurs PHyC.
+
+        seuils : {"H": {clé: val_m}, "Q": {clé: val_m3s}}
+        Sélectionne H ou Q selon la grandeur choisie dans l'UI.
+        """
+        use_h = self.var_seuils_grandeur.get() == "H (m)"
+        sous = seuils.get("H" if use_h else "Q", {})
         n = 0
         for key in ("zt_jaune", "jaune", "zt_orange", "orange", "zt_rouge", "rouge"):
-            if key in seuils:
-                self._var_seuils[key].set(f"{seuils[key]:.1f}")
+            if key in sous:
+                self._var_seuils[key].set(f"{sous[key]:.3f}" if use_h else f"{sous[key]:.1f}")
                 n += 1
-        if n:
-            self.var_seuil_status.set(f"{n} seuil(s) récupéré(s) depuis PHyC.")
-        else:
-            for key in ("zt_jaune", "jaune", "zt_orange", "orange", "zt_rouge", "rouge"):
+            else:
                 self._var_seuils[key].set("")
-            self.var_seuil_status.set("Aucun seuil de vigilance disponible pour ce site — champs vidés.")
+        grandeur_lbl = "H" if use_h else "Q"
+        n_h = len(seuils.get("H", {}))
+        n_q = len(seuils.get("Q", {}))
+        if n:
+            self.var_seuil_status.set(
+                f"{n} seuil(s) {grandeur_lbl} récupéré(s) depuis PHyC "
+                f"(disponibles : {n_h} H, {n_q} Q).")
+        else:
+            self.var_seuil_status.set(
+                f"Aucun seuil {grandeur_lbl} disponible pour ce site "
+                f"(disponibles : {n_h} H, {n_q} Q).")
 
     def _on_seuils_grandeur_change(self):
         """Bascule l'affichage entre seuils Q (m³/s) et H (m)."""

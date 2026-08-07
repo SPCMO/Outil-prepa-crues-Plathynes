@@ -258,8 +258,15 @@ class PhycClient:
     def get_seuils_vigilance(self, code_site):
         """Récupère les seuils de vigilance actifs (NatureSeuil=22) pour un site.
 
-        Retourne dict : {"jaune": Q_m3s, "orange": Q_m3s, "rouge": Q_m3s}
-        Valeurs absentes si non disponibles pour la couleur.
+        Doit être appelé avec le CODE SITE (7 chiffres après la lettre) pour
+        obtenir à la fois les seuils H et Q en un seul appel.
+
+        Retourne dict :
+          {
+            "H": {"zt_jaune": m, "jaune": m, ...},   # hauteurs en mètres
+            "Q": {"zt_jaune": m3s, "jaune": m3s, ...} # débits en m³/s
+          }
+        Clés absentes si non disponibles pour la grandeur / couleur.
         """
         if self._client is None or self._idsession is None:
             raise PhycAuthError("Client PHyC non connecte.")
@@ -295,7 +302,7 @@ class PhycClient:
                 xmlprev = el.text
                 break
         if not xmlprev:
-            return {}
+            return {"H": {}, "Q": {}}
         return self._parse_seuils_vigilance(xmlprev)
 
     # Mapping indice de gravité → clé seuil
@@ -306,28 +313,56 @@ class PhycClient:
 
     @staticmethod
     def _parse_seuils_vigilance(xml_str):
-        """Parse le XML publierSeuilHydro — retourne seuils actifs en m3/s.
+        """Parse le XML publierSeuilHydro v2.1 — retourne seuils H et Q actifs.
 
-        Clés retournées : zt_jaune, jaune, zt_orange, orange, zt_rouge, rouge
+        Structure PHyC v2.1 : dans chaque bloc SeuilHydro (NatureSeuilHydro=22),
+        les ValSeuilHydro sont rattachés soit au site (CdSiteHydro → Q en L/s)
+        soit à la station (CdStationHydro → H en mm). TypSeuilHydro=1 pour les deux.
+
+        Retourne :
+          {
+            "H": {"zt_jaune": m, ...},    # hauteurs en mètres (mm/1000)
+            "Q": {"zt_jaune": m3s, ...}   # débits en m³/s (L/s /1000)
+          }
         """
         root = ET.fromstring(xml_str)
-        candidats = {}  # {indice_gravite: val_m3s}  — garde la valeur active la plus basse
-        for val_el in root.iter("ValeursSeuilSiteHydro"):
-            if val_el.findtext("NatureSeuilSiteHydro") != "22":
+        cand_H = {}  # {indice: val_mm}
+        cand_Q = {}  # {indice: val_Ls}
+
+        for seuil_el in root.iter("SeuilHydro"):
+            if seuil_el.findtext("NatureSeuilHydro") != "22":
                 continue
-            if val_el.findtext("DtDesactivationSeuilSiteHydro"):
+            indice_str = seuil_el.findtext("IndiceGraviteSeuilHydro")
+            if not indice_str:
                 continue
-            val_str    = val_el.findtext("ValDebitSeuilSiteHydro")
-            indice_str = val_el.findtext("IndiceGraviteSeuilSiteHydro")
-            if not val_str or not indice_str:
+            try:
+                indice = int(indice_str)
+            except ValueError:
                 continue
-            indice  = int(indice_str)
             if indice not in PhycClient._INDICE_TO_KEY:
                 continue
-            val_m3s = float(val_str) / 1000.0
-            if indice not in candidats or val_m3s < candidats[indice]:
-                candidats[indice] = val_m3s
-        return {PhycClient._INDICE_TO_KEY[i]: v for i, v in candidats.items()}
+
+            for val_el in seuil_el.findall(".//ValSeuilHydro"):
+                if val_el.findtext("DtDesactivationValSeuilHydro"):
+                    continue
+                val_str = val_el.findtext("ValValSeuilHydro")
+                if not val_str:
+                    continue
+                val = float(val_str)
+                has_station = val_el.findtext(".//CdStationHydro") is not None
+                has_site    = val_el.findtext(".//CdSiteHydro")    is not None
+                if has_station and not has_site:      # H (mm)
+                    if indice not in cand_H or val < cand_H[indice]:
+                        cand_H[indice] = val
+                elif has_site and not has_station:    # Q (L/s)
+                    if indice not in cand_Q or val < cand_Q[indice]:
+                        cand_Q[indice] = val
+
+        key = PhycClient._INDICE_TO_KEY
+        return {
+            "H": {key[i]: v / 1000.0 for i, v in cand_H.items()},
+            "Q": {key[i]: v / 1000.0 for i, v in cand_Q.items()},
+        }
 
     # ------------------------------------------------------------------
     # Parsing XML réponse PHyC
