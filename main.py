@@ -1077,8 +1077,10 @@ class App(tk.Tk):
                             fill=False, edgecolor=C_P, linewidth=0.7, zorder=4))
                     ant_handles.append(b_sol)
                     ant_labels.append("Antilope solide (par diff.)")
-                    for rect, sol_v in zip(b_sol.patches, sol_aligned):
+                    for rect, sol_v, total in zip(b_sol.patches, sol_aligned, p_vals):
                         self._visu_bar_info.insert(0, (rect, sol_v, "Antilope sol"))
+                        # Entrée total via la barre sol : présente même si liq_aligned=0
+                        self._visu_bar_info.insert(0, (rect, total, "Antilope liq"))
             else:
                 # Mode normal : barres totales avec seuil
                 base_vals = [min(v, seuil) for v in p_vals]
@@ -1324,20 +1326,21 @@ class App(tk.Tk):
         if frm_q is not None:
             for w in frm_q.winfo_children():
                 w.destroy()
-            BG_Q   = "#FAFAFA"
-            HDR_BG = "#EEF2F7"
+            BG_Q = "#FAFAFA"
             frm_q.config(bg=BG_Q)
             import matplotlib.colors as _mcolors
             for handle, label in zip(h3, l3):
-                fc = handle.get_facecolor()
-                if hasattr(fc, '__len__') and len(fc) == 4:
-                    hex_c = _mcolors.to_hex(fc)
-                else:
-                    hex_c = "#333333"
+                try:
+                    hex_c = _mcolors.to_hex(handle.get_color())
+                except Exception:
+                    try:
+                        hex_c = _mcolors.to_hex(handle.get_facecolor()[0])
+                    except Exception:
+                        hex_c = "#333333"
                 f = tk.Frame(frm_q, bg=BG_Q)
                 f.pack(fill="x", padx=2, pady=0)
-                tk.Label(f, text="■", bg=BG_Q, fg=hex_c,
-                         font=("TkDefaultFont", 8)).pack(side=tk.LEFT, padx=(2, 1))
+                tk.Label(f, text="—", bg=BG_Q, fg=hex_c,
+                         font=("TkDefaultFont", 9, "bold")).pack(side=tk.LEFT, padx=(2, 1))
                 tk.Label(f, text=label, bg=BG_Q, fg="#222",
                          font=("TkDefaultFont", 7), anchor="w").pack(side=tk.LEFT)
             # Séparateur + case à cocher
@@ -1464,9 +1467,15 @@ class App(tk.Tk):
 
         # 2e passage : collecter TOUTES les barres à ce centre X (même colonne)
         # Ordre d'insertion : Antilope en tête (insert 0), Panthère en queue (append)
-        seen_labels = {}   # label → val (premier = prioritaire)
-        ann_y = 0.0        # point d'ancrage Y = min des y (bord haut dans axe inversé)
+        seen_labels = {}
         bar_half_w = None
+        # Ancrage Y : position souris convertie en coordonnées de l'axe pluie
+        if event.inaxes is self._visu_ax_hu and event.xdata is not None:
+            import matplotlib.transforms as _mtr
+            _disp = self._visu_ax_hu.transData.transform((event.xdata, event.ydata))
+            ann_y = self._visu_ax_p.transData.inverted().transform(_disp)[1]
+        else:
+            ann_y = event.ydata if event.ydata is not None else 0.0
         for rect, val, label in self._visu_bar_info:
             if rect.get_height() == 0:
                 continue
@@ -1477,8 +1486,6 @@ class App(tk.Tk):
                 bar_half_w = rect.get_width() / 2
             if label not in seen_labels:
                 seen_labels[label] = val
-            # Bord haut = y le plus petit (axe Y inversé, 0 en haut)
-            ann_y = min(ann_y, rect.get_y())
 
         # Vérifier que le curseur est dans la largeur d'une barre
         if bar_half_w is not None and best_dist > bar_half_w:
@@ -1526,7 +1533,7 @@ class App(tk.Tk):
         if self._visu_tooltip_artist is None:
             self._visu_tooltip_artist = self._visu_ax_p.annotate(
                 txt,
-                xy=(best_cx, ann_y), xytext=(8, -8), textcoords="offset points",
+                xy=(best_cx, ann_y), xytext=(10, 10), textcoords="offset points",
                 fontsize=7.5, linespacing=1.4,
                 bbox=dict(boxstyle="round,pad=0.35", facecolor="#FFFDE7",
                           edgecolor="#AAAAAA", linewidth=0.7, alpha=0.95),
