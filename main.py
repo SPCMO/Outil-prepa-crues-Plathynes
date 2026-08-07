@@ -175,9 +175,11 @@ class App(tk.Tk):
         self._notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed)
 
     def _on_tab_changed(self, _event=None):
-        """Déclenche un refresh automatique quand on bascule sur l'onglet Import Plathynes."""
+        """Refresh automatique lors du changement d'onglet."""
         selected = self._notebook.select()
-        if selected == str(self.tab_plathynes):
+        if selected == str(self.tab_visu):
+            self._appliquer_seuils()
+        elif selected == str(self.tab_plathynes):
             self._refresh_visu_list()
             self._plath_refresh()
 
