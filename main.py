@@ -1030,7 +1030,8 @@ class App(tk.Tk):
                 if any(v > 0 for v in liq_excess):
                     b_liq_ex = self._visu_ax_p.bar(p_dates, liq_excess, width=bar_w,
                                                     bottom=base_vals,
-                                                    color=C_P_EXCESS, alpha=0.82, align="center",
+                                                    color="none", hatch="///", edgecolor=C_P_EXCESS,
+                                                    linewidth=0.5, align="center",
                                                     zorder=3, label=f"Antilope liquide > {seuil:.0f} mm")
                     ant_handles.append(b_liq_ex)
                     ant_labels.append(f"Antilope liquide > {seuil:.0f} mm")
@@ -1060,7 +1061,8 @@ class App(tk.Tk):
                 if any(v > 0 for v in excess_vals):
                     b2 = self._visu_ax_p.bar(p_dates, excess_vals, width=bar_w,
                                               bottom=base_vals,
-                                              color=C_P_EXCESS, alpha=0.82, align="center",
+                                              color="none", hatch="///", edgecolor=C_P_EXCESS,
+                                              linewidth=0.5, align="center",
                                               zorder=3, label=f"Antilope BV > {seuil:.0f} mm")
                     ant_handles.append(b2)
                     ant_labels.append(f"Antilope BV > {seuil:.0f} mm")
@@ -1399,12 +1401,12 @@ class App(tk.Tk):
 
         row = 1
 
-        def _ligne(produit_txt, cumul_mm, couleur, produit_key):
+        def _ligne(produit_txt, cumul_mm, couleur, produit_key, icon="■"):
             nonlocal row
             # Pastille + nom produit
             f = tk.Frame(frm, bg=BG)
             f.grid(row=row, column=0, sticky="ew", padx=(0, 1), pady=0)
-            tk.Label(f, text="■", bg=BG, fg=couleur,
+            tk.Label(f, text=icon, bg=BG, fg=couleur,
                      font=("TkDefaultFont", 8)).pack(side=tk.LEFT, padx=(2, 1))
             tk.Label(f, text=produit_txt, bg=BG, fg="#222",
                      font=("TkDefaultFont", 7), anchor="w").pack(side=tk.LEFT)
@@ -1423,11 +1425,11 @@ class App(tk.Tk):
             row += 1
 
         if ant_handles:
-            lbl0 = ant_labels[0] if ant_labels else "Antilope BV"
-            _ligne(lbl0, sum_ant, C_P, "antilope")
-            if len(ant_handles) > 1:
-                lbl1 = ant_labels[1] if len(ant_labels) > 1 else "Antilope BV sup"
-                _ligne(lbl1, None, C_P_EXCESS, "")
+            # Couleurs et icônes selon position : ≤seuil (bleu), >seuil (violet hach.), solide (bleu clair)
+            _ant_colors = [C_P, C_P_EXCESS, _C_ANT_SOL]
+            _ant_icons  = ["■", "▨", "■"]
+            for _i, (_lbl, _col, _icn) in enumerate(zip(ant_labels, _ant_colors, _ant_icons)):
+                _ligne(_lbl, sum_ant if _i == 0 else None, _col, "antilope" if _i == 0 else "", _icn)
 
         if pant_handles:
             lbl_pan = pant_labels[0] if pant_labels else "Panthère BV"
