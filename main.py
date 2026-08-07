@@ -1032,9 +1032,10 @@ class App(tk.Tk):
                 if any(v > 0 for v in liq_excess):
                     b_liq_ex = self._visu_ax_p.bar(p_dates, liq_excess, width=bar_w,
                                                     bottom=base_vals,
-                                                    color="none", hatch="///", edgecolor=C_P_EXCESS,
-                                                    linewidth=0.5, align="center",
-                                                    zorder=3, label=f"Antilope liquide > {seuil:.0f} mm")
+                                                    color=C_P_EXCESS, alpha=0.25,
+                                                    hatch="///", edgecolor=C_P_EXCESS, linewidth=0.6,
+                                                    align="center", zorder=3,
+                                                    label=f"Antilope liquide > {seuil:.0f} mm")
                     ant_handles.append(b_liq_ex)
                     ant_labels.append(f"Antilope liquide > {seuil:.0f} mm")
                     for rect, total in zip(b_liq_ex.patches, p_vals):
@@ -1063,9 +1064,10 @@ class App(tk.Tk):
                 if any(v > 0 for v in excess_vals):
                     b2 = self._visu_ax_p.bar(p_dates, excess_vals, width=bar_w,
                                               bottom=base_vals,
-                                              color="none", hatch="///", edgecolor=C_P_EXCESS,
-                                              linewidth=0.5, align="center",
-                                              zorder=3, label=f"Antilope BV > {seuil:.0f} mm")
+                                              color=C_P_EXCESS, alpha=0.25,
+                                              hatch="///", edgecolor=C_P_EXCESS, linewidth=0.6,
+                                              align="center", zorder=3,
+                                              label=f"Antilope BV > {seuil:.0f} mm")
                     ant_handles.append(b2)
                     ant_labels.append(f"Antilope BV > {seuil:.0f} mm")
                     for rect, excess_v, total in zip(b2.patches, excess_vals, p_vals):
@@ -1427,10 +1429,16 @@ class App(tk.Tk):
             row += 1
 
         if ant_handles:
-            # Couleurs et icônes selon position : ≤seuil (bleu), >seuil (violet hach.), solide (bleu clair)
-            _ant_colors = [C_P, C_P_EXCESS, _C_ANT_SOL]
-            _ant_icons  = ["■", "▨", "■"]
-            for _i, (_lbl, _col, _icn) in enumerate(zip(ant_labels, _ant_colors, _ant_icons)):
+            # Couleur et icône déduites du label (pas de l'index) pour rester cohérent
+            # quelle que soit la combinaison liq / liq_ex / sol présente.
+            for _i, _lbl in enumerate(ant_labels):
+                _lbl_l = _lbl.lower()
+                if "solide" in _lbl_l:
+                    _col, _icn = _C_ANT_SOL, "■"
+                elif ">" in _lbl:
+                    _col, _icn = C_P_EXCESS, "▨"
+                else:
+                    _col, _icn = C_P, "■"
                 _ligne(_lbl, sum_ant if _i == 0 else None, _col, "antilope" if _i == 0 else "", _icn)
 
         if pant_handles:
