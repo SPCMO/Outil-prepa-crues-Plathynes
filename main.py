@@ -1318,16 +1318,30 @@ class App(tk.Tk):
         self._visu_ax_q.grid(True, alpha=0.25, linestyle="--", color="#AAAAAA", zorder=1)
         self._visu_ax_q.set_facecolor("#F8F9FA")
 
+        # ── Légende Q + case à cocher info-bulle dans un seul bloc tkinter ──
         h3, l3 = self._visu_ax_q.get_legend_handles_labels()
-        if h3:
-            self._visu_ax_q.legend(h3, l3, loc="upper right", fontsize=8)
-
-        # ── Case à cocher tooltip Q dans sa propre frame ─────────────────────
         frm_q = getattr(self, "_visu_legende_q_frame", None)
         if frm_q is not None:
             for w in frm_q.winfo_children():
                 w.destroy()
-            BG_Q = "#FAFAFA"
+            BG_Q   = "#FAFAFA"
+            HDR_BG = "#EEF2F7"
+            frm_q.config(bg=BG_Q)
+            import matplotlib.colors as _mcolors
+            for handle, label in zip(h3, l3):
+                fc = handle.get_facecolor()
+                if hasattr(fc, '__len__') and len(fc) == 4:
+                    hex_c = _mcolors.to_hex(fc)
+                else:
+                    hex_c = "#333333"
+                f = tk.Frame(frm_q, bg=BG_Q)
+                f.pack(fill="x", padx=2, pady=0)
+                tk.Label(f, text="■", bg=BG_Q, fg=hex_c,
+                         font=("TkDefaultFont", 8)).pack(side=tk.LEFT, padx=(2, 1))
+                tk.Label(f, text=label, bg=BG_Q, fg="#222",
+                         font=("TkDefaultFont", 7), anchor="w").pack(side=tk.LEFT)
+            # Séparateur + case à cocher
+            tk.Frame(frm_q, height=1, bg="#CCCCCC").pack(fill="x", pady=(3, 1))
             def _toggle_tooltip_q(*_):
                 if not self.var_visu_labels_q.get():
                     tt = getattr(self, "_visu_tooltip_q", None)
@@ -1337,7 +1351,7 @@ class App(tk.Tk):
             tk.Checkbutton(frm_q, text="Info-bulle Q/H", variable=self.var_visu_labels_q,
                            command=_toggle_tooltip_q,
                            bg=BG_Q, fg="#444", font=("TkDefaultFont", 7),
-                           activebackground=BG_Q, anchor="w").pack(padx=2, pady=2)
+                           activebackground=BG_Q, anchor="w").pack(fill="x", padx=2, pady=(0, 2))
             frm_q.update_idletasks()
             frm_q.place(relx=0.93, rely=0.52, anchor="ne")
 
@@ -1487,9 +1501,9 @@ class App(tk.Tk):
         # ── Construire le texte multi-lignes ──────────────────────────────────
         # Ordre d'affichage : liquide / solide / Panthère / HU
         _LABEL_NAMES = {
-            "Antilope liq": "Ant. tot.",
+            "Antilope liq": "Ant. totale",
             "Antilope sol": "Ant. solide",
-            "Antilope":     "Antilope",
+            "Antilope":     "Ant. totale",
             "Panthère":     "Panthère",
         }
         _LABEL_ORDER = ["Antilope liq", "Antilope", "Antilope sol", "Panthère"]
