@@ -1356,7 +1356,9 @@ class App(tk.Tk):
                            bg=BG_Q, fg="#444", font=("TkDefaultFont", 7),
                            activebackground=BG_Q, anchor="w").pack(fill="x", padx=2, pady=(0, 2))
             frm_q.update_idletasks()
-            frm_q.place(relx=0.93, rely=0.52, anchor="ne")
+            # Positionnement dans le coin haut-droit du graphique Q
+            bbox_q = self._visu_ax_q.get_position()   # figure coords (0=bas, 1=haut)
+            frm_q.place(relx=bbox_q.x1, rely=1.0 - bbox_q.y1, anchor="ne")
 
         # ── Synchronisation et formatage de l'axe X (identique sur les 2 graphiques) ─
         all_dates = sorted(
@@ -1506,20 +1508,25 @@ class App(tk.Tk):
             hu_str = f"{hu_vals[idx_hu]:.1f} %"
 
         # ── Construire le texte multi-lignes ──────────────────────────────────
-        # Ordre d'affichage : liquide / solide / Panthère / HU
-        _LABEL_NAMES = {
-            "Antilope liq": "Ant. totale",
-            "Antilope sol": "Ant. solide",
-            "Antilope":     "Ant. totale",
-            "Panthère":     "Panthère",
-        }
-        _LABEL_ORDER = ["Antilope liq", "Antilope", "Antilope sol", "Panthère"]
         lines_txt = []
-        for lbl in _LABEL_ORDER:
-            if lbl in seen_labels:
-                lines_txt.append(f"{_LABEL_NAMES[lbl]} : {seen_labels[lbl]:.1f} mm")
+        # Ant. totale
+        tot_val = seen_labels.get("Antilope liq") or seen_labels.get("Antilope")
+        if tot_val is not None:
+            lines_txt.append(f"Ant. totale  : {tot_val:.1f} mm")
+        # Ant. liquide = totale - solide (mode liq+sol uniquement)
+        sol_val = seen_labels.get("Antilope sol")
+        if tot_val is not None and sol_val is not None:
+            liq_val = max(0.0, tot_val - sol_val)
+            lines_txt.append(f"Ant. liquide : {liq_val:.1f} mm")
+        # Ant. solide
+        if sol_val is not None:
+            lines_txt.append(f"Ant. solide  : {sol_val:.1f} mm")
+        # Panthère
+        pan_val = seen_labels.get("Panthère")
+        if pan_val is not None:
+            lines_txt.append(f"Panthère     : {pan_val:.1f} mm")
         if hu_str:
-            lines_txt.append(f"HU : {hu_str}")
+            lines_txt.append(f"HU           : {hu_str}")
         txt = "\n".join(lines_txt) if lines_txt else ""
 
         if not txt:
