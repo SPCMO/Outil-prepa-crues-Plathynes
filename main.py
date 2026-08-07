@@ -1044,8 +1044,10 @@ class App(tk.Tk):
                 if any(v > 0 for v in sol_aligned):
                     b_sol = self._visu_ax_p.bar(p_dates, sol_aligned, width=bar_w,
                                                  bottom=liq_aligned,
-                                                 color=C_P_SOL, alpha=0.75, align="center",
-                                                 zorder=3, label="Antilope solide (par diff.)")
+                                                 color=C_P_SOL, alpha=0.85,
+                                                 hatch="ooo", edgecolor="white", linewidth=0.4,
+                                                 align="center", zorder=3,
+                                                 label="Antilope solide (par diff.)")
                     ant_handles.append(b_sol)
                     ant_labels.append("Antilope solide (par diff.)")
                     for rect, total in zip(b_sol.patches, p_vals):
