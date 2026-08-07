@@ -1334,7 +1334,7 @@ class App(tk.Tk):
                     if tt and tt.get_visible():
                         tt.set_visible(False)
                         self._visu_canvas.draw_idle()
-            tk.Checkbutton(frm_q, text="Tooltip Q/H", variable=self.var_visu_labels_q,
+            tk.Checkbutton(frm_q, text="Info-bulle Q/H", variable=self.var_visu_labels_q,
                            command=_toggle_tooltip_q,
                            bg=BG_Q, fg="#444", font=("TkDefaultFont", 7),
                            activebackground=BG_Q, anchor="w").pack(padx=2, pady=2)
@@ -1623,7 +1623,7 @@ class App(tk.Tk):
                     tt.set_visible(False)
                     self._visu_canvas.draw_idle()
 
-        chk_p = tk.Checkbutton(frm, text="Tooltip pluie", variable=self.var_visu_labels_p,
+        chk_p = tk.Checkbutton(frm, text="Info-bulle pluie", variable=self.var_visu_labels_p,
                                 command=_toggle_tooltip_p,
                                 bg=BG, fg="#444", font=("TkDefaultFont", 7),
                                 activebackground=BG, anchor="w")
