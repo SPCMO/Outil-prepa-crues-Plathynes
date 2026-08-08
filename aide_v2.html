@@ -455,11 +455,17 @@
           <ul>
             <li>Si Antilope est disponible : barres <span style="color:#1F618D;font-weight:600">bleues</span> (valeur ≤ seuil) et <span style="color:#7D3C98;font-weight:600">violettes</span> (valeur &gt; seuil), au premier plan (zorder élevé). Si la pluie liquide a été extraite en même temps (option "Pluie totale + pluie liquide"), l'hyétogramme affiche des barres <strong>empilées</strong> : la portion <span style="color:#1F618D;font-weight:600">bleue foncée</span> représente la <strong>pluie liquide</strong> (bande <code>liquide</code>) et la portion <span style="color:#85C1E9;font-weight:600">bleue claire</span> empilée au-dessus représente la <strong>phase solide par différence</strong> (graupel + neige = total − liquide). Le seuil hyétogramme s'applique à la partie liquide.</li>
             <li>Si Panthère est disponible : barres <span style="color:#CC5500;font-weight:600">orange</span> semi-transparentes en arrière-plan, bordures en pointillés.</li>
-            <li>La <strong>légende</strong> : le <strong>cumul AJ1</strong> est intégré directement dans le label "Antilope BV ≤ seuil mm" sur la même ligne. Le <strong>cumul Pan.</strong> est intégré dans le label "Panthère BV (mm)" avec un tiret de séparation.</li>
+            <li>La <strong>légende</strong> : le <strong>cumul AJ1</strong> est intégré directement dans le label "Antilope BV ≤ seuil mm" sur la même ligne. Le <strong>cumul Pan.</strong> est intégré dans le label "Panthère BV (mm)" avec un tiret de séparation. La légende contient également une case <strong>"Info-bulle pluies et HU"</strong> pour activer/désactiver l'info-bulle au survol des barres.</li>
             <li>Les annotations <em>HU début</em> et <em>HU 6h</em> indiquent les humidités clés.</li>
           </ul>
         </li>
-        <li><strong>Graphique bas</strong> — Courbe de débit Q avec zones de vigilance colorées. Les annotations <em>Q début</em> et <em>Q max</em> sont affichées avec horodatage.</li>
+        <li><strong>Graphique bas</strong> — Courbe de débit Q avec zones de vigilance colorées. Les annotations <em>Q début</em> et <em>Q max</em> sont affichées avec horodatage. Une <strong>légende tkinter</strong> (encadré en haut à droite du graphique Q) affiche les séries avec leurs couleurs et contient une case <strong>"Info-bulle Q/H"</strong> pour activer/désactiver l'info-bulle au survol de la courbe.</li>
+      </ul>
+      <h3>Info-bulles interactives</h3>
+      <p>Au survol de la souris sur les graphiques, des <strong>info-bulles</strong> (tooltips) apparaissent :</p>
+      <ul>
+        <li><strong>Info-bulle pluies et HU</strong> (graphique haut) — en survolant les barres, une bulle s'affiche au-dessus de la souris avec, selon les données disponibles : <em>Ant. totale</em>, <em>Ant. liquide</em> (= totale − solide), <em>Ant. solide</em> en mm, <em>Panthère</em> en mm, et <em>HU</em> en %. La case à cocher correspondante dans la légende pluie permet de désactiver ce tooltip sans affecter les annotations statiques.</li>
+        <li><strong>Info-bulle Q/H</strong> (graphique bas) — en survolant la courbe de débit, une bulle affiche la valeur et l'horodatage. La case à cocher dans la légende Q du graphique bas permet de la désactiver.</li>
       </ul>
       <p>Le graphique de débit affiche les lignes des <strong>6 seuils de vigilance</strong> (ZT Jaune, Jaune, ZT Orange, Orange, ZT Rouge, Rouge) avec leur valeur en étiquette. Les seuils ZT sont tracés en pointillé/pastel, les seuils principaux en trait plein. <strong>Les étiquettes dont la valeur dépasse la plage visible du graphique sont masquées automatiquement</strong> pour ne pas déborder hors zone.</p>
       <p>Le champ <strong>"Seuil hyétogramme *"</strong> (défaut 10 mm/pas) détermine la limite entre la coloration bleue et violette d'Antilope, <strong>et recalcule à la volée</strong> l'indicateur de fortes intensités dans l'encart de comparaison (voir ci-dessous).</p>
@@ -475,13 +481,13 @@
       <p>Les deux graphiques partagent la même échelle temporelle (x identique).</p>
 
       <h3>Cumuls spatialisés (fenêtre dédiée)</h3>
-      <p>Un clic sur le cumul Antilope ou Panthère dans la <strong>légende du graphique</strong> (en haut à droite), ou sur les valeurs d'indices dans l'onglet <strong>Analyse pluies</strong>, ouvre une fenêtre affichant les cumuls spatialisés Antilope et Panthère côte à côte :</p>
+      <p>Un clic sur le cumul Antilope ou Panthère dans la <strong>légende du graphique</strong> (en haut à droite), ou sur les valeurs d'indices dans l'onglet <strong>Analyse pluies</strong>, ouvre une fenêtre affichant trois cartes côte à côte :</p>
       <ul>
-        <li>Chaque carte affiche le cumul de pluie cumulée sur le bassin versant, masqué hors de l'emprise BV.</li>
-        <li>Le contour du bassin versant est tracé en noir.</li>
-        <li>Le titre de chaque carte mentionne le cumul moyen BV en mm.</li>
-        <li>Une <strong>colorbar commune</strong> (à droite) utilise la <strong>palette « Hydro » du Superviseur national</strong> avec les classes suivantes :</li>
+        <li><strong>Antilope — Cumul total</strong> : cumul de la pluie totale (bande <code>rr</code>).</li>
+        <li><strong>Antilope solide (par diff.) — Cumul solide</strong> : cumul de la phase solide calculé pixel par pixel par différence (total − liquide ≥ 0). Disponible uniquement si l'extraction a été lancée avec l'option <em>Pluie totale + pluie liquide</em>. Affichée avec la <strong>même palette de couleurs mais en hachures</strong> (appliquées uniquement sur les pixels dont la valeur est &gt; 0, grâce à un rendu <code>contourf</code>), ce qui la distingue visuellement des deux autres cartes à pixels pleins.</li>
+        <li><strong>Panthère — Cumul total</strong> : cumul de la pluie radar temps-différé.</li>
       </ul>
+      <p>Pour chaque carte : le cumul moyen BV figure dans le titre, le contour du bassin versant est tracé en noir et la zone hors BV est grisée. Une <strong>colorbar commune</strong> (à droite) utilise la <strong>palette « Hydro » du Superviseur national</strong> avec les classes suivantes :</p>
       <table>
         <tr><th>Classe</th><th>Couleur</th></tr>
         <tr><td>0–2 mm</td><td><span style="display:inline-block;width:18px;height:12px;background:#FFFFFF;border:1px solid #ccc;vertical-align:middle"></span> Blanc (pas de pluie significative)</td></tr>
@@ -1758,6 +1764,64 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <span class="change-tag ct-fix">Correction</span>
     <strong>Requêtes PHyC Q désormais en code station (10 car.) au lieu du code site (8 car.)</strong>
     <p>L'extraction des débits Q utilisait jusqu'ici le code site à 8 caractères pour interroger PHyC, tandis que les hauteurs H utilisaient déjà le code station complet (10 car.). Les deux grandeurs utilisent maintenant systématiquement le code station. Le parsing de la réponse XML accepte indifféremment <code>CdSiteHydro</code> et <code>CdStationHydro</code>, PHyC pouvant retourner l'un ou l'autre selon le code envoyé.</p>
+  </div>
+
+  <h2>Info-bulles et légende Q — août 2026</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Renommage "Étiquettes" → "Info-bulle" (terminologie française standard)</strong>
+    <p>Les cases à cocher qui contrôlaient l'affichage des tooltips s'appelaient "Étiquettes pluie" et "Étiquettes Q/H". Renommées en <strong>"Info-bulle pluies et HU"</strong> et <strong>"Info-bulle Q/H"</strong>, terme plus explicite et conforme à la terminologie française standard des interfaces graphiques. Les cases désactivent uniquement le <em>tooltip au survol de la souris</em> — les annotations statiques (Q début, Q max, HU début, HU 6h) ne sont pas affectées.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Légende Q unifiée dans un bloc tkinter en haut à droite du graphique débit</strong>
+    <p>La légende du graphique de débit Q (séries + checkbox "Info-bulle Q/H") était auparavant positionnée à une coordonnée fixe non liée au graphique. Elle est désormais un bloc tkinter (<code>tk.Frame</code>) positionné dynamiquement en haut à droite du graphique Q via <code>ax.get_position()</code> (coordonnées bbox figure → coordonnées <code>place</code> tkinter). Les couleurs des séries sont extraites via <code>handle.get_color()</code> avec fallback sur <code>get_facecolor()[0]</code>, et les icônes sont des tirets "—" (adaptés aux lignes).</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Info-bulle pluies enrichie : Ant. liquide, Ant. solide, HU</strong>
+    <p>L'info-bulle qui apparaît au survol des barres du graphique hyétogramme affiche désormais jusqu'à 5 valeurs selon les données disponibles : <em>Ant. totale</em> (mm), <em>Ant. liquide</em> (= totale − solide, calculé à la volée), <em>Ant. solide</em> (mm), <em>Panthère</em> (mm) et <em>HU</em> (%). La bulle apparaît <strong>au-dessus de la souris</strong> (décalage <code>(10, 10)</code> en points) et non plus sur l'axe des abscisses. La détection de position Y est réalisée en convertissant les coordonnées de l'axe HU (<code>twinx</code>) vers l'axe pluie via la chaîne <code>transData.transform → transData.inverted</code>.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Ant. totale manquante dans l'info-bulle quand pluie liquide = 0</strong>
+    <p>Quand la pluie liquide était nulle (hauteur de barre = 0), la barre Antilope totale n'était pas détectée lors du scan de survol (seules les barres de hauteur non nulle étaient retenues). Corrigé en stockant également le tuple <code>(rect, total, "Antilope liq")</code> sur le même rectangle que la barre solide, garantissant l'accès à la valeur totale même quand la portion liquide est vide.</p>
+  </div>
+
+  <h2>Cumuls spatialisés — panneau Antilope solide — août 2026</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Troisième panneau "Antilope solide" dans la fenêtre des cumuls spatialisés</strong>
+    <p>La fenêtre des cumuls spatialisés affiche désormais <strong>trois cartes</strong> (GridSpec 1×4 avec colorbar) au lieu de deux : <em>Antilope totale</em> | <em>Antilope solide (par diff.)</em> | <em>Panthère</em>. Le cumul solide est calculé pixel par pixel par différence <code>max(0, total − liquide)</code> à partir des GRD chargés. La fenêtre est élargie à 1600×600 px. Le bandeau de statistiques en bas affiche les indices de variabilité spatiale pour les trois produits.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Renommage des titres : "Cumul :" → "Cumul total :" / "Cumul solide :"</strong>
+    <p>Les titres des panneaux mentionnent désormais explicitement la nature du cumul : <strong>"Cumul total"</strong> pour Antilope totale et Panthère, <strong>"Cumul solide"</strong> pour le panneau Antilope solide.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-feat">Fonctionnalité</span>
+    <strong>Rendu en hachures pour le panneau Antilope solide (pixels non nuls uniquement)</strong>
+    <p>Le panneau Antilope solide utilise un rendu semi-transparent (<code>alpha=0.55</code>) combiné à des <strong>hachures diagonales</strong> (<code>///</code>) via <code>contourf</code> avec <code>levels=[0.001, max+1]</code> : les hachures s'appliquent <em>uniquement aux pixels dont la valeur est strictement positive</em>, laissant le fond blanc propre pour les zones sans précipitations solides. La couleur des hachures est contrôlée via <code>matplotlib.rcParams["hatch.color"]</code> (compatible toutes versions matplotlib), la valeur d'origine étant restaurée après le tracé. <code>np.flipud(data)</code> est appliqué car <code>contourf</code> attend un axe Y croissant alors que <code>imshow</code> utilise <code>origin="upper"</code>.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Fenêtre cumuls spatialisés vide — compatibilité matplotlib ≥ 3.8</strong>
+    <p>Dans les versions récentes de matplotlib, l'attribut <code>.collections</code> sur un <code>QuadContourSet</code> retourné par <code>contourf</code> est déprécié et peut être supprimé. Une <code>AttributeError</code> silencieuse abortait la boucle de rendu des panneaux avant l'appel à <code>canvas.draw()</code>, laissant la fenêtre vide. Corrigé en remplaçant <code>_cf.collections</code> par <code>getattr(_cf, "collections", [])</code> et en entourant l'ensemble du bloc contourf d'un <code>try/except</code>.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>AttributeError sur <code>_visu_tooltip_q</code> dans le handler de survol</strong>
+    <p>L'accès direct <code>self._visu_tooltip_q</code> sur une sous-classe tkinter déclenchait <code>__getattr__</code> qui cherchait l'attribut côté C (<code>tkapp</code>) au lieu de l'instance Python, provoquant une <code>AttributeError</code> non bloquante mais visible dans la console. Corrigé en utilisant <code>getattr(self, "_visu_tooltip_q", None)</code>, cohérent avec le pattern utilisé pour les autres attributs optionnels de l'application.</p>
   </div>
 </div>
 
