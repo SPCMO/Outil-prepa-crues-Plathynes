@@ -1823,6 +1823,20 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <strong>AttributeError sur <code>_visu_tooltip_q</code> dans le handler de survol</strong>
     <p>L'accès direct <code>self._visu_tooltip_q</code> sur une sous-classe tkinter déclenchait <code>__getattr__</code> qui cherchait l'attribut côté C (<code>tkapp</code>) au lieu de l'instance Python, provoquant une <code>AttributeError</code> non bloquante mais visible dans la console. Corrigé en utilisant <code>getattr(self, "_visu_tooltip_q", None)</code>, cohérent avec le pattern utilisé pour les autres attributs optionnels de l'application.</p>
   </div>
+
+  <h2>Corrections robustesse — août 2026</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Validation du code station à l'enregistrement de la configuration</strong>
+    <p>Un avertissement (non bloquant) est désormais affiché lors de l'enregistrement de la configuration si le code station ne correspond pas au format attendu : <strong>1 lettre + 9 chiffres</strong> (ex. : <code>W123456789</code>). La configuration est quand même enregistrée pour ne pas bloquer le travail, mais le message invite à vérifier la saisie. Un code incorrect entraînerait des échecs silencieux lors des requêtes PHyC.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-fix">Correction</span>
+    <strong>Corrections internes de robustesse (non visibles à l'utilisateur)</strong>
+    <p>Plusieurs corrections sans impact sur l'interface : élimination d'un <code>NameError</code> silencieux sur la phase solide quand aucune pluie n'est disponible ; résolution d'une race condition lors de l'import Plathynes (les seuils et l'ouverture de Plathynes se font maintenant après la fin de l'import, et non en parallèle) ; réduction des fuites mémoire matplotlib sur les fenêtres de cumuls spatialisés et l'onglet Analyse pluies ; correction du scroll de la molette dans l'onglet Analyse pluies qui pouvait interférer avec les autres onglets ; vectorisation numpy de la sélection des pixels dans le BV (gain de performance ×50 sur les grilles fines).</p>
+  </div>
 </div>
 
 <script>
