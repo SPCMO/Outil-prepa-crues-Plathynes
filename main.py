@@ -1898,15 +1898,19 @@ class App(tk.Tk):
                 # Hachures uniquement sur les pixels > 0
                 _valid_max = float(np.nanmax(data)) if np.any(~np.isnan(data) & (data > 0)) else None
                 if _valid_max is not None:
-                    _xs = np.linspace(ext[0], ext[1], nc)
-                    _ys = np.linspace(ext[2], ext[3], nr)   # bas → haut
-                    _d_flip = np.flipud(data)                # flipud pour contourf (Y croissant)
-                    _cf = ax.contourf(_xs, _ys, _d_flip,
-                                      levels=[0.001, _valid_max + 1],
-                                      hatches=["///"], colors=["none"], zorder=3)
-                    for _coll in _cf.collections:
-                        _coll.set_edgecolor("#444444")
-                        _coll.set_linewidth(0.4)
+                    try:
+                        _xs = np.linspace(ext[0], ext[1], nc)
+                        _ys = np.linspace(ext[2], ext[3], nr)   # bas → haut
+                        _d_flip = np.flipud(data)                # flipud pour contourf (Y croissant)
+                        _cf = ax.contourf(_xs, _ys, _d_flip,
+                                          levels=[0.001, _valid_max + 1],
+                                          hatches=["///"], colors=["none"], zorder=3)
+                        # .collections supprimé en mpl >= 3.10 → getattr pour compatibilité
+                        for _coll in getattr(_cf, "collections", []):
+                            _coll.set_edgecolor("#444444")
+                            _coll.set_linewidth(0.4)
+                    except Exception as _exc:
+                        print(f"[WARN] hachures contourf : {_exc}")
             else:
                 img = ax.imshow(data, origin="upper", extent=ext,
                                 cmap=cmap_disc, norm=norm_disc,
