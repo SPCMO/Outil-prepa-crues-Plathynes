@@ -1899,13 +1899,17 @@ class App(tk.Tk):
                 _valid_max = float(np.nanmax(data)) if np.any(~np.isnan(data) & (data > 0)) else None
                 if _valid_max is not None:
                     try:
+                        import matplotlib as _mpl
                         _xs = np.linspace(ext[0], ext[1], nc)
                         _ys = np.linspace(ext[2], ext[3], nr)   # bas → haut
                         _d_flip = np.flipud(data)                # flipud pour contourf (Y croissant)
+                        # hatch.color contrôle la couleur réelle des hachures en mpl récent
+                        _prev_hatch = _mpl.rcParams.get("hatch.color", "black")
+                        _mpl.rcParams["hatch.color"] = "white"
                         _cf = ax.contourf(_xs, _ys, _d_flip,
                                           levels=[0.001, _valid_max + 1],
                                           hatches=["///"], colors=["none"], zorder=3)
-                        # .collections supprimé en mpl >= 3.10 → getattr pour compatibilité
+                        _mpl.rcParams["hatch.color"] = _prev_hatch
                         for _coll in getattr(_cf, "collections", []):
                             _coll.set_edgecolor("#FFFFFF")
                             _coll.set_linewidth(0.4)
