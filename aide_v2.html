@@ -726,7 +726,9 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
       <code>config_manager.py</code> — lecture/écriture JSON<br>
       <code>csv_loader.py</code> — import catalogue épisodes<br>
       <code>phyc_diag.py</code> — diagnostic connexion PHyC<br>
-      <code>plathynes_importer.py</code> — génération .evt/.mrr/.mqo + mise à jour .prj
+      <code>plathynes_importer.py</code> — génération .evt/.mrr/.mqo + mise à jour .prj<br>
+      <code>visu_logic.py</code> — scan du dossier sorties, calcul stats Ant./Pan.<br>
+      <code>utils.py</code> — lecture CSV série (read_csv_serie)
     </div>
     <div class="arch-box tool">
       <strong>📁 config/</strong><br>
@@ -735,10 +737,12 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     </div>
     <div class="arch-box tool">
       <strong>📁 sorties/{station}/</strong> (généré)<br>
-      <code>Pluies/AntJ1-Ep_*/</code> — .grd Antilope<br>
+      <code>Pluies/AntJ1-Ep_*/</code> — .grd Antilope totale<br>
+      <code>Pluies/AntJ1-Liq-Ep_*/</code> — .grd Antilope liquide<br>
       <code>Pluies/Pant-Ep_*/</code> — .grd Panthère<br>
       <code>Pluies temps moy BV pour graph/</code><br>
-      &nbsp;&nbsp;<code>AntJ1_BV-Ep_*.csv</code> — pluie moy. BV Antilope<br>
+      &nbsp;&nbsp;<code>AntJ1_BV-Ep_*.csv</code> — pluie moy. BV Antilope totale<br>
+      &nbsp;&nbsp;<code>AntJ1-Liq_BV-Ep_*.csv</code> — pluie moy. BV Antilope liquide<br>
       &nbsp;&nbsp;<code>Pant_BV-Ep_*.csv</code> — pluie moy. BV Panthère<br>
       <code>HU/HU-Ep_*.csv</code> — humidité sols<br>
       <code>Debits/Q-Ep_*.txt</code> — débits
@@ -858,7 +862,11 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <tr><td><code>_refresh_episodes_table()</code></td><td>Reconstruit le treeview après filtrage et tri</td><td>Appelle <code>_episodes_view()</code> puis applique le tri actif.</td></tr>
     <tr><td><code>_build_tab_extraction()</code></td><td>Options, journal ScrolledText, barre de progression</td><td>—</td></tr>
     <tr><td><code>_lancer_extraction()</code></td><td>Lance <code>run_extraction</code> dans un thread, gère progress + popup synthèse</td><td>Thread worker ; UI mise à jour via <code>after()</code></td></tr>
-    <tr><td><code>_plot_episode(ep)</code></td><td>Trace les 2 sous-graphiques matplotlib pour un épisode</td><td>Marges définies dans <code>GridSpec</code> pour maximiser la zone utile. Panthère tracée en premier (zorder=1, bordures pointillées, alpha 25 %), Antilope par-dessus (zorder=3, bleu <code>#1F618D</code>, alpha 70 %) — l'ordre est impératif pour éviter le mélange alpha gris. Cumuls AJ1 et Pan. intégrés directement dans les labels de la légende (pas de handles fantômes). Appelle <code>_draw_antpan_stats_panel()</code> si les deux produits pluie sont présents.</td></tr>
+    <tr><td><code>_plot_episode(ep)</code></td><td>Trace les 2 sous-graphiques matplotlib pour un épisode</td><td>Marges définies dans <code>GridSpec</code> pour maximiser la zone utile. Panthère tracée en premier (zorder=1, bordures pointillées, alpha 25 %), Antilope par-dessus (zorder=3, bleu <code>#1F618D</code>, alpha 70 %) — l'ordre est impératif pour éviter le mélange alpha gris. Si l'Antilope liquide est disponible : barres empilées liquide (bas) + solide (haut, bleu clair <code>#85C1E9</code>). Cumuls AJ1 et Pan. intégrés directement dans les labels de la légende (pas de handles fantômes). Appelle <code>_draw_antpan_stats_panel()</code> si les deux produits pluie sont présents.</td></tr>
+    <tr><td><code>_visu_update_legende()</code></td><td>Reconstruit le bloc légende tkinter superposé en haut-droite du graphique haut (pluies)</td><td>Tableau 2 colonnes (icône couleur | label + cumul). Cases à cocher "Info-bulle pluies et HU" intégrées. Positionné dynamiquement via <code>ax.get_position()</code> → coordonnées <code>place()</code> tkinter.</td></tr>
+    <tr><td><code>_visu_update_legende_q()</code></td><td>Reconstruit le bloc légende tkinter superposé en haut-droite du graphique débit</td><td>Même principe que <code>_visu_update_legende</code> mais pour les séries Q/H. Case à cocher "Info-bulle Q/H" intégrée. Icônes tirets "—" (lignes).</td></tr>
+    <tr><td><code>_on_hyet_hover(event)</code></td><td>Handler <code>motion_notify_event</code> matplotlib — affiche les info-bulles au survol</td><td>Deux info-bulles indépendantes : <strong>pluies et HU</strong> (graphique haut, survol des barres, affiche Ant. totale / liquide / solide / Panthère / HU au même pas de temps) et <strong>Q/H</strong> (graphique bas, survol de la courbe, affiche valeur + horodatage). Chacune activable/désactivable via la case à cocher de sa légende. Connexion via <code>mpl_connect</code>, cid sauvegardé dans <code>_hyet_hover_cid</code>.</td></tr>
+    <tr><td><code>_visu_ouvrir_cumuls_spatiaux(ep)</code></td><td>Ouvre une fenêtre Toplevel avec les 3 cartes de cumuls spatialisés pour un épisode</td><td>Déclenchée par un clic sur les cellules d'indices (CV, Gini, Max/Moy) dans l'onglet Analyse pluies. Affiche : Antilope totale | Antilope solide (par diff., rendu semi-transparent + hachures <code>///</code> via <code>contourf</code>) | Panthère. GridSpec 1×4 avec colorbar palette « Hydro – Superviseur national ». Bandeau stats (CV / Gini / Max/Moy) en bas. <code>WM_DELETE_WINDOW</code> ferme proprement la figure matplotlib.</td></tr>
     <tr><td><code>_calc_ep_antpan_stats(p_dates, p_vals, pant_dates, pant_vals, seuil)</code></td><td>Calcule les 4 indicateurs Antilope vs Panthère pour un épisode</td><td>Aligne sur les timestamps communs. Retourne : écart max 1h, écart au pic Ant., écart sur 3h consécutives max, écart sur fortes intensités (Ant &gt; seuil). Chaque écart accompagné de son % relatif par rapport à la valeur Antilope. Méthode statique.</td></tr>
     <tr><td><code>_get_global_antpan_max(seuil)</code></td><td>Calcule les maxima globaux des 4 indicateurs sur tous les épisodes</td><td>Résultat mis en cache dans <code>self._antpan_global_max</code>. Cache invalidé si le seuil change (clé <code>_seuil_key</code>) ou si la liste d'épisodes est rechargée. Chaque indicateur possède sa propre référence de normalisation (pas une référence commune).</td></tr>
     <tr><td><code>_draw_antpan_stats_panel(ax, …, seuil)</code></td><td>Dessine l'encart comparatif Ant./Pan. en bas-droite du graphique haut</td><td>4 lignes de données (label | barre proportionnelle | valeur mm + % | horodatage). Couleur : bleu si Ant &gt; Pan, orange si Pan &gt; Ant. Bouton "Synthèse BV ▶" en haut à droite de l'en-tête (Text matplotlib, détection clic via <code>button_press_event</code> + <code>get_window_extent</code>). Pied d'encart : tendance sur une ligne (% des pas de temps, nb, % cumul global). Coordonnées <code>transAxes</code>, <code>matplotlib.patches</code>.</td></tr>
@@ -922,9 +930,11 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
   <h2>Format des fichiers de sortie</h2>
   <table>
     <tr><th>Fichier</th><th>Format</th><th>Délimiteur / Entête</th></tr>
-    <tr><td><code>{station}/Pluies/AntJ1-Ep_*/*.grd</code></td><td>ESRI ASCII Grid, valeurs entières</td><td>Antilope. 6 lignes NCOLS/NROWS/XLL/YLL/CELLSIZE/NODATA, puis données</td></tr>
+    <tr><td><code>{station}/Pluies/AntJ1-Ep_*/*.grd</code></td><td>ESRI ASCII Grid, valeurs entières</td><td>Antilope totale. 6 lignes NCOLS/NROWS/XLL/YLL/CELLSIZE/NODATA, puis données en 1/10 mm.</td></tr>
+    <tr><td><code>{station}/Pluies/AntJ1-Liq-Ep_*/*.grd</code></td><td>ESRI ASCII Grid, valeurs entières</td><td>Antilope liquide. Même format. La phase solide se déduit pixel par pixel : <code>max(0, total − liquide)</code>.</td></tr>
     <tr><td><code>{station}/Pluies/Pant-Ep_*/*.grd</code></td><td>ESRI ASCII Grid, valeurs entières</td><td>Panthère. Même format que ci-dessus.</td></tr>
-    <tr><td><code>AntJ1_BV-Ep_*.csv</code></td><td>CSV 2 colonnes</td><td>Pluie moy. BV Antilope. Entête <code>date;pluie_mm</code>, format date <code>%d/%m/%Y %H:%M</code></td></tr>
+    <tr><td><code>AntJ1_BV-Ep_*.csv</code></td><td>CSV 2 colonnes</td><td>Pluie moy. BV Antilope totale. Entête <code>date;pluie_mm</code>, format date <code>%d/%m/%Y %H:%M</code></td></tr>
+    <tr><td><code>AntJ1-Liq_BV-Ep_*.csv</code></td><td>CSV 2 colonnes</td><td>Pluie moy. BV Antilope liquide. Même format. Utilisé pour les barres empilées liq/sol dans l'hyétogramme.</td></tr>
     <tr><td><code>Pant_BV-Ep_*.csv</code></td><td>CSV 2 colonnes</td><td>Pluie moy. BV Panthère. Même format.</td></tr>
     <tr><td><code>HU-Ep_*.csv</code></td><td>CSV 2 colonnes</td><td>Entête <code>date;hu</code>, format date <code>%d/%m/%Y %H:%M</code></td></tr>
     <tr><td><code>Q-Ep_*.txt</code> / <code>H-Ep_*.txt</code></td><td>CSV sans entête</td><td>Format date <code>%d/%m/%Y %H:%M</code>, valeur en m³/s (Q) ou en m (H). Le préfixe du fichier correspond à la grandeur extraite.</td></tr>
@@ -1051,11 +1061,11 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <div class="syn-arrow">→</div>
     <div class="syn-cell sc-ui">_on_visu_select()<br><small>→ _plot_episode()</small></div>
     <div class="syn-arrow">→</div>
-    <div class="syn-cell sc-file">Q-Ep_*.txt<br>HU-Ep_*.csv<br>AntJ1_BV / Pant_BV</div>
+    <div class="syn-cell sc-file">Q-Ep_*.txt<br>HU-Ep_*.csv<br>AntJ1_BV / AntJ1-Liq_BV<br>Pant_BV</div>
     <div class="syn-arrow">→</div>
-    <div class="syn-cell sc-disp">Hyétogramme<br>+ courbe HU<br>+ courbe Q</div>
+    <div class="syn-cell sc-disp">Hyétogramme<br>(tot / liq / sol / Pan)<br>+ courbe HU + Q</div>
     <div class="syn-arrow">→</div>
-    <div class="syn-cell sc-disp">Encart stats<br>Ant vs Pan</div>
+    <div class="syn-cell sc-disp">Encart stats<br>Ant vs Pan<br>+ info-bulles survol</div>
   </div>
   <div class="syn-row" style="margin-top:6px">
     <div class="syn-cell sc-user">Onglet<br>"Analyse pluies"</div>
@@ -1064,7 +1074,18 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <div class="syn-arrow">→</div>
     <div class="syn-cell sc-file">Tous les épisodes<br>du dossier sorties/</div>
     <div class="syn-arrow">→</div>
-    <div class="syn-cell sc-disp">Tableau + frise<br>chronologique</div>
+    <div class="syn-cell sc-disp">Tableau cumuls<br>+ frise chronologique</div>
+    <div class="syn-arrow" style="color:transparent">→</div>
+    <div class="syn-cell" style="background:transparent;border:none"></div>
+  </div>
+  <div class="syn-row" style="margin-top:6px">
+    <div class="syn-cell sc-user">Clic indice<br><small>CV / Gini / Max/Moy</small></div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-ui">_visu_ouvrir_cumuls_spatiaux()</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-file">*.grd Antilope totale<br>*.grd Antilope liquide<br>*.grd Panthère<br>masque BV (.asc)</div>
+    <div class="syn-arrow">→</div>
+    <div class="syn-cell sc-disp">3 cartes spatiales<br>+ colorbar Hydro<br>+ stats BV</div>
     <div class="syn-arrow" style="color:transparent">→</div>
     <div class="syn-cell" style="background:transparent;border:none"></div>
   </div>
