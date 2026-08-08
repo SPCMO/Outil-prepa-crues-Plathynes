@@ -1858,6 +1858,26 @@ MARGE_M = 5000   # ← marge en mètres autour de chaque bassin (défaut : 5 km)
     <strong>Corrections internes de robustesse (non visibles à l'utilisateur)</strong>
     <p>Plusieurs corrections sans impact sur l'interface : élimination d'un <code>NameError</code> silencieux sur la phase solide quand aucune pluie n'est disponible ; résolution d'une race condition lors de l'import Plathynes (les seuils et l'ouverture de Plathynes se font maintenant après la fin de l'import, et non en parallèle) ; réduction des fuites mémoire matplotlib sur les fenêtres de cumuls spatialisés et l'onglet Analyse pluies ; correction du scroll de la molette dans l'onglet Analyse pluies qui pouvait interférer avec les autres onglets ; vectorisation numpy de la sélection des pixels dans le BV (gain de performance ×50 sur les grilles fines).</p>
   </div>
+
+  <h2>Redimensionnement dynamique des onglets — août 2026</h2>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Onglet Épisodes — liste adaptée à la taille de l'écran</strong>
+    <p>Le tableau des épisodes (Treeview) n'est plus limité à une hauteur fixe d'environ 10 lignes. Il occupe désormais toute la hauteur disponible entre les deux sections de saisie et le bas de la fenêtre, et se redimensionne automatiquement si la fenêtre est agrandie ou réduite. La barre de défilement verticale propre au tableau reste disponible pour naviguer dans une longue liste d'épisodes.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Onglet Extraction — journal d'extraction extensible</strong>
+    <p>Le journal d'extraction n'a plus de hauteur fixe (anciennement 12 lignes). Les sections d'options (Pluies, HU, Débits, Masque BV, boutons) occupent leur hauteur naturelle en haut de l'onglet ; le journal remplit tout l'espace restant et grandit avec la fenêtre. Sur petit écran, un ascenseur vertical apparaît dans la partie options si nécessaire.</p>
+  </div>
+
+  <div class="change-entry">
+    <span class="change-tag ct-ux">UX</span>
+    <strong>Onglet Caractérisation crues — rafraîchissement automatique à l'ouverture</strong>
+    <p>Cliquer sur l'onglet <span class="badge" style="background:#1A5276;color:#fff">Caractérisation crues</span> déclenche automatiquement un calcul équivalent au bouton <em>"↻ Calculer / Rafraîchir"</em>. Les graphiques et statistiques sont donc toujours à jour sans action manuelle supplémentaire.</p>
+  </div>
 </div>
 
 <script>
