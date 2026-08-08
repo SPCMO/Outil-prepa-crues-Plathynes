@@ -1428,7 +1428,7 @@ class App(tk.Tk):
                 self._visu_tooltip_q.set_visible(True)
             redraw = True
         else:
-            if self._visu_tooltip_q and self._visu_tooltip_q.get_visible():
+            if getattr(self, "_visu_tooltip_q", None) and self._visu_tooltip_q.get_visible():
                 self._visu_tooltip_q.set_visible(False)
                 redraw = True
 
@@ -1905,7 +1905,7 @@ class App(tk.Tk):
                         _d_flip = np.flipud(data)                # flipud pour contourf (Y croissant)
                         # hatch.color contrôle la couleur réelle des hachures en mpl récent
                         _prev_hatch = _mpl.rcParams.get("hatch.color", "black")
-                        _mpl.rcParams["hatch.color"] = "white"
+                        _mpl.rcParams["hatch.color"] = "#444444"
                         _cf = ax.contourf(_xs, _ys, _d_flip,
                                           levels=[0.001, _valid_max + 1],
                                           hatches=["///"], colors=["none"], zorder=3)
