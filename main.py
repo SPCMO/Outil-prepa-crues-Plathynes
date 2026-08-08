@@ -2,6 +2,7 @@
 """Interface principale — Outil prépa crues Plathynes."""
 
 import csv
+import logging
 import os
 import sys
 import threading
@@ -110,6 +111,7 @@ class App(tk.Tk):
         self._extraction_thread = None
         self._stop_event = threading.Event()
         self._visu_episodes = []
+        self._pluies_fig = None   # figure frise chronologique (évite fuites mémoire)
 
         try:
             ttk.Style().theme_use("clam")
@@ -795,7 +797,7 @@ class App(tk.Tk):
             self._visu_annots_q          = []
             self.var_visu_labels_p       = tk.BooleanVar(value=True)
             self.var_visu_labels_q       = tk.BooleanVar(value=True)
-            self._visu_canvas.mpl_connect('motion_notify_event', self._on_hyet_hover)
+            self._hyet_hover_cid = self._visu_canvas.mpl_connect('motion_notify_event', self._on_hyet_hover)
         else:
             tk.Label(right,
                      text="matplotlib n'est pas installé.\n\npip install matplotlib",
@@ -873,7 +875,9 @@ class App(tk.Tk):
                 max_e3h = max(max_e3h, abs(s["ecart_3h"]))
                 if s["ecart_forte"] is not None:
                     max_ef = max(max_ef, abs(s["ecart_forte"]))
-            except Exception:
+            except Exception as _e:
+                logging.warning("_get_global_antpan_max : épisode ignoré — %s: %s",
+                                type(_e).__name__, _e)
                 continue
 
         self._antpan_global_max = {
@@ -896,8 +900,12 @@ class App(tk.Tk):
         debits_dir, hu_dir, pluies_dir, bv_dir = self._get_out_dirs()
 
         def _scan():
-            episodes = visu_logic.build_episode_list(
-                debits_dir, hu_dir, pluies_dir, bv_dir)
+            try:
+                episodes = visu_logic.build_episode_list(
+                    debits_dir, hu_dir, pluies_dir, bv_dir)
+            except OSError as _e:
+                logging.warning("_refresh_visu_list : accès dossier échoué — %s", _e)
+                episodes = []
             self.after(0, lambda: self._on_visu_list_ready(episodes))
 
         threading.Thread(target=_scan, daemon=True).start()
@@ -993,6 +1001,11 @@ class App(tk.Tk):
             seuil = float(self._visu_seuil_var.get())
         except ValueError:
             seuil = 40.0
+            self._visu_seuil_var.set("40")   # resynchronise l'affichage UI
+
+        # Variables initialisées ici pour éviter NameError si p_dates est vide
+        sol_aligned = []
+        liq_aligned = []
 
         # ── Graphique haut : hyétogramme inversé (barres vers le bas) + HU ────────
         C_PANT = _C_PANT
@@ -1202,8 +1215,9 @@ class App(tk.Tk):
                     self._visu_ax_p, p_dates, p_vals, pant_dates, pant_vals,
                     C_P, C_PANT, seuil)
             except Exception as _e:
-                print(f"[WARN] _plot_episode : encart Ant/Pan non affiché "
-                      f"(épisode {ep.get('label','?')}) — {type(_e).__name__}: {_e}")
+                logging.warning("_plot_episode : encart Ant/Pan non affiché "
+                                "(épisode %s) — %s: %s",
+                                ep.get('label', '?'), type(_e).__name__, _e)
 
         # ── Graphique bas : débit Q ou H ─────────────────────────────────────
         grandeur_ep = ep.get("grandeur", self.config_data.get("extraction", {}).get("grandeur", "Q"))
@@ -1781,26 +1795,25 @@ class App(tk.Tk):
                 return data_grd[~np.isnan(data_grd)]
             mx  = mask_header["xllcorner"]; my  = mask_header["yllcorner"]
             mcs = mask_header["cellsize"]
-            mnr = mask_header["nrows"]
-            nc_g = hdr_grd["ncols"]; nr_g = hdr_grd["nrows"]
+            mnr = mask_header["nrows"];     mnc = mask_header["ncols"]
+            nr_g = hdr_grd["nrows"];        nc_g = hdr_grd["ncols"]
             cs_g = hdr_grd["cellsize"]
-            xll_g = hdr_grd["xllcorner"]; yll_g = hdr_grd["yllcorner"]
-            vals = []
-            for row_g in range(nr_g):
-                # Centre Y du pixel GRD (origin="upper" → row 0 = haut = yll + (nr-0.5)*cs)
-                gy = yll_g + (nr_g - row_g - 0.5) * cs_g
-                for col_g in range(nc_g):
-                    gx = xll_g + (col_g + 0.5) * cs_g
-                    v  = data_grd[row_g, col_g]
-                    if np.isnan(v):
-                        continue
-                    # Pixel masque correspondant
-                    mi = int((my + mnr * mcs - gy) / mcs)
-                    mj = int((gx - mx) / mcs)
-                    if 0 <= mi < mnr and 0 <= mj < mask_header["ncols"]:
-                        if masque_array[mi, mj] == 1:
-                            vals.append(v)
-            return np.array(vals, dtype=np.float32)
+            xll_g = hdr_grd["xllcorner"];  yll_g = hdr_grd["yllcorner"]
+            # Centres X de chaque colonne GRD
+            gx = xll_g + (np.arange(nc_g) + 0.5) * cs_g          # (nc_g,)
+            # Centres Y de chaque ligne GRD (origin="upper" → ligne 0 = haut)
+            gy = yll_g + (nr_g - np.arange(nr_g) - 0.5) * cs_g   # (nr_g,)
+            # Indices dans le masque correspondant à chaque pixel GRD
+            mi = ((my + mnr * mcs - gy) / mcs).astype(int)        # (nr_g,)
+            mj = ((gx - mx) / mcs).astype(int)                    # (nc_g,)
+            # Grille 2D des indices (broadcasting)
+            MI = mi[:, np.newaxis] * np.ones(nc_g, dtype=int)     # (nr_g, nc_g)
+            MJ = np.ones(nr_g, dtype=int)[:, np.newaxis] * mj     # (nr_g, nc_g)
+            valid = (MI >= 0) & (MI < mnr) & (MJ >= 0) & (MJ < mnc)
+            in_bv = np.zeros((nr_g, nc_g), dtype=bool)
+            in_bv[valid] = masque_array[MI[valid], MJ[valid]] == 1
+            mask_final = in_bv & ~np.isnan(data_grd)
+            return data_grd[mask_final].astype(np.float32)
 
         def _appliquer_masque(ax, hdr_grd):
             """Overlay gris hors BV + contour BV + rectangles jusqu'aux bords bbox."""
@@ -1914,7 +1927,7 @@ class App(tk.Tk):
                             _coll.set_edgecolor("#FFFFFF")
                             _coll.set_linewidth(0.4)
                     except Exception as _exc:
-                        print(f"[WARN] hachures contourf : {_exc}")
+                        logging.warning("hachures contourf : %s", _exc)
             else:
                 img = ax.imshow(data, origin="upper", extent=ext,
                                 cmap=cmap_disc, norm=norm_disc,
@@ -2009,6 +2022,8 @@ class App(tk.Tk):
         canvas = FigureCanvasTkAgg(fig, master=top)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         canvas.draw()
+        top.protocol("WM_DELETE_WINDOW",
+                     lambda: (fig.clear(), canvas.get_tk_widget().destroy(), top.destroy()))
 
     # ── Seuils variabilité spatiale (réutilisés popup + tableau) ─────────────
 
@@ -2470,7 +2485,8 @@ class App(tk.Tk):
 
         def _scroll(e):
             canv.yview_scroll(int(-1 * (e.delta / 120)), "units")
-        canv.bind_all("<MouseWheel>", _scroll)
+        canv.bind("<Enter>", lambda e: canv.bind_all("<MouseWheel>", _scroll))
+        canv.bind("<Leave>", lambda e: canv.unbind_all("<MouseWheel>"))
 
         def _idx_cell(parent, row, col, stats, fn_seuil, key_name, row_bg):
             if stats is None or stats.get(key_name) is None:
@@ -2535,7 +2551,11 @@ class App(tk.Tk):
         chart_frame.pack(fill=tk.X, side=tk.BOTTOM, padx=4, pady=(2, 4))
         chart_frame.pack_propagate(False)
 
+        if self._pluies_fig is not None:
+            self._pluies_fig.clear()
+            self._pluies_fig = None
         fig = Figure(figsize=(10, 2.4), dpi=96, facecolor="white")
+        self._pluies_fig = fig
         ax  = fig.add_subplot(111)
         # Marge gauche plus large pour loger les labels Antilope/Panthère
         fig.subplots_adjust(left=0.10, right=0.98, top=0.82, bottom=0.28)
@@ -2938,7 +2958,7 @@ class App(tk.Tk):
         self._plath_ep_data.clear()
         self._plath_ep_rows = []
 
-        for vep in sorted(self._visu_episodes, key=lambda e: e["_dt"]):
+        for vep in sorted(self._visu_episodes, key=lambda e: e.get("_dt", datetime.min)):
             ep_key = vep.get("_key", "")
             # Chercher le dossier GRD correspondant
             grd_dir = None
@@ -3169,17 +3189,18 @@ class App(tk.Tk):
                     "ok" if nb_err == 0 else None)
                 self._btn_plath_import.config(state=tk.NORMAL)
                 self._plath_refresh()
+                # Seuils et ouverture APRÈS la fin du worker pour éviter la
+                # race condition sur l'écriture du .prj
+                if _do_seuils:
+                    self._plath_importer_seuils(prj_path)
+                if _do_ouvrir:
+                    self._plath_ouvrir_avec_projet(prj_path)
             self.after(0, _done)
 
+        # Capturer les cases à cocher AVANT de démarrer le thread
+        _do_seuils = self._var_plath_seuils.get()
+        _do_ouvrir = self._var_plath_ouvrir.get()
         threading.Thread(target=_worker, daemon=True).start()
-
-        # Importer les seuils de vigilance si demandé
-        if self._var_plath_seuils.get():
-            self._plath_importer_seuils(prj_path)
-
-        # Ouvrir Plathynes si demandé
-        if self._var_plath_ouvrir.get():
-            self._plath_ouvrir_avec_projet(prj_path)
 
     def _on_plath_pref_change(self, *_):
         """Auto-sauvegarde des préférences cases à cocher Import Plathynes."""
@@ -3233,6 +3254,12 @@ class App(tk.Tk):
                 parties = ligne.rstrip().split()
                 # Format : Station hydro: <nom> <code> <x> <y> <alt> [seuils…]
                 # → 7 tokens de base ; si >= 13, seuils déjà présents
+                if len(parties) < 7:
+                    self._plath_log_msg(
+                        f"  [AVERT] Seuils non importés : ligne 'Station hydro:' "
+                        f"mal formée ({len(parties)} token(s) au lieu de 7 attendus).",
+                        "avert")
+                    return
                 base = parties[:7]
                 lignes[i] = " ".join(base) + " " + vals_str + "\n"
                 modifie = True
@@ -3319,7 +3346,8 @@ class App(tk.Tk):
         bat_dir = os.path.dirname(bat_found)
         prj_abs = os.path.abspath(prj_path)
         try:
-            subprocess.Popen(["cmd", "/c", bat_found, prj_abs], cwd=bat_dir)
+            subprocess.Popen([bat_found, prj_abs], cwd=bat_dir,
+                             stderr=subprocess.DEVNULL)
             self._plath_log_msg(f"  → Plathynes lancé avec : {prj_abs}", "ok")
         except Exception as e:
             self._plath_log_msg(f"  [AVERT] Impossible de lancer Plathynes : {e}", "erreur")
@@ -4049,6 +4077,7 @@ class App(tk.Tk):
         self.var_masque_asc.set(masque)
 
     def _save_config(self):
+        import re
         if "phyc"    not in self.config_data: self.config_data["phyc"]    = {}
         if "bdimage" not in self.config_data: self.config_data["bdimage"] = {}
 
@@ -4058,6 +4087,13 @@ class App(tk.Tk):
         self.config_data["bdimage"]["url"]    = self.var_bdi_url.get().strip()
         self.config_data["output_dir"]        = self.var_outdir.get().strip()
         code_station = self.var_code_station.get().strip()
+        if code_station and not re.fullmatch(r'[A-Za-z]\d{9}', code_station):
+            messagebox.showwarning(
+                "Code station",
+                f"Code station « {code_station} » suspect.\n"
+                "Format attendu : 1 lettre + 9 chiffres (ex. : W123456789).\n"
+                "La configuration sera quand même enregistrée."
+            )
         code_site    = code_station[:8]  # 1 lettre + 7 chiffres
         self.config_data["station"] = {
             "code_station": code_station,

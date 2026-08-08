@@ -234,7 +234,7 @@ class PhycClient:
                 "Content-Type": "text/xml; charset=utf-8",
                 "SOAPAction": '"publierObservationsHydroPasDeTemps"',
             },
-            timeout=120,
+            timeout=self.timeout,
         )
         resp.raise_for_status()
 
@@ -292,7 +292,7 @@ class PhycClient:
         resp = _requests.post(endpoint, data=soap_bytes,
                               headers={"Content-Type": "text/xml; charset=utf-8",
                                        "SOAPAction": '"publierSeuilHydro"'},
-                              timeout=60)
+                              timeout=self.timeout)
         resp.raise_for_status()
 
         root_soap = lxml_etree.fromstring(resp.content)
