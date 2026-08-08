@@ -185,6 +185,8 @@ class App(tk.Tk):
         elif selected == str(self.tab_plathynes):
             self._refresh_visu_list()
             self._plath_refresh()
+        elif selected == str(self.tab_analyse):
+            self._refresh_analyse()
 
     def _place_logo(self):
         logo_path = os.path.join(os.path.dirname(__file__), "Doc BDImage", "logo_Plathynes.png")
@@ -441,7 +443,7 @@ class App(tk.Tk):
     # ── Onglet Episodes ──────────────────────────────────────────────────────
 
     def _build_tab_episodes(self):
-        frm = self._make_scrollable_tab(self.tab_episodes)
+        frm = self.tab_episodes
 
         # Section — Chargement CSV
         inn, bg = self._make_section(frm, "Chargement d'un catalogue de crues (OCTAVE par ex.)", "bleu")
@@ -573,7 +575,25 @@ class App(tk.Tk):
     # ── Onglet Extraction ────────────────────────────────────────────────────
 
     def _build_tab_extraction(self):
-        frm = self._make_scrollable_tab(self.tab_extraction)
+        # Canvas scrollable pour les sections d'options (hauteur = contenu, pas expand)
+        # Le journal d'extraction est placé en dessous et s'étend avec la fenêtre
+        _top = tk.Frame(self.tab_extraction)
+        _top.pack(fill=tk.X)
+        _canv = tk.Canvas(_top, highlightthickness=0)
+        _vsb = ttk.Scrollbar(_top, orient=tk.VERTICAL, command=_canv.yview)
+        _canv.configure(yscrollcommand=_vsb.set)
+        _vsb.pack(side=tk.RIGHT, fill=tk.Y)
+        _canv.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        frm = tk.Frame(_canv)
+        _win_id = _canv.create_window((0, 0), window=frm, anchor="nw")
+        def _on_frm_cfg(e):
+            _canv.configure(scrollregion=_canv.bbox("all"), height=frm.winfo_reqheight())
+        frm.bind("<Configure>", _on_frm_cfg)
+        _canv.bind("<Configure>", lambda e: _canv.itemconfig(_win_id, width=e.width))
+        def _scroll(e):
+            _canv.yview_scroll(int(-1 * (e.delta / 120)), "units")
+        _canv.bind("<Enter>", lambda e: _canv.bind_all("<MouseWheel>", _scroll))
+        _canv.bind("<Leave>", lambda e: _canv.unbind_all("<MouseWheel>"))
 
         # Section Pluies
         inn, bg = self._make_section(frm, "Pluies spatialisées — BDImage", "teal")
@@ -693,10 +713,11 @@ class App(tk.Tk):
         self.progress = ttk.Progressbar(frm, mode="determinate")
         self.progress.pack(fill=tk.X, padx=12, pady=(0, 4))
 
-        # Journal
-        inn, bg = self._make_section(frm, "Journal d'extraction", "gris", fill=tk.BOTH, expand=True)
+        # Journal — directement dans l'onglet (hors canvas), s'étend avec la fenêtre
+        inn, bg = self._make_section(self.tab_extraction, "Journal d'extraction", "gris",
+                                     fill=tk.BOTH, expand=True)
         self.log_text = scrolledtext.ScrolledText(
-            inn, height=12, state=tk.DISABLED,
+            inn, state=tk.DISABLED,
             wrap=tk.WORD, font=("Consolas", 9), bg="#FDFEFE")
         self.log_text.pack(fill=tk.BOTH, expand=True)
         self.log_text.tag_config("erreur", foreground="#C0392B", font=("Consolas", 9, "bold"))
