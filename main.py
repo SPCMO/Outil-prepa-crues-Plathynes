@@ -1907,7 +1907,7 @@ class App(tk.Tk):
                                           hatches=["///"], colors=["none"], zorder=3)
                         # .collections supprimé en mpl >= 3.10 → getattr pour compatibilité
                         for _coll in getattr(_cf, "collections", []):
-                            _coll.set_edgecolor("#444444")
+                            _coll.set_edgecolor("#FFFFFF")
                             _coll.set_linewidth(0.4)
                     except Exception as _exc:
                         print(f"[WARN] hachures contourf : {_exc}")
